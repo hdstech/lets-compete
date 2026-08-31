@@ -23,3 +23,8 @@ dev-dist
 *.njsproj
 *.sln
 *.sw?
+
+# Local env files (keep .env.example tracked)
+.env
+.env.*
+!.env.example
