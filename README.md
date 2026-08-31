@@ -1,75 +1,42 @@
-# React + TypeScript + Vite
+# Let's Compete — Event Scoring App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A mobile-first PWA for scoring live competitions. The MVP (**V1**) is a **quiz / Bible Bowl** format: participants answer live, timed questions on their phones; answers are auto pre-marked against an acceptable-answer set and confirmed by a single grader; top-N advance with sudden-death tiebreaks until a champion is declared. A **judged panel** format is planned for V2.
 
-Currently, two official plugins are available:
+Stack: **Vite + React + TypeScript + Tailwind** (installable PWA) on **Supabase** (Postgres + Auth + Realtime + Storage), hosted on **Vercel**. Domain logic lives in Postgres (RPC / RLS / triggers), so the frontend is a thin, static client and no custom server is required.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Local development
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+cp .env.example .env   # then fill in your Supabase values
+npm run dev            # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Other scripts: `npm run build` (type-check + production build), `npm run preview`, `npm run lint`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Environment variables
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Variable | Where | Purpose |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | client (`.env` + Vercel) | Supabase project URL, read by the browser app |
+| `VITE_SUPABASE_ANON_KEY` | client (`.env` + Vercel) | Public publishable/anon key; safe to ship — RLS is the security boundary |
+| `SUPABASE_URL` | server (Vercel) | Used by the keep-alive function |
+| `SUPABASE_ANON_KEY` | server (Vercel) | Used by the keep-alive function |
+| `CRON_SECRET` | server (Vercel) | Random string; Vercel passes it to the cron as `Authorization: Bearer <CRON_SECRET>` |
 
-```
+`.env` is git-ignored; set the production copies in **Vercel → Settings → Environment Variables**.
+
+## Deployment (Vercel)
+
+Pushing a branch creates a Vercel **preview** deployment; merging to `main` updates production. [`vercel.json`](vercel.json) does two things:
+
+- **SPA routing** — rewrites all non-`/api` paths to `index.html` so React Router deep links resolve (static assets and API functions are served first).
+- **Keep-alive cron** — schedules [`api/keepalive.ts`](api/keepalive.ts) daily. It pings Supabase's PostgREST root so the free-tier project isn't auto-paused for inactivity.
+
+Notes:
+- Vercel Cron on the **Hobby (free) tier runs at most once per day** and only on **production** deployments (not previews).
+- The keep-alive is a pragmatic workaround, not an official Supabase guarantee. If it ever stops resetting the timer, unpause the project manually before test sessions or upgrade to Supabase Pro.
+
+## Project tracking
+
+Architecture and data model live in the plan doc; build work is tracked on the "Event Scoring App — Build Board" Notion kanban (V1 · Quiz MVP vs V2 · Judged).
