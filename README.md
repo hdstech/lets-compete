@@ -21,7 +21,7 @@ Other scripts: `npm run build` (type-check + production build), `npm run preview
 | `VITE_SUPABASE_URL` | client (`.env` + Vercel) | Supabase project URL, read by the browser app |
 | `VITE_SUPABASE_ANON_KEY` | client (`.env` + Vercel) | Public publishable/anon key; safe to ship — RLS is the security boundary |
 | `SUPABASE_URL` | server (Vercel) | Used by the keep-alive function |
-| `SUPABASE_ANON_KEY` | server (Vercel) | Used by the keep-alive function |
+| `SUPABASE_SECRET_KEY` | server (Vercel) | **Secret** key (`sb_secret_…`), server-only; the keep-alive pings a Supabase endpoint that requires a secret key |
 | `CRON_SECRET` | server (Vercel) | Random string; Vercel passes it to the cron as `Authorization: Bearer <CRON_SECRET>` |
 
 `.env` is git-ignored; set the production copies in **Vercel → Settings → Environment Variables**.
