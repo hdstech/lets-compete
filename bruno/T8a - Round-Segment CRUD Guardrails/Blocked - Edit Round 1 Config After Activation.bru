@@ -1,0 +1,33 @@
+meta {
+  name: Blocked: Edit Round 1 Config After Activation
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{base_url}}/rest/v1/rounds?id=eq.{{round1_id}}
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "sequence": 5
+  }
+}
+
+script:post-response {
+  test("round config edit is rejected once active (400)", function () {
+      expect([400]).to.include(res.status);
+  });
+}
+
+docs {
+  T8a's enforce_round_draft_only trigger freezes a round's config surface (name/sequence/advancement_type/advancement_n/is_final_round) once the owning event has left draft. Attempts to change round 1's sequence. Expects a 400 check_violation.
+}

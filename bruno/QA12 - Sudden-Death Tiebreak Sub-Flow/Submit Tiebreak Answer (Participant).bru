@@ -1,0 +1,31 @@
+meta {
+  name: Submit Tiebreak Answer (Participant)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/submit_answer
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{participant_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_question_id": "{{drawn_tiebreak_question_id}}",
+    "p_submitted_text": "Tokyo",
+    "p_client_elapsed_ms": 2000,
+    "p_reveal_token": "{{drawn_tiebreak_reveal_token}}",
+    "p_is_saved_draft": false
+  }
+}
+
+docs {
+  Reuses QA6's submit_answer against the drawn tiebreak question. QA12 restricts writes to the frozen tiebreak_entrants cohort — a non-entrant is rejected even via this RPC. Requires {{drawn_tiebreak_question_id}} / {{drawn_tiebreak_reveal_token}} from a successful Draw Tiebreak Question above.
+}

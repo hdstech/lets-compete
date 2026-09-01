@@ -1,0 +1,43 @@
+meta {
+  name: Create Segment for Round 1
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/rest/v1/segments
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+  Prefer: return=representation
+}
+
+body:json {
+  {
+    "round_id": "{{round1_id}}",
+    "name": "Segment 1",
+    "sequence": 1
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = Array.isArray(json) ? json[0].id : json.id;
+      if (value) {
+          bru.setEnvVar("segment1_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  Captures {{segment1_id}}. Segments have no lifecycle columns of their own (QA4's migration comment); once the event leaves draft they freeze totally (T8a).
+}

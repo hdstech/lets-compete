@@ -1,0 +1,33 @@
+meta {
+  name: Blocked: Edit Question Authoring Field After Activation
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{base_url}}/rest/v1/questions?id=eq.{{question1_id}}
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "prompt": "Edited after activation"
+  }
+}
+
+script:post-response {
+  test("question authoring-field edit is rejected once active (400)", function () {
+      expect([400]).to.include(res.status);
+  });
+}
+
+docs {
+  Same trigger, the UPDATE leg: the authoring surface (prompt/answer_type/window_seconds/sequence/is_tiebreak/segment_id) freezes once active; lifecycle columns (status/reveal_token/etc.) stay writable for QA5/QA8's RPCs. Attempts to edit question 1's prompt directly. Expects a 400 check_violation.
+}

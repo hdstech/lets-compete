@@ -1,0 +1,39 @@
+meta {
+  name: [Final Round Setup] Adjudicate Round 2 Answers (Grader)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/adjudicate_round_answers
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{grader_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_round_id": "{{round2_id}}",
+    "p_grades": [
+      {
+        "answer_id": "{{answer2_id}}",
+        "final_correct": true
+      }
+    ]
+  }
+}
+
+script:post-response {
+  test("round 2 adjudicated (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  Replays QA10's adjudicate_round_answers against the final round.
+}

@@ -1,0 +1,8 @@
+meta {
+  name: T6 - Event Lifecycle (activate_event)
+  seq: 4
+}
+
+docs {
+  Ships activate_event (draft -> active). Because activate_event requires round 1 (and, transitively, everything QA4/T8a's freeze triggers protect) to already exist, and because those freeze triggers make it impossible to author rounds/segments/questions AFTER activation, this folder also carries the full draft-phase fixture setup for the whole regression run: the event, both rounds, both segments, and all four questions (+ acceptable answers) used by every later folder. The T8a and QA4 folders that follow deliberately do NOT duplicate this creation step — they instead prove the freeze constraints those tickets actually added, which can only be demonstrated post-activation.
+}

@@ -1,0 +1,42 @@
+meta {
+  name: Join Event (Participant)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/join_event
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{participant_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_join_code": "{{join_code}}",
+    "p_name": "Test Participant",
+    "p_type": "individual"
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = json.id;
+      if (value) {
+          bru.setEnvVar("participant_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  T10/QA3's join_event(p_join_code, p_name, p_type): self-registers the participant JWT holder as a pending participant of the event matching {{join_code}}. Idempotent on repeat calls. Captures {{participant_id}} (the participants.id row — distinct from {{participant_user_id}}, the auth.users id).
+}

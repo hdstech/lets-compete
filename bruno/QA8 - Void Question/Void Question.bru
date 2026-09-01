@@ -1,0 +1,33 @@
+meta {
+  name: Void Question
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/void_question
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_question_id": "{{question3_id}}"
+  }
+}
+
+script:post-response {
+  test("question voided (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  QA8's void_question(p_question_id): organizer-only, one-way. Requires round 1 still scoring_open (this must run before QA9's Close Round 1). Discards the question's answers outright (there are none here) and marks it voided (voided_at/voided_by audit trail).
+}

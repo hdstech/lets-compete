@@ -1,0 +1,33 @@
+meta {
+  name: Approve Participant (Organizer)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/approve_participant
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_participant_id": "{{participant_id}}"
+  }
+}
+
+script:post-response {
+  test("participant approved (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  QA3's approve_participant(p_participant_id): organizer-only, moves the pending (or revoked) participant to admission_status=approved. Must run before the roster freezes at the first reveal (QA5).
+}

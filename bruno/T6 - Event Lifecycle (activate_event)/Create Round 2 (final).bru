@@ -1,0 +1,46 @@
+meta {
+  name: Create Round 2 (final)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/rest/v1/rounds
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+  Prefer: return=representation
+}
+
+body:json {
+  {
+    "event_id": "{{event_id}}",
+    "name": "Final Round",
+    "sequence": 2,
+    "advancement_type": "top_n",
+    "advancement_n": null,
+    "is_final_round": true
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = Array.isArray(json) ? json[0].id : json.id;
+      if (value) {
+          bru.setEnvVar("round2_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  Round 2 of 2, is_final_round=true (advancement_n must be null — rounds_final_has_no_advancement_n). Captures {{round2_id}}.
+}

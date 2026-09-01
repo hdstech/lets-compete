@@ -1,0 +1,37 @@
+meta {
+  name: Draw Tiebreak Question
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/draw_tiebreak_question
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_tiebreak_id": "{{tiebreak_id}}"
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      if (json && json.id) {
+          bru.setEnvVar("drawn_tiebreak_question_id", json.id);
+          bru.setEnvVar("drawn_tiebreak_reveal_token", json.reveal_token);
+      }
+  }
+}
+
+docs {
+  QA12's draw_tiebreak_question(p_tiebreak_id): draws the next unused is_tiebreak reserve question (authored in T6) and reveals it in one step. Returns null (200, empty body) once the pool is exhausted. Requires {{tiebreak_id}} from a successful Start Tiebreak above.
+}

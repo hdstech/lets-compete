@@ -1,0 +1,35 @@
+meta {
+  name: Grader - Blocked: Insert Participant
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/rest/v1/participants
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{grader_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "event_id": "00000000-0000-0000-0000-000000000000",
+    "name": "Should Be Rejected",
+    "type": "individual"
+  }
+}
+
+script:post-response {
+  test("grader insert is rejected by RLS (403)", function () {
+      expect([403]).to.include(res.status);
+  });
+}
+
+docs {
+  QA2 RLS: participants_insert_organizer only allows the event organizer to insert a participant row. A grader attempting the same insert (against a nil event id) must be rejected. Proves the grader role cannot write the roster.
+}

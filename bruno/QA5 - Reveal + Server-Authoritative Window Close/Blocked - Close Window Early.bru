@@ -1,0 +1,33 @@
+meta {
+  name: Blocked: Close Window Early
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/close_question_window
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_question_id": "{{question1_id}}"
+  }
+}
+
+script:post-response {
+  test("closing before window_seconds elapses is rejected (400)", function () {
+      expect([400]).to.include(res.status);
+  });
+}
+
+docs {
+  QA5's close_question_window(p_question_id) only succeeds once window_seconds has actually elapsed since revealed_at — the server verifies the clock, not the caller. Called immediately after Reveal (0s elapsed < 20s), so this must be rejected. Expects a 400 check_violation.
+}

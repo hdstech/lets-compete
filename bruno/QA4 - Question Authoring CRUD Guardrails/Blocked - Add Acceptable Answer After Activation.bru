@@ -1,0 +1,35 @@
+meta {
+  name: Blocked: Add Acceptable Answer After Activation
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/rest/v1/question_acceptable_answers
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "question_id": "{{question1_id}}",
+    "value": "Too Late",
+    "is_numeric": false
+  }
+}
+
+script:post-response {
+  test("adding an acceptable answer is rejected once active (400)", function () {
+      expect([400]).to.include(res.status);
+  });
+}
+
+docs {
+  QA4's enforce_question_acceptable_answer_draft_only trigger: acceptable answers have no lifecycle columns of their own, so their freeze is total once the owning event has left draft. Expects a 400 check_violation.
+}

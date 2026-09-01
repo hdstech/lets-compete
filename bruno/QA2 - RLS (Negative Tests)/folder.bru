@@ -1,0 +1,8 @@
+meta {
+  name: QA2 - RLS (Negative Tests)
+  seq: 3
+}
+
+docs {
+  QA1 (skipped, schema-only) enables RLS with no policies on every table; QA2 (this ticket, also skipped as a folder for its own DDL) is the migration that actually writes the participant/grader/admin access model described in event-scoring-app-plan.md. These three requests are deliberately-403 negative tests, one per role, proving RLS denies writes outside each role's slice — order-independent (a nil UUID is used so these can run immediately after Auth, before any fixture data exists).
+}

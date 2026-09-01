@@ -1,0 +1,33 @@
+meta {
+  name: [Final Round Setup] Close Question Window - Question 2
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/close_question_window
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_question_id": "{{question2_id}}"
+  }
+}
+
+script:post-response {
+  test("question 2 window closed (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  Run at least 20s after "Reveal Question 2" above. Replays QA5's close_question_window.
+}

@@ -1,0 +1,8 @@
+meta {
+  name: QA12 - Sudden-Death Tiebreak Sub-Flow
+  seq: 16
+}
+
+docs {
+  Ships tiebreaks/tiebreak_entrants/tiebreak_questions plus start_tiebreak, draw_tiebreak_question, void_tiebreak_question, and resolve_tiebreak_question. IMPORTANT: this suite's default fixture seeds exactly one participant (see the Auth folder), so round 1 never produces an actual tie and "Start Tiebreak" is expected to fail here with "no tie to break" — the requests below are still correctly shaped and independently callable. To exercise a real tie end-to-end: before Question 1 is revealed (QA5) — the roster freezes at first reveal — register and approve a second participant via a second GoTrue signup + QA3's join_event/approve_participant, then have both participants submit the same answer to Question 1 so round 1's calculate_results (T16) ranks them tied at rank 1 (advancement_n=1). Re-run this folder against that fixture to see start_tiebreak through resolve_tiebreak_question actually progress.
+}

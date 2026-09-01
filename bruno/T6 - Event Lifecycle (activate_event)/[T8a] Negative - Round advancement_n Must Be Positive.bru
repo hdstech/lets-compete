@@ -1,0 +1,37 @@
+meta {
+  name: [T8a] Negative: Round advancement_n Must Be Positive
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/rest/v1/rounds
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "event_id": "{{event_id}}",
+    "name": "Invalid Round",
+    "sequence": 97,
+    "is_final_round": false,
+    "advancement_n": -1
+  }
+}
+
+script:post-response {
+  test("advancement_n <= 0 is rejected (400)", function () {
+      expect([400]).to.include(res.status);
+  });
+}
+
+docs {
+  Exercises T8a's rounds_advancement_n_positive CHECK constraint. Placed here (in the T6 folder) rather than in the T8a folder because it must run while the event is still draft — T8a's own folder runs after activate_event, by which point ANY new-round insert is already rejected by the separate "rounds cannot be added once left draft" trigger, which would mask this specific constraint. Expects a 400 check_violation.
+}

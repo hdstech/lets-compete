@@ -1,0 +1,43 @@
+meta {
+  name: [Final Round Setup] Calculate Results - Final Round
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/calculate_results
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_event_id": "{{event_id}}",
+    "p_round_id": "{{round2_id}}",
+    "p_segment_id": null,
+    "p_reason": "T18 regression: final round results"
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = json.id;
+      if (value) {
+          bru.setEnvVar("round2_calculation_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  Replays T16's calculate_results against the final round. Captures {{round2_calculation_id}}.
+}

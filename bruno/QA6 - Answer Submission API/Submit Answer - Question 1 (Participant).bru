@@ -1,0 +1,44 @@
+meta {
+  name: Submit Answer - Question 1 (Participant)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/submit_answer
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{participant_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_question_id": "{{question1_id}}",
+    "p_submitted_text": "Paris",
+    "p_client_elapsed_ms": 3000,
+    "p_reveal_token": "{{question1_reveal_token}}",
+    "p_is_saved_draft": false
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = json.id;
+      if (value) {
+          bru.setEnvVar("answer1_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  QA6's submit_answer(p_question_id, p_submitted_text, p_client_elapsed_ms, p_reveal_token, p_is_saved_draft): the single write path for both a live submit and a reconnect/sendBeacon draft replay. Runs after QA5 has already closed Question 1's window, so this exercises the grace-period acceptance path (question.status=window_closed but still within window_seconds+10s grace of revealed_at) rather than a live in-window submit — send this promptly after "Close Question Window" succeeds. p_client_elapsed_ms is the participant's own token-anchored timer, independent of real server-clock elapsed time. Captures {{answer1_id}}.
+}

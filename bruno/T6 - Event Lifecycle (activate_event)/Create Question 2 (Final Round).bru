@@ -1,0 +1,46 @@
+meta {
+  name: Create Question 2 (Final Round)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{base_url}}/rest/v1/questions
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+  Prefer: return=representation
+}
+
+body:json {
+  {
+    "segment_id": "{{segment2_id}}",
+    "prompt": "What is 7 + 5?",
+    "answer_type": "numeric",
+    "window_seconds": 20,
+    "sequence": 1,
+    "is_tiebreak": false
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = Array.isArray(json) ? json[0].id : json.id;
+      if (value) {
+          bru.setEnvVar("question2_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  The live-play question for the final round, used later by the T16a folder before declare_winner. answer_type=numeric to exercise QA7's numeric-equivalence matcher path. Captures {{question2_id}}.
+}

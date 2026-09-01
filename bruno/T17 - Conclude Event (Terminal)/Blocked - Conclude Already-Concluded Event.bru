@@ -1,0 +1,33 @@
+meta {
+  name: Blocked: Conclude Already-Concluded Event
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/conclude_event
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_event_id": "{{event_id}}"
+  }
+}
+
+script:post-response {
+  test("re-concluding is rejected (400)", function () {
+      expect([400]).to.include(res.status);
+  });
+}
+
+docs {
+  Re-calling conclude_event on an already-concluded event must be rejected — both by this RPC's own status check and, as a backstop, by T6's events_status_transition_guard trigger (only draft->active->concluded is legal; concluded is terminal). Expects a 400 check_violation.
+}

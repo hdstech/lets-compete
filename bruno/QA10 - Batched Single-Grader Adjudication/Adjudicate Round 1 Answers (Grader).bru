@@ -1,0 +1,39 @@
+meta {
+  name: Adjudicate Round 1 Answers (Grader)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/adjudicate_round_answers
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{grader_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_round_id": "{{round1_id}}",
+    "p_grades": [
+      {
+        "answer_id": "{{answer1_id}}",
+        "final_correct": true
+      }
+    ]
+  }
+}
+
+script:post-response {
+  test("round 1 adjudicated (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  QA10's adjudicate_round_answers(p_round_id, p_grades): grader-only (events.grader_id), requires the round scoring_closed. p_grades is a JSON array of {answer_id, final_correct}; confirms Question 1's answer as correct, writing final_correct/graded_by/graded_at.
+}

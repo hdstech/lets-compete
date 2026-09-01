@@ -1,0 +1,8 @@
+meta {
+  name: QA0 - Event Format Enum + Immutability
+  seq: 2
+}
+
+docs {
+  QA0 ships public.event_format ('quiz' | 'judged') and prevent_event_format_change(), a BEFORE UPDATE trigger bound to events (in the now-skipped QA1 schema migration) that rejects any change to events.format once set. This is a pure schema/constraint ticket with no RPC or standalone endpoint to call — it is exercised implicitly every time the "Create Event" request (T6 folder) sets format='quiz' at insert, and would reject a PATCH that tried to change it afterward. No runtime request is included here by design.
+}

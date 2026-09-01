@@ -1,0 +1,8 @@
+meta {
+  name: QA4 - Question Authoring CRUD Guardrails
+  seq: 7
+}
+
+docs {
+  Like T8a, QA4 does not add a new RPC — it adds constraints/triggers on top of QA2's existing organizer CRUD grant. The positive-value check (window_seconds > 0) is exercised in the T6 folder (pre-activation); this folder proves the authoring-surface freeze once the event is active. All three requests are expected to fail (400) — that is the passing outcome. The actual question/acceptable-answer fixtures used by the rest of the suite were created in T6, before activation made this freeze relevant.
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Advance Round 1
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/advance_round
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_round_id": "{{round1_id}}"
+  }
+}
+
+script:post-response {
+  test("round 1 advanced (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  T16a's advance_round(p_round_id): non-final rounds only, requires scoring_closed with a final round-scope calculation already run (T16, above). Writes round_participants outcomes for round 1 (rank<=advancement_n=1 -> advanced), seeds round 2's round_participants with the advancing set, opens round 2 (scoring_open), and marks round 1 advanced.
+}

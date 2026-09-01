@@ -1,0 +1,33 @@
+meta {
+  name: [Final Round Setup] Close Round 2
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/close_round
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_round_id": "{{round2_id}}"
+  }
+}
+
+script:post-response {
+  test("round 2 closed (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  Replays QA9's close_round against the final round.
+}

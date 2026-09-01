@@ -1,0 +1,38 @@
+meta {
+  name: [T8a] Negative: At Most One Final Round
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/rest/v1/rounds
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "event_id": "{{event_id}}",
+    "name": "Second Final Round",
+    "sequence": 98,
+    "advancement_type": "top_n",
+    "advancement_n": null,
+    "is_final_round": true
+  }
+}
+
+script:post-response {
+  test("a second is_final_round row is rejected (409)", function () {
+      expect([409]).to.include(res.status);
+  });
+}
+
+docs {
+  Exercises T8a's rounds_one_final_per_event unique partial index. Attempts a second is_final_round=true row for the same event. Expects a 409 unique_violation.
+}
