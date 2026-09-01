@@ -277,9 +277,11 @@ select throws_ok(
 );
 reset role;
 
--- Open the window (postgres)
+-- Open the window (postgres). revealed_at is set alongside status because
+-- QA5 makes private.question_is_window_open time-aware (status = window_open
+-- AND now() < revealed_at + window_seconds), not status-only.
 update public.questions
-set status = 'window_open'
+set status = 'window_open', revealed_at = now()
 where id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
 
 set local role authenticated;
