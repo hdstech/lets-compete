@@ -62,7 +62,9 @@ select ok(
   'T4 trigger mirrored five auth users into profiles'
 );
 
--- Fixture (postgres bypasses RLS)
+-- Fixture (postgres bypasses RLS). Inserted as draft so the round/segment
+-- below can be created (T8a freezes rounds/segments once an event leaves
+-- draft); flipped to active further down, once they exist.
 insert into public.events (
   id, name, organizer_id, grader_id, format, status, join_code
 ) values (
@@ -71,7 +73,7 @@ insert into public.events (
   '11111111-1111-1111-1111-111111111111',
   '22222222-2222-2222-2222-222222222222',
   'quiz',
-  'active',
+  'draft',
   'QA2JOIN1'
 );
 
@@ -136,6 +138,10 @@ insert into public.participants (
     'approved',
     'eligible'
   );
+
+-- Round/segment/question fixtures now exist; activate the event so the rest
+-- of this suite (answer-window RLS etc.) sees the active state it expects.
+update public.events set status = 'active' where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 
 -- Grants: anon holds nothing
 select ok(
