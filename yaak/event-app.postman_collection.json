@@ -1,0 +1,3358 @@
+{
+  "info": {
+    "name": "Event Scoring App - Backend Regression Suite (T18)",
+    "description": "Postman Collection v2.1 regression suite covering every backend RPC/table built for the event-scoring app from QA0 through T17 (see event-scoring-app-plan.md). This is the living regression suite referenced by ticket T18 in the plan, replacing the originally-planned Insomnia collection now that tooling has switched to Yaak (Yaak imports this natively via Import > Postman; see README.md in this folder for import + run instructions).\n\nRun order: folders are ordered to match the plan's Track A ticket sequence and are designed to run top-to-bottom in one pass (Auth first, T17 last). A few folders necessarily reorder some setup relative to strict ticket-build order so the suite is actually runnable end-to-end against the FINAL migrated schema (e.g. all fixture authoring — event/rounds/segments/questions — happens in the T6 folder, before activate_event freezes it; the T8a/QA4 folders that follow prove those freeze guardrails instead of repeating CRUD). Each folder's own description explains any such reordering. Several requests are timing-sensitive (server-authoritative answer windows + a 10s grace period) — see QA5/QA6/QA7's request descriptions.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "GoTrue signup/login for the three seeded V1 roles (organizer/admin, participant, grader — T4's profiles-mirror trigger backfills public.profiles for each on signup). Run the three \"Sign Up\" requests first on a fresh database; on a re-run against an already-seeded database, use \"Log In\" instead (Sign Up returns 422/400 for an existing email). Every request downstream authenticates with the JWTs captured here.",
+      "item": [
+        {
+          "id": "req-1",
+          "name": "Admin / Organizer - Sign Up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/v1/signup"
+            },
+            "description": "GoTrue signup for the seeded Admin / Organizer test user. Requires Email auth enabled and \"confirm email\" disabled in the Supabase dashboard (T4's own migration comment flags this as a manual step) so the response includes a session directly. On success, captures {{admin_jwt}} and {{admin_user_id}} for every downstream request. Safe to re-run: a 422/400 \"already registered\" is expected on repeat runs — use the matching Log In request instead in that case.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\",\n  \"data\": {\n    \"name\": \"Admin / Organizer\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.access_token) {",
+                  "        pm.environment.set(\"admin_jwt\", json.access_token);",
+                  "    }",
+                  "    if (json.user && json.user.id) {",
+                  "        pm.environment.set(\"admin_user_id\", json.user.id);",
+                  "    }",
+                  "}",
+                  "pm.test(\"received an access_token (or user already exists)\", function () {",
+                  "    pm.expect([200, 400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-2",
+          "name": "Admin / Organizer - Log In",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/v1/token?grant_type=password"
+            },
+            "description": "GoTrue password grant for the seeded Admin / Organizer test user. Use this instead of Sign Up once the user already exists (re-running the suite). Captures {{admin_jwt}} and {{admin_user_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.access_token) {",
+                  "        pm.environment.set(\"admin_jwt\", json.access_token);",
+                  "    }",
+                  "    if (json.user && json.user.id) {",
+                  "        pm.environment.set(\"admin_user_id\", json.user.id);",
+                  "    }",
+                  "}",
+                  "pm.test(\"received an access_token (or user already exists)\", function () {",
+                  "    pm.expect([200, 400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-3",
+          "name": "Participant - Sign Up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/v1/signup"
+            },
+            "description": "GoTrue signup for the seeded Participant test user. Requires Email auth enabled and \"confirm email\" disabled in the Supabase dashboard (T4's own migration comment flags this as a manual step) so the response includes a session directly. On success, captures {{participant_jwt}} and {{participant_user_id}} for every downstream request. Safe to re-run: a 422/400 \"already registered\" is expected on repeat runs — use the matching Log In request instead in that case.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{participant_email}}\",\n  \"password\": \"{{participant_password}}\",\n  \"data\": {\n    \"name\": \"Participant\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.access_token) {",
+                  "        pm.environment.set(\"participant_jwt\", json.access_token);",
+                  "    }",
+                  "    if (json.user && json.user.id) {",
+                  "        pm.environment.set(\"participant_user_id\", json.user.id);",
+                  "    }",
+                  "}",
+                  "pm.test(\"received an access_token (or user already exists)\", function () {",
+                  "    pm.expect([200, 400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-4",
+          "name": "Participant - Log In",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/v1/token?grant_type=password"
+            },
+            "description": "GoTrue password grant for the seeded Participant test user. Use this instead of Sign Up once the user already exists (re-running the suite). Captures {{participant_jwt}} and {{participant_user_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{participant_email}}\",\n  \"password\": \"{{participant_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.access_token) {",
+                  "        pm.environment.set(\"participant_jwt\", json.access_token);",
+                  "    }",
+                  "    if (json.user && json.user.id) {",
+                  "        pm.environment.set(\"participant_user_id\", json.user.id);",
+                  "    }",
+                  "}",
+                  "pm.test(\"received an access_token (or user already exists)\", function () {",
+                  "    pm.expect([200, 400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-5",
+          "name": "Grader - Sign Up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/v1/signup"
+            },
+            "description": "GoTrue signup for the seeded Grader test user. Requires Email auth enabled and \"confirm email\" disabled in the Supabase dashboard (T4's own migration comment flags this as a manual step) so the response includes a session directly. On success, captures {{grader_jwt}} and {{grader_user_id}} for every downstream request. Safe to re-run: a 422/400 \"already registered\" is expected on repeat runs — use the matching Log In request instead in that case.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{grader_email}}\",\n  \"password\": \"{{grader_password}}\",\n  \"data\": {\n    \"name\": \"Grader\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.access_token) {",
+                  "        pm.environment.set(\"grader_jwt\", json.access_token);",
+                  "    }",
+                  "    if (json.user && json.user.id) {",
+                  "        pm.environment.set(\"grader_user_id\", json.user.id);",
+                  "    }",
+                  "}",
+                  "pm.test(\"received an access_token (or user already exists)\", function () {",
+                  "    pm.expect([200, 400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-6",
+          "name": "Grader - Log In",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/v1/token?grant_type=password"
+            },
+            "description": "GoTrue password grant for the seeded Grader test user. Use this instead of Sign Up once the user already exists (re-running the suite). Captures {{grader_jwt}} and {{grader_user_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{grader_email}}\",\n  \"password\": \"{{grader_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.access_token) {",
+                  "        pm.environment.set(\"grader_jwt\", json.access_token);",
+                  "    }",
+                  "    if (json.user && json.user.id) {",
+                  "        pm.environment.set(\"grader_user_id\", json.user.id);",
+                  "    }",
+                  "}",
+                  "pm.test(\"received an access_token (or user already exists)\", function () {",
+                  "    pm.expect([200, 400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA0 - Event Format Enum + Immutability",
+      "description": "QA0 ships public.event_format ('quiz' | 'judged') and prevent_event_format_change(), a BEFORE UPDATE trigger bound to events (in the now-skipped QA1 schema migration) that rejects any change to events.format once set. This is a pure schema/constraint ticket with no RPC or standalone endpoint to call — it is exercised implicitly every time the \"Create Event\" request (T6 folder) sets format='quiz' at insert, and would reject a PATCH that tried to change it afterward. No runtime request is included here by design.",
+      "item": []
+    },
+    {
+      "name": "QA2 - RLS (Negative Tests)",
+      "description": "QA1 (skipped, schema-only) enables RLS with no policies on every table; QA2 (this ticket, also skipped as a folder for its own DDL) is the migration that actually writes the participant/grader/admin access model described in event-scoring-app-plan.md. These three requests are deliberately-403 negative tests, one per role, proving RLS denies writes outside each role's slice — order-independent (a nil UUID is used so these can run immediately after Auth, before any fixture data exists).",
+      "item": [
+        {
+          "id": "req-7",
+          "name": "Participant - Blocked: Insert Round",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{participant_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rounds"
+            },
+            "description": "QA2 RLS: rounds_insert_organizer only allows the event organizer to insert. A participant attempting to insert a round (even against a non-existent event id — private.is_event_organizer() simply evaluates false and RLS rejects the row before any FK is checked) must be rejected. Proves the participant role cannot write event structure.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"name\": \"Should Be Rejected\",\n  \"sequence\": 1,\n  \"is_final_round\": false,\n  \"advancement_n\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"participant insert is rejected by RLS (403)\", function () {",
+                  "    pm.expect([403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-8",
+          "name": "Grader - Blocked: Insert Participant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{grader_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/participants"
+            },
+            "description": "QA2 RLS: participants_insert_organizer only allows the event organizer to insert a participant row. A grader attempting the same insert (against a nil event id) must be rejected. Proves the grader role cannot write the roster.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"name\": \"Should Be Rejected\",\n  \"type\": \"individual\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"grader insert is rejected by RLS (403)\", function () {",
+                  "    pm.expect([403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-9",
+          "name": "Admin - Blocked: Insert Answer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/answers"
+            },
+            "description": "QA2 RLS: answers_insert_own_open requires private.owns_participant(participant_id) — true only for the approved participant who owns that row. The organizer owns no participant row, so this insert (against nil participant/question/round/segment ids) must be rejected even though the organizer has broad structural access elsewhere. Proves \"admin is read-only on answers\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"participant_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"question_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"round_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"segment_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"submitted_text\": \"Should Be Rejected\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"organizer insert is rejected by RLS (403)\", function () {",
+                  "    pm.expect([403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "T6 - Event Lifecycle (activate_event)",
+      "description": "Ships activate_event (draft -> active). Because activate_event requires round 1 (and, transitively, everything QA4/T8a's freeze triggers protect) to already exist, and because those freeze triggers make it impossible to author rounds/segments/questions AFTER activation, this folder also carries the full draft-phase fixture setup for the whole regression run: the event, both rounds, both segments, and all four questions (+ acceptable answers) used by every later folder. The T8a and QA4 folders that follow deliberately do NOT duplicate this creation step — they instead prove the freeze constraints those tickets actually added, which can only be demonstrated post-activation.",
+      "item": [
+        {
+          "id": "req-10",
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/events"
+            },
+            "description": "Prerequisite for activate_event: creates a draft quiz event owned by the admin/organizer, with grader_id set to the seeded grader test user (QA2's single-grader identity column — required for QA10's adjudicate_round_answers to authorize later). join_code is left out of the body so T10's events_generate_join_code trigger fills it; format='quiz' is set once and is immutable thereafter (QA0). Captures {{event_id}} and {{join_code}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"T18 Regression Quiz\",\n  \"event_date\": \"2026-09-01\",\n  \"organizer_id\": \"{{admin_user_id}}\",\n  \"format\": \"quiz\",\n  \"has_rounds\": true,\n  \"grader_id\": \"{{grader_user_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const row = Array.isArray(json) ? json[0] : json;",
+                  "    if (row) {",
+                  "        pm.environment.set(\"event_id\", row.id);",
+                  "        pm.environment.set(\"join_code\", row.join_code);",
+                  "    }",
+                  "}",
+                  "pm.test(\"event created (2xx)\", function () {",
+                  "    pm.expect([200,201]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-11",
+          "name": "[T8a] Negative: Round advancement_n Must Be Positive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rounds"
+            },
+            "description": "Exercises T8a's rounds_advancement_n_positive CHECK constraint. Placed here (in the T6 folder) rather than in the T8a folder because it must run while the event is still draft — T8a's own folder runs after activate_event, by which point ANY new-round insert is already rejected by the separate \"rounds cannot be added once left draft\" trigger, which would mask this specific constraint. Expects a 400 check_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"{{event_id}}\",\n  \"name\": \"Invalid Round\",\n  \"sequence\": 97,\n  \"is_final_round\": false,\n  \"advancement_n\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"advancement_n <= 0 is rejected (400)\", function () {",
+                  "    pm.expect([400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-12",
+          "name": "Create Round 1 (non-final)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rounds"
+            },
+            "description": "Round 1 of 2. advancement_type=top_n, advancement_n=1 (only rank<=1 advances — matches the single seeded participant advancing cleanly with no tie). Captures {{round1_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"{{event_id}}\",\n  \"name\": \"Round 1\",\n  \"sequence\": 1,\n  \"advancement_type\": \"top_n\",\n  \"advancement_n\": 1,\n  \"is_final_round\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"round1_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-13",
+          "name": "Create Round 2 (final)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rounds"
+            },
+            "description": "Round 2 of 2, is_final_round=true (advancement_n must be null — rounds_final_has_no_advancement_n). Captures {{round2_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"{{event_id}}\",\n  \"name\": \"Final Round\",\n  \"sequence\": 2,\n  \"advancement_type\": \"top_n\",\n  \"advancement_n\": null,\n  \"is_final_round\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"round2_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-14",
+          "name": "[T8a] Negative: At Most One Final Round",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rounds"
+            },
+            "description": "Exercises T8a's rounds_one_final_per_event unique partial index. Attempts a second is_final_round=true row for the same event. Expects a 409 unique_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"{{event_id}}\",\n  \"name\": \"Second Final Round\",\n  \"sequence\": 98,\n  \"advancement_type\": \"top_n\",\n  \"advancement_n\": null,\n  \"is_final_round\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"a second is_final_round row is rejected (409)\", function () {",
+                  "    pm.expect([409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-15",
+          "name": "Create Segment for Round 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/segments"
+            },
+            "description": "Captures {{segment1_id}}. Segments have no lifecycle columns of their own (QA4's migration comment); once the event leaves draft they freeze totally (T8a).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"round_id\": \"{{round1_id}}\",\n  \"name\": \"Segment 1\",\n  \"sequence\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"segment1_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-16",
+          "name": "Create Segment for Round 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/segments"
+            },
+            "description": "Captures {{segment2_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"round_id\": \"{{round2_id}}\",\n  \"name\": \"Final Segment\",\n  \"sequence\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"segment2_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-17",
+          "name": "[QA4] Negative: window_seconds Must Be Positive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/questions"
+            },
+            "description": "Exercises QA4's questions_window_seconds_positive CHECK constraint. Placed here (pre-activation) for the same reason as the T8a advancement_n negative test above: after activate_event, any new-question insert is already blocked by the separate \"questions cannot be added once left draft\" trigger. Expects a 400 check_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"segment_id\": \"{{segment1_id}}\",\n  \"prompt\": \"Invalid window test\",\n  \"answer_type\": \"text\",\n  \"window_seconds\": -5,\n  \"sequence\": 98,\n  \"is_tiebreak\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"window_seconds <= 0 is rejected (400)\", function () {",
+                  "    pm.expect([400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-18",
+          "name": "Create Question 1 (Round 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/questions"
+            },
+            "description": "The main live-play question for Round 1. window_seconds is set to 20s (not a realistic quiz pace) to keep the QA5/QA6/QA7 timing windows practical to click through manually or with a short Yaak/Postman runner delay. Captures {{question1_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"segment_id\": \"{{segment1_id}}\",\n  \"prompt\": \"What is the capital of France?\",\n  \"answer_type\": \"text\",\n  \"window_seconds\": 20,\n  \"sequence\": 1,\n  \"is_tiebreak\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"question1_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-19",
+          "name": "Create Acceptable Answer for Question 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/question_acceptable_answers"
+            },
+            "description": "Feeds QA7's auto pre-mark matcher (normalized text match). Captures {{acceptable_answer1_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_id\": \"{{question1_id}}\",\n  \"value\": \"Paris\",\n  \"is_numeric\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"acceptable_answer1_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-20",
+          "name": "Create Question To Void (Round 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/questions"
+            },
+            "description": "A throwaway question reserved for the QA8 void_question demo, so voiding it doesn't disturb the main live-play scoring path. Captures {{question3_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"segment_id\": \"{{segment1_id}}\",\n  \"prompt\": \"Question reserved for the QA8 void demo\",\n  \"answer_type\": \"text\",\n  \"window_seconds\": 20,\n  \"sequence\": 3,\n  \"is_tiebreak\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"question3_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-21",
+          "name": "Create Tiebreak Reserve Question (Round 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/questions"
+            },
+            "description": "QA4's is_tiebreak=true pool question, authored in draft alongside the normal question but only drawn/revealed later by QA12's draw_tiebreak_question. Captures {{tiebreak_reserve_question_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"segment_id\": \"{{segment1_id}}\",\n  \"prompt\": \"Tiebreak reserve — capital of Japan?\",\n  \"answer_type\": \"text\",\n  \"window_seconds\": 20,\n  \"sequence\": 2,\n  \"is_tiebreak\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"tiebreak_reserve_question_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-22",
+          "name": "Create Acceptable Answer for Tiebreak Question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/question_acceptable_answers"
+            },
+            "description": "Captures {{acceptable_answer3_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_id\": \"{{tiebreak_reserve_question_id}}\",\n  \"value\": \"Tokyo\",\n  \"is_numeric\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"acceptable_answer3_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-23",
+          "name": "Create Question 2 (Final Round)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/questions"
+            },
+            "description": "The live-play question for the final round, used later by the T16a folder before declare_winner. answer_type=numeric to exercise QA7's numeric-equivalence matcher path. Captures {{question2_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"segment_id\": \"{{segment2_id}}\",\n  \"prompt\": \"What is 7 + 5?\",\n  \"answer_type\": \"numeric\",\n  \"window_seconds\": 20,\n  \"sequence\": 1,\n  \"is_tiebreak\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"question2_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-24",
+          "name": "Create Acceptable Answer for Question 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/question_acceptable_answers"
+            },
+            "description": "is_numeric=true — matched via private.parse_numeric_answer equality rather than normalized text. Captures {{acceptable_answer2_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_id\": \"{{question2_id}}\",\n  \"value\": \"12\",\n  \"is_numeric\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = Array.isArray(json) ? json[0].id : json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"acceptable_answer2_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-25",
+          "name": "Activate Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/activate_event"
+            },
+            "description": "T6's activate_event(p_event_id): organizer-only, moves the event draft -> active. Quiz-format: requires round 1 to exist and be pending (verified above), opens round 1 (scoring_open, scoring_opened_at). Leaves the participant roster open (it freezes at the first reveal, QA5). Everything below this point runs against an ACTIVE event, so T8a's and QA4's freeze triggers are now live — that is deliberate: their own folders (next) exercise those freezes as negative tests instead of duplicating the CRUD already done above.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_event_id\": \"{{event_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"event activated (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "T8a - Round/Segment CRUD Guardrails",
+      "description": "T8a's actual contribution is not new CRUD capability (organizer INSERT/UPDATE/DELETE on rounds/segments already flows through QA2's RLS grants) but the constraints/triggers layered on top of it: advancement_n positivity, at-most-one-final-round, and the config freeze once an event leaves draft. The positivity and one-final-round constraints are exercised in the T6 folder (pre-activation, where a real CRUD attempt is still meaningful); this folder proves the freeze itself, which only means something post-activation. All three requests below are expected to fail (400) — that is the passing outcome.",
+      "item": [
+        {
+          "id": "req-26",
+          "name": "Blocked: Edit Round 1 Config After Activation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rounds?id=eq.{{round1_id}}"
+            },
+            "description": "T8a's enforce_round_draft_only trigger freezes a round's config surface (name/sequence/advancement_type/advancement_n/is_final_round) once the owning event has left draft. Attempts to change round 1's sequence. Expects a 400 check_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sequence\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"round config edit is rejected once active (400)\", function () {",
+                  "    pm.expect([400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-27",
+          "name": "Blocked: Add New Round After Activation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rounds"
+            },
+            "description": "Same trigger, the INSERT/DELETE leg: rounds cannot be added (or removed) once the event has left draft. Expects a 400 check_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"{{event_id}}\",\n  \"name\": \"Too Late\",\n  \"sequence\": 3,\n  \"advancement_type\": \"top_n\",\n  \"advancement_n\": 1,\n  \"is_final_round\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"adding a round is rejected once active (400)\", function () {",
+                  "    pm.expect([400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-28",
+          "name": "Blocked: Edit Segment After Activation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/segments?id=eq.{{segment1_id}}"
+            },
+            "description": "T8a's enforce_segment_draft_only trigger: segments have no lifecycle columns of their own, so their freeze is total once the owning event has left draft. Attempts to rename segment 1. Expects a 400 check_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Renamed After Activation\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"segment edit is rejected once active (400)\", function () {",
+                  "    pm.expect([400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA3 - Participant Self-Register + Approve + Identity",
+      "description": "Runs after activate_event (T6) but before the first reveal (QA5), so the QA5 roster-freeze trigger is not yet in effect and this folder is unaffected by the T6/T8a/QA4 reordering discussed above.",
+      "item": [
+        {
+          "id": "req-29",
+          "name": "Join Event (Participant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{participant_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/join_event"
+            },
+            "description": "T10/QA3's join_event(p_join_code, p_name, p_type): self-registers the participant JWT holder as a pending participant of the event matching {{join_code}}. Idempotent on repeat calls. Captures {{participant_id}} (the participants.id row — distinct from {{participant_user_id}}, the auth.users id).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_join_code\": \"{{join_code}}\",\n  \"p_name\": \"Test Participant\",\n  \"p_type\": \"individual\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"participant_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-30",
+          "name": "Approve Participant (Organizer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/approve_participant"
+            },
+            "description": "QA3's approve_participant(p_participant_id): organizer-only, moves the pending (or revoked) participant to admission_status=approved. Must run before the roster freezes at the first reveal (QA5).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_participant_id\": \"{{participant_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"participant approved (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-31",
+          "name": "My Participant Identity (Participant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{participant_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/my_participant_identity"
+            },
+            "description": "QA3's my_participant_identity(p_join_code): resolves \"who am I in this event\" from just the join code. Should return the same row as Join Event, now with admission_status=approved.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_join_code\": \"{{join_code}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"identity resolved (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA4 - Question Authoring CRUD Guardrails",
+      "description": "Like T8a, QA4 does not add a new RPC — it adds constraints/triggers on top of QA2's existing organizer CRUD grant. The positive-value check (window_seconds > 0) is exercised in the T6 folder (pre-activation); this folder proves the authoring-surface freeze once the event is active. All three requests are expected to fail (400) — that is the passing outcome. The actual question/acceptable-answer fixtures used by the rest of the suite were created in T6, before activation made this freeze relevant.",
+      "item": [
+        {
+          "id": "req-32",
+          "name": "Blocked: Add New Question After Activation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/questions"
+            },
+            "description": "QA4's enforce_question_draft_only trigger: questions cannot be added (or removed) once the owning event has left draft. Expects a 400 check_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"segment_id\": \"{{segment1_id}}\",\n  \"prompt\": \"Too late to add\",\n  \"answer_type\": \"text\",\n  \"window_seconds\": 20,\n  \"sequence\": 99,\n  \"is_tiebreak\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"adding a question is rejected once active (400)\", function () {",
+                  "    pm.expect([400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-33",
+          "name": "Blocked: Edit Question Authoring Field After Activation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/questions?id=eq.{{question1_id}}"
+            },
+            "description": "Same trigger, the UPDATE leg: the authoring surface (prompt/answer_type/window_seconds/sequence/is_tiebreak/segment_id) freezes once active; lifecycle columns (status/reveal_token/etc.) stay writable for QA5/QA8's RPCs. Attempts to edit question 1's prompt directly. Expects a 400 check_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Edited after activation\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"question authoring-field edit is rejected once active (400)\", function () {",
+                  "    pm.expect([400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-34",
+          "name": "Blocked: Add Acceptable Answer After Activation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/question_acceptable_answers"
+            },
+            "description": "QA4's enforce_question_acceptable_answer_draft_only trigger: acceptable answers have no lifecycle columns of their own, so their freeze is total once the owning event has left draft. Expects a 400 check_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_id\": \"{{question1_id}}\",\n  \"value\": \"Too Late\",\n  \"is_numeric\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"adding an acceptable answer is rejected once active (400)\", function () {",
+                  "    pm.expect([400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA5 - Reveal + Server-Authoritative Window Close",
+      "description": "Ships reveal_question (issues reveal_token, opens the window) and close_question_window (server-clock-gated close). Also ships the participant-roster freeze at first reveal (private.event_has_had_first_reveal) — QA3's join_event/approve_participant must run before this folder, which the collection order already guarantees.",
+      "item": [
+        {
+          "id": "req-35",
+          "name": "Reveal Question 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/reveal_question"
+            },
+            "description": "QA5's reveal_question(p_question_id): organizer-only, requires the question pending in an active event whose round is scoring_open. Stamps revealed_at + a fresh reveal_token and opens the answer window (status=window_open). Captures {{question1_reveal_token}}. window_seconds=20, so downstream requests in this folder and QA6/QA7 are timing-sensitive — see each request's description.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question1_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.reveal_token) { pm.environment.set(\"question1_reveal_token\", json.reveal_token); }",
+                  "}",
+                  "pm.test(\"question revealed (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-36",
+          "name": "Blocked: Close Window Early",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/close_question_window"
+            },
+            "description": "QA5's close_question_window(p_question_id) only succeeds once window_seconds has actually elapsed since revealed_at — the server verifies the clock, not the caller. Called immediately after Reveal (0s elapsed < 20s), so this must be rejected. Expects a 400 check_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question1_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"closing before window_seconds elapses is rejected (400)\", function () {",
+                  "    pm.expect([400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-37",
+          "name": "Close Question Window (Question 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/close_question_window"
+            },
+            "description": "Run this at least 20s after \"Reveal Question 1\" above (configure a runner delay, or simply wait before sending it manually) — it is the real, successful close: status -> window_closed, window_closed_at stamped. QA6's submit_answer still accepts a late-but-in-grace submission afterward (window_seconds + 10s grace), so run QA6 promptly after this succeeds.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question1_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"window closed after 20s+ (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA6 - Answer Submission API",
+      "description": "Ships submit_answer. See the request description for the timing note: this call is deliberately positioned after QA5's close, so it demonstrates the disconnection-tolerance / grace-window acceptance path described in the plan, not a live in-window submit.",
+      "item": [
+        {
+          "id": "req-38",
+          "name": "Submit Answer - Question 1 (Participant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{participant_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/submit_answer"
+            },
+            "description": "QA6's submit_answer(p_question_id, p_submitted_text, p_client_elapsed_ms, p_reveal_token, p_is_saved_draft): the single write path for both a live submit and a reconnect/sendBeacon draft replay. Runs after QA5 has already closed Question 1's window, so this exercises the grace-period acceptance path (question.status=window_closed but still within window_seconds+10s grace of revealed_at) rather than a live in-window submit — send this promptly after \"Close Question Window\" succeeds. p_client_elapsed_ms is the participant's own token-anchored timer, independent of real server-clock elapsed time. Captures {{answer1_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question1_id}}\",\n  \"p_submitted_text\": \"Paris\",\n  \"p_client_elapsed_ms\": 3000,\n  \"p_reveal_token\": \"{{question1_reveal_token}}\",\n  \"p_is_saved_draft\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"answer1_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA7 - Auto Pre-Mark Matcher",
+      "description": "Ships auto_mark_question_answers plus the underlying normalize/numeric-parse/match helpers. Writes a provisional auto_correct that QA10's grader later confirms or overrides into final_correct.",
+      "item": [
+        {
+          "id": "req-39",
+          "name": "Auto-Mark Question 1 Answers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/auto_mark_question_answers"
+            },
+            "description": "QA7's auto_mark_question_answers(p_question_id): organizer-only batch pre-mark. Requires the question window_closed AND the same 10s grace period QA6 honors to have elapsed since window_closed_at (so a still-landing reconnect replay is never marked out from under itself) — if this returns a check_violation about the grace period, wait a few seconds and retry. Normalizes \"Paris\" against Question 1's acceptable-answer list and writes the provisional result to answers.auto_correct.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question1_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers auto-marked (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA8 - Void Question",
+      "description": "Ships void_question. Uses the dedicated throwaway \"Question To Void\" fixture from T6 rather than Question 1, so voiding it does not disturb the main live-play scoring path (QA6/QA7/QA10/T16).",
+      "item": [
+        {
+          "id": "req-40",
+          "name": "Reveal Question To Void",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/reveal_question"
+            },
+            "description": "Reuses QA5's reveal_question so the throwaway \"Question To Void\" (created in T6) has a real reveal_token before it is voided. Captures {{question3_reveal_token}} (unused downstream, captured for completeness).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question3_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.reveal_token) { pm.environment.set(\"question3_reveal_token\", json.reveal_token); }",
+                  "}",
+                  "pm.test(\"question revealed (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-41",
+          "name": "Void Question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/void_question"
+            },
+            "description": "QA8's void_question(p_question_id): organizer-only, one-way. Requires round 1 still scoring_open (this must run before QA9's Close Round 1). Discards the question's answers outright (there are none here) and marks it voided (voided_at/voided_by audit trail).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question3_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"question voided (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA9 - Round-Close Gate",
+      "description": "Ships close_round (using the final QA12-amended definition, which excludes is_tiebreak reserve-pool questions from the all-closed check).",
+      "item": [
+        {
+          "id": "req-42",
+          "name": "Close Round 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/close_round"
+            },
+            "description": "QA9's close_round(p_round_id): organizer-only, requires every non-reserve question across the round's segments to be window_closed or voided. Round 1 has Question 1 (window_closed via QA5/QA6/QA7), the throwaway Question To Void (voided via QA8), and the is_tiebreak reserve question (excluded from this check per QA12's amendment — it stays pending). Sets round1.status=scoring_closed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_round_id\": \"{{round1_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"round 1 closed (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA10 - Batched Single-Grader Adjudication",
+      "description": "Ships adjudicate_round_answers. Authorizes against events.grader_id, which the T6 folder's \"Create Event\" request sets to {{grader_user_id}} up front.",
+      "item": [
+        {
+          "id": "req-43",
+          "name": "Adjudicate Round 1 Answers (Grader)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{grader_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/adjudicate_round_answers"
+            },
+            "description": "QA10's adjudicate_round_answers(p_round_id, p_grades): grader-only (events.grader_id), requires the round scoring_closed. p_grades is a JSON array of {answer_id, final_correct}; confirms Question 1's answer as correct, writing final_correct/graded_by/graded_at.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_round_id\": \"{{round1_id}}\",\n  \"p_grades\": [\n    {\n      \"answer_id\": \"{{answer1_id}}\",\n      \"final_correct\": true\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"round 1 adjudicated (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "T16 - calculate_results (Quiz Branch)",
+      "description": "Ships calculate_results' quiz branch (sum final_correct) plus private.result_scope_totals (using the QA12-amended definition, which excludes is_tiebreak questions from every scope's total).",
+      "item": [
+        {
+          "id": "req-44",
+          "name": "Calculate Results - Round 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/calculate_results"
+            },
+            "description": "T16's calculate_results(p_event_id, p_round_id, p_segment_id, p_reason): organizer-only, requires the target round scoring_closed/advanced with no ungraded answers. Scope: p_round_id set, p_segment_id null = per-round leaderboard. Sums final_correct per participant, RANK()s, writes a new result_calculations header + frozen result_calculation_entries + an exclusion snapshot, flipping any prior is_final for the scope. Captures {{round1_calculation_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_event_id\": \"{{event_id}}\",\n  \"p_round_id\": \"{{round1_id}}\",\n  \"p_segment_id\": null,\n  \"p_reason\": \"T18 regression: round 1 results\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"round1_calculation_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "T16a - advance_round + declare_winner",
+      "description": "Ships advance_round and declare_winner (final QA12-amended definitions, which consult a resolved sudden-death tiebreak at the boundary rank before falling back to co-advance). Because declare_winner requires the FINAL round to already be fully played and calculated — the same pipeline QA5 through T16 already demonstrated for round 1 — the \"[Final Round Setup]\" requests in this folder replay that pipeline once more against round 2's question before advance_round's final-round counterpart, declare_winner, is called. Same timing notes apply as QA5/QA6/QA7 (window_seconds=20s, 10s grace).",
+      "item": [
+        {
+          "id": "req-45",
+          "name": "Advance Round 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/advance_round"
+            },
+            "description": "T16a's advance_round(p_round_id): non-final rounds only, requires scoring_closed with a final round-scope calculation already run (T16, above). Writes round_participants outcomes for round 1 (rank<=advancement_n=1 -> advanced), seeds round 2's round_participants with the advancing set, opens round 2 (scoring_open), and marks round 1 advanced.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_round_id\": \"{{round1_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"round 1 advanced (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-46",
+          "name": "[Final Round Setup] Reveal Question 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/reveal_question"
+            },
+            "description": "declare_winner (below) requires the final round to already be scoring_closed with a final calculation — i.e. fully played. This replays QA5's reveal_question against the final round's question (round 2 is scoring_open after Advance Round 1 above). Captures {{question2_reveal_token}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question2_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.reveal_token) { pm.environment.set(\"question2_reveal_token\", json.reveal_token); }",
+                  "}",
+                  "pm.test(\"question 2 revealed (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-47",
+          "name": "[Final Round Setup] Submit Answer - Question 2 (Participant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{participant_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/submit_answer"
+            },
+            "description": "Replays QA6's submit_answer, sent immediately after reveal (live in-window submit this time, unlike QA6's own grace-period demo). Captures {{answer2_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question2_id}}\",\n  \"p_submitted_text\": \"12\",\n  \"p_client_elapsed_ms\": 2000,\n  \"p_reveal_token\": \"{{question2_reveal_token}}\",\n  \"p_is_saved_draft\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"answer2_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-48",
+          "name": "[Final Round Setup] Close Question Window - Question 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/close_question_window"
+            },
+            "description": "Run at least 20s after \"Reveal Question 2\" above. Replays QA5's close_question_window.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question2_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"question 2 window closed (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-49",
+          "name": "[Final Round Setup] Auto-Mark Question 2 Answers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/auto_mark_question_answers"
+            },
+            "description": "Run at least 10s after the previous request (QA6/QA7's shared grace period). Replays QA7's auto_mark_question_answers.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{question2_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"question 2 auto-marked (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-50",
+          "name": "[Final Round Setup] Adjudicate Round 2 Answers (Grader)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{grader_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/adjudicate_round_answers"
+            },
+            "description": "Replays QA10's adjudicate_round_answers against the final round.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_round_id\": \"{{round2_id}}\",\n  \"p_grades\": [\n    {\n      \"answer_id\": \"{{answer2_id}}\",\n      \"final_correct\": true\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"round 2 adjudicated (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-51",
+          "name": "[Final Round Setup] Close Round 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/close_round"
+            },
+            "description": "Replays QA9's close_round against the final round.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_round_id\": \"{{round2_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"round 2 closed (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-52",
+          "name": "[Final Round Setup] Calculate Results - Final Round",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/calculate_results"
+            },
+            "description": "Replays T16's calculate_results against the final round. Captures {{round2_calculation_id}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_event_id\": \"{{event_id}}\",\n  \"p_round_id\": \"{{round2_id}}\",\n  \"p_segment_id\": null,\n  \"p_reason\": \"T18 regression: final round results\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"round2_calculation_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-53",
+          "name": "Declare Winner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/declare_winner"
+            },
+            "description": "T16a's declare_winner(p_event_id): the final-round equivalent of advance_round. Requires the final round scoring_closed with a final calculation and an untied rank 1 (with only one seeded participant, this is trivially untied). Writes round_participants outcomes and sets events.winner_participant_id. Does not conclude the event (T17).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_event_id\": \"{{event_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"winner declared (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QA12 - Sudden-Death Tiebreak Sub-Flow",
+      "description": "Ships tiebreaks/tiebreak_entrants/tiebreak_questions plus start_tiebreak, draw_tiebreak_question, void_tiebreak_question, and resolve_tiebreak_question. IMPORTANT: this suite's default fixture seeds exactly one participant (see the Auth folder), so round 1 never produces an actual tie and \"Start Tiebreak\" is expected to fail here with \"no tie to break\" — the requests below are still correctly shaped and independently callable. To exercise a real tie end-to-end: before Question 1 is revealed (QA5) — the roster freezes at first reveal — register and approve a second participant via a second GoTrue signup + QA3's join_event/approve_participant, then have both participants submit the same answer to Question 1 so round 1's calculate_results (T16) ranks them tied at rank 1 (advancement_n=1). Re-run this folder against that fixture to see start_tiebreak through resolve_tiebreak_question actually progress.",
+      "item": [
+        {
+          "id": "req-54",
+          "name": "Start Tiebreak (Round 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/start_tiebreak"
+            },
+            "description": "QA12's start_tiebreak(p_round_id): organizer-only, infers scope/cutoff from is_final_round and requires a genuine tie straddling the cutoff rank in that round's final calculate_results output (>=2 entries at rank=cutoff). EXPECTED TO FAIL in this fixture's default run: the suite seeds exactly one participant (Auth folder), so round 1 never has a tie to break. See this folder's description for how to actually exercise a tie. Captures {{tiebreak_id}} only if it succeeds.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_round_id\": \"{{round1_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.id;",
+                  "    if (value) {",
+                  "        pm.environment.set(\"tiebreak_id\", value);",
+                  "    }",
+                  "}",
+                  "pm.test(\"status is 2xx\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-55",
+          "name": "Draw Tiebreak Question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/draw_tiebreak_question"
+            },
+            "description": "QA12's draw_tiebreak_question(p_tiebreak_id): draws the next unused is_tiebreak reserve question (authored in T6) and reveals it in one step. Returns null (200, empty body) once the pool is exhausted. Requires {{tiebreak_id}} from a successful Start Tiebreak above.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_tiebreak_id\": \"{{tiebreak_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "    const json = pm.response.json();",
+                  "    if (json && json.id) {",
+                  "        pm.environment.set(\"drawn_tiebreak_question_id\", json.id);",
+                  "        pm.environment.set(\"drawn_tiebreak_reveal_token\", json.reveal_token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-56",
+          "name": "Submit Tiebreak Answer (Participant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{participant_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/submit_answer"
+            },
+            "description": "Reuses QA6's submit_answer against the drawn tiebreak question. QA12 restricts writes to the frozen tiebreak_entrants cohort — a non-entrant is rejected even via this RPC. Requires {{drawn_tiebreak_question_id}} / {{drawn_tiebreak_reveal_token}} from a successful Draw Tiebreak Question above.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_question_id\": \"{{drawn_tiebreak_question_id}}\",\n  \"p_submitted_text\": \"Tokyo\",\n  \"p_client_elapsed_ms\": 2000,\n  \"p_reveal_token\": \"{{drawn_tiebreak_reveal_token}}\",\n  \"p_is_saved_draft\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "id": "req-57",
+          "name": "Void Tiebreak Question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/void_tiebreak_question"
+            },
+            "description": "QA12's void_tiebreak_question(p_tiebreak_id): QA8's escape valve adapted for a tiebreak's already-scoring_closed round. Voids the currently-drawn, not-yet-graded question and frees the tiebreak to draw its next one.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_tiebreak_id\": \"{{tiebreak_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "id": "req-58",
+          "name": "Resolve Tiebreak Question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/resolve_tiebreak_question"
+            },
+            "description": "QA12's resolve_tiebreak_question(p_tiebreak_id): requires the currently-drawn question window_closed/voided and fully graded. Computes cumulative sudden-death scores and checks for a clean cut at slots_to_fill; flips entrant outcomes and the tiebreak to resolved on a clean cut, otherwise leaves it open for another draw.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_tiebreak_id\": \"{{tiebreak_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "T17 - Conclude Event (Terminal)",
+      "description": "Ships conclude_event, the last lifecycle transition. This is the final folder in the collection's main path — a full pass through Auth -> ... -> T17 exercises every RPC shipped by QA0 through T17 (QA12's tiebreak sub-flow excepted, per that folder's own note).",
+      "item": [
+        {
+          "id": "req-59",
+          "name": "Conclude Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/conclude_event"
+            },
+            "description": "T17's conclude_event(p_event_id): organizer-only, terminal active -> concluded transition. Requires events.winner_participant_id to already be set (declare_winner, T16a). Stamps status=concluded and concluded_at.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_event_id\": \"{{event_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"event concluded (200)\", function () {",
+                  "    pm.expect([200]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "req-60",
+          "name": "Blocked: Conclude Already-Concluded Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/conclude_event"
+            },
+            "description": "Re-calling conclude_event on an already-concluded event must be rejected — both by this RPC's own status check and, as a backstop, by T6's events_status_transition_guard trigger (only draft->active->concluded is legal; concluded is terminal). Expects a 400 check_violation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_event_id\": \"{{event_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"re-concluding is rejected (400)\", function () {",
+                  "    pm.expect([400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
