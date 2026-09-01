@@ -26,6 +26,20 @@ Other scripts: `npm run build` (type-check + production build), `npm run preview
 
 `.env` is git-ignored; set the production copies in **Vercel → Settings → Environment Variables**.
 
+## Database migrations (Supabase)
+
+Schema changes are version-controlled SQL files under [`supabase/migrations/`](supabase/migrations/), applied with the Supabase CLI:
+
+```bash
+supabase login                                  # once per machine
+supabase link --project-ref <your-project-ref>  # once per clone
+supabase migration new <name>                   # scaffold a new migration
+supabase db push                                 # apply pending migrations to the linked project
+supabase migration list                          # confirm what's applied locally vs remotely
+```
+
+`npm run supabase:smoke-test` builds a client from `.env` and calls `supabase.auth.getSession()` to confirm the project is reachable.
+
 ## Deployment (Vercel)
 
 Pushing a branch creates a Vercel **preview** deployment; merging to `main` updates production. [`vercel.json`](vercel.json) does two things:
