@@ -1,0 +1,33 @@
+meta {
+  name: Blocked: Edit Segment After Activation
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{base_url}}/rest/v1/segments?id=eq.{{segment1_id}}
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Renamed After Activation"
+  }
+}
+
+script:post-response {
+  test("segment edit is rejected once active (400)", function () {
+      expect([400]).to.include(res.status);
+  });
+}
+
+docs {
+  T8a's enforce_segment_draft_only trigger: segments have no lifecycle columns of their own, so their freeze is total once the owning event has left draft. Attempts to rename segment 1. Expects a 400 check_violation.
+}

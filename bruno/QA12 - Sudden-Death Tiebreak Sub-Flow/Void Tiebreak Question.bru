@@ -1,0 +1,27 @@
+meta {
+  name: Void Tiebreak Question
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/void_tiebreak_question
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_tiebreak_id": "{{tiebreak_id}}"
+  }
+}
+
+docs {
+  QA12's void_tiebreak_question(p_tiebreak_id): QA8's escape valve adapted for a tiebreak's already-scoring_closed round. Voids the currently-drawn, not-yet-graded question and frees the tiebreak to draw its next one.
+}

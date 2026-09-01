@@ -1,0 +1,46 @@
+meta {
+  name: Create Question 1 (Round 1)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{base_url}}/rest/v1/questions
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+  Prefer: return=representation
+}
+
+body:json {
+  {
+    "segment_id": "{{segment1_id}}",
+    "prompt": "What is the capital of France?",
+    "answer_type": "text",
+    "window_seconds": 20,
+    "sequence": 1,
+    "is_tiebreak": false
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = Array.isArray(json) ? json[0].id : json.id;
+      if (value) {
+          bru.setEnvVar("question1_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  The main live-play question for Round 1. window_seconds is set to 20s (not a realistic quiz pace) to keep the QA5/QA6/QA7 timing windows practical to click through manually or with a short Yaak/Postman runner delay. Captures {{question1_id}}.
+}

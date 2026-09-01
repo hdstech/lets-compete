@@ -1,0 +1,37 @@
+meta {
+  name: [Final Round Setup] Reveal Question 2
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/reveal_question
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_question_id": "{{question2_id}}"
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      if (json.reveal_token) { bru.setEnvVar("question2_reveal_token", json.reveal_token); }
+  }
+  test("question 2 revealed (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  declare_winner (below) requires the final round to already be scoring_closed with a final calculation — i.e. fully played. This replays QA5's reveal_question against the final round's question (round 2 is scoring_open after Advance Round 1 above). Captures {{question2_reveal_token}}.
+}

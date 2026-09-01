@@ -1,0 +1,33 @@
+meta {
+  name: Close Question Window (Question 1)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/close_question_window
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_question_id": "{{question1_id}}"
+  }
+}
+
+script:post-response {
+  test("window closed after 20s+ (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  Run this at least 20s after "Reveal Question 1" above (configure a runner delay, or simply wait before sending it manually) — it is the real, successful close: status -> window_closed, window_closed_at stamped. QA6's submit_answer still accepts a late-but-in-grace submission afterward (window_seconds + 10s grace), so run QA6 promptly after this succeeds.
+}

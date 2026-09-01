@@ -1,0 +1,33 @@
+meta {
+  name: Declare Winner
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/declare_winner
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_event_id": "{{event_id}}"
+  }
+}
+
+script:post-response {
+  test("winner declared (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  T16a's declare_winner(p_event_id): the final-round equivalent of advance_round. Requires the final round scoring_closed with a final calculation and an untied rank 1 (with only one seeded participant, this is trivially untied). Writes round_participants outcomes and sets events.winner_participant_id. Does not conclude the event (T17).
+}

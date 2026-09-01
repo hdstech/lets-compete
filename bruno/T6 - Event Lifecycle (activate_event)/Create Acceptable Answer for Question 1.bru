@@ -1,0 +1,43 @@
+meta {
+  name: Create Acceptable Answer for Question 1
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{base_url}}/rest/v1/question_acceptable_answers
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+  Prefer: return=representation
+}
+
+body:json {
+  {
+    "question_id": "{{question1_id}}",
+    "value": "Paris",
+    "is_numeric": false
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = Array.isArray(json) ? json[0].id : json.id;
+      if (value) {
+          bru.setEnvVar("acceptable_answer1_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  Feeds QA7's auto pre-mark matcher (normalized text match). Captures {{acceptable_answer1_id}}.
+}

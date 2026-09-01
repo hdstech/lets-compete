@@ -1,0 +1,33 @@
+meta {
+  name: Close Round 1
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/close_round
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_round_id": "{{round1_id}}"
+  }
+}
+
+script:post-response {
+  test("round 1 closed (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  QA9's close_round(p_round_id): organizer-only, requires every non-reserve question across the round's segments to be window_closed or voided. Round 1 has Question 1 (window_closed via QA5/QA6/QA7), the throwaway Question To Void (voided via QA8), and the is_tiebreak reserve question (excluded from this check per QA12's amendment — it stays pending). Sets round1.status=scoring_closed.
+}

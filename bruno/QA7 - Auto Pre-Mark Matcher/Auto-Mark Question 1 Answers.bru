@@ -1,0 +1,33 @@
+meta {
+  name: Auto-Mark Question 1 Answers
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/auto_mark_question_answers
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_question_id": "{{question1_id}}"
+  }
+}
+
+script:post-response {
+  test("answers auto-marked (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  QA7's auto_mark_question_answers(p_question_id): organizer-only batch pre-mark. Requires the question window_closed AND the same 10s grace period QA6 honors to have elapsed since window_closed_at (so a still-landing reconnect replay is never marked out from under itself) — if this returns a check_violation about the grace period, wait a few seconds and retry. Normalizes "Paris" against Question 1's acceptable-answer list and writes the provisional result to answers.auto_correct.
+}

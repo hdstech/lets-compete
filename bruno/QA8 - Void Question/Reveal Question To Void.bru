@@ -1,0 +1,37 @@
+meta {
+  name: Reveal Question To Void
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/reveal_question
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_question_id": "{{question3_id}}"
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      if (json.reveal_token) { bru.setEnvVar("question3_reveal_token", json.reveal_token); }
+  }
+  test("question revealed (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  Reuses QA5's reveal_question so the throwaway "Question To Void" (created in T6) has a real reveal_token before it is voided. Captures {{question3_reveal_token}} (unused downstream, captured for completeness).
+}

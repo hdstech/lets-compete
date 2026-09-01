@@ -1,0 +1,44 @@
+meta {
+  name: [Final Round Setup] Submit Answer - Question 2 (Participant)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/submit_answer
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{participant_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_question_id": "{{question2_id}}",
+    "p_submitted_text": "12",
+    "p_client_elapsed_ms": 2000,
+    "p_reveal_token": "{{question2_reveal_token}}",
+    "p_is_saved_draft": false
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = json.id;
+      if (value) {
+          bru.setEnvVar("answer2_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  Replays QA6's submit_answer, sent immediately after reveal (live in-window submit this time, unlike QA6's own grace-period demo). Captures {{answer2_id}}.
+}

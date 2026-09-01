@@ -1,0 +1,42 @@
+meta {
+  name: Grader - Log In
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/auth/v1/token?grant_type=password
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{grader_email}}",
+    "password": "{{grader_password}}"
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      if (json.access_token) {
+          bru.setEnvVar("grader_jwt", json.access_token);
+      }
+      if (json.user && json.user.id) {
+          bru.setEnvVar("grader_user_id", json.user.id);
+      }
+  }
+  test("received an access_token (or user already exists)", function () {
+      expect([200, 400, 422]).to.include(res.status);
+  });
+}
+
+docs {
+  GoTrue password grant for the seeded Grader test user. Use this instead of Sign Up once the user already exists (re-running the suite). Captures {{grader_jwt}} and {{grader_user_id}}.
+}

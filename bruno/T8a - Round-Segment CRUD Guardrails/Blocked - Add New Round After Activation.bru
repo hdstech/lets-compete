@@ -1,0 +1,38 @@
+meta {
+  name: Blocked: Add New Round After Activation
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/rest/v1/rounds
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "event_id": "{{event_id}}",
+    "name": "Too Late",
+    "sequence": 3,
+    "advancement_type": "top_n",
+    "advancement_n": 1,
+    "is_final_round": false
+  }
+}
+
+script:post-response {
+  test("adding a round is rejected once active (400)", function () {
+      expect([400]).to.include(res.status);
+  });
+}
+
+docs {
+  Same trigger, the INSERT/DELETE leg: rounds cannot be added (or removed) once the event has left draft. Expects a 400 check_violation.
+}

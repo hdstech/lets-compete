@@ -1,0 +1,8 @@
+meta {
+  name: Auth
+  seq: 1
+}
+
+docs {
+  GoTrue signup/login for the three seeded V1 roles (organizer/admin, participant, grader — T4's profiles-mirror trigger backfills public.profiles for each on signup). Run the three "Sign Up" requests first on a fresh database; on a re-run against an already-seeded database, use "Log In" instead (Sign Up returns 422/400 for an existing email). Every request downstream authenticates with the JWTs captured here.
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Conclude Event
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/conclude_event
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_event_id": "{{event_id}}"
+  }
+}
+
+script:post-response {
+  test("event concluded (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  T17's conclude_event(p_event_id): organizer-only, terminal active -> concluded transition. Requires events.winner_participant_id to already be set (declare_winner, T16a). Stamps status=concluded and concluded_at.
+}

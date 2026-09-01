@@ -1,0 +1,8 @@
+meta {
+  name: QA5 - Reveal + Server-Authoritative Window Close
+  seq: 8
+}
+
+docs {
+  Ships reveal_question (issues reveal_token, opens the window) and close_question_window (server-clock-gated close). Also ships the participant-roster freeze at first reveal (private.event_has_had_first_reveal) — QA3's join_event/approve_participant must run before this folder, which the collection order already guarantees.
+}

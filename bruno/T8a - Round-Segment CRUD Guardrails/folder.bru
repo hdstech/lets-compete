@@ -1,0 +1,8 @@
+meta {
+  name: T8a - Round/Segment CRUD Guardrails
+  seq: 5
+}
+
+docs {
+  T8a's actual contribution is not new CRUD capability (organizer INSERT/UPDATE/DELETE on rounds/segments already flows through QA2's RLS grants) but the constraints/triggers layered on top of it: advancement_n positivity, at-most-one-final-round, and the config freeze once an event leaves draft. The positivity and one-final-round constraints are exercised in the T6 folder (pre-activation, where a real CRUD attempt is still meaningful); this folder proves the freeze itself, which only means something post-activation. All three requests below are expected to fail (400) — that is the passing outcome.
+}

@@ -1,0 +1,46 @@
+meta {
+  name: Create Round 1 (non-final)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/rest/v1/rounds
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+  Prefer: return=representation
+}
+
+body:json {
+  {
+    "event_id": "{{event_id}}",
+    "name": "Round 1",
+    "sequence": 1,
+    "advancement_type": "top_n",
+    "advancement_n": 1,
+    "is_final_round": false
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = Array.isArray(json) ? json[0].id : json.id;
+      if (value) {
+          bru.setEnvVar("round1_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  Round 1 of 2. advancement_type=top_n, advancement_n=1 (only rank<=1 advances — matches the single seeded participant advancing cleanly with no tie). Captures {{round1_id}}.
+}

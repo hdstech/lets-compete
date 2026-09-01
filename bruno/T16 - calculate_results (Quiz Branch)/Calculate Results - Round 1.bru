@@ -1,0 +1,43 @@
+meta {
+  name: Calculate Results - Round 1
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/calculate_results
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_event_id": "{{event_id}}",
+    "p_round_id": "{{round1_id}}",
+    "p_segment_id": null,
+    "p_reason": "T18 regression: round 1 results"
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = json.id;
+      if (value) {
+          bru.setEnvVar("round1_calculation_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  T16's calculate_results(p_event_id, p_round_id, p_segment_id, p_reason): organizer-only, requires the target round scoring_closed/advanced with no ungraded answers. Scope: p_round_id set, p_segment_id null = per-round leaderboard. Sums final_correct per participant, RANK()s, writes a new result_calculations header + frozen result_calculation_entries + an exclusion snapshot, flipping any prior is_final for the scope. Captures {{round1_calculation_id}}.
+}

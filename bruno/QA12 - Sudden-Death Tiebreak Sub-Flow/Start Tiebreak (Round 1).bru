@@ -1,0 +1,40 @@
+meta {
+  name: Start Tiebreak (Round 1)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/start_tiebreak
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_round_id": "{{round1_id}}"
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = json.id;
+      if (value) {
+          bru.setEnvVar("tiebreak_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  QA12's start_tiebreak(p_round_id): organizer-only, infers scope/cutoff from is_final_round and requires a genuine tie straddling the cutoff rank in that round's final calculate_results output (>=2 entries at rank=cutoff). EXPECTED TO FAIL in this fixture's default run: the suite seeds exactly one participant (Auth folder), so round 1 never has a tie to break. See this folder's description for how to actually exercise a tie. Captures {{tiebreak_id}} only if it succeeds.
+}

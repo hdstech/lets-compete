@@ -1,0 +1,33 @@
+meta {
+  name: My Participant Identity (Participant)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/my_participant_identity
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{participant_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_join_code": "{{join_code}}"
+  }
+}
+
+script:post-response {
+  test("identity resolved (200)", function () {
+      expect([200]).to.include(res.status);
+  });
+}
+
+docs {
+  QA3's my_participant_identity(p_join_code): resolves "who am I in this event" from just the join code. Should return the same row as Join Event, now with admission_status=approved.
+}

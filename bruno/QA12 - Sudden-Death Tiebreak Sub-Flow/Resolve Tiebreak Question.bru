@@ -1,0 +1,27 @@
+meta {
+  name: Resolve Tiebreak Question
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/rest/v1/rpc/resolve_tiebreak_question
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "p_tiebreak_id": "{{tiebreak_id}}"
+  }
+}
+
+docs {
+  QA12's resolve_tiebreak_question(p_tiebreak_id): requires the currently-drawn question window_closed/voided and fully graded. Computes cumulative sudden-death scores and checks for a clean cut at slots_to_fill; flips entrant outcomes and the tiebreak to resolved on a clean cut, otherwise leaves it open for another draw.
+}

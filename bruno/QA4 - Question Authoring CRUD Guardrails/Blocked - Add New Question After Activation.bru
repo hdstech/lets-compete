@@ -1,0 +1,38 @@
+meta {
+  name: Blocked: Add New Question After Activation
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rest/v1/questions
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "segment_id": "{{segment1_id}}",
+    "prompt": "Too late to add",
+    "answer_type": "text",
+    "window_seconds": 20,
+    "sequence": 99,
+    "is_tiebreak": false
+  }
+}
+
+script:post-response {
+  test("adding a question is rejected once active (400)", function () {
+      expect([400]).to.include(res.status);
+  });
+}
+
+docs {
+  QA4's enforce_question_draft_only trigger: questions cannot be added (or removed) once the owning event has left draft. Expects a 400 check_violation.
+}

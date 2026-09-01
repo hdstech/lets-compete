@@ -1,0 +1,38 @@
+meta {
+  name: [QA4] Negative: window_seconds Must Be Positive
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}/rest/v1/questions
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "segment_id": "{{segment1_id}}",
+    "prompt": "Invalid window test",
+    "answer_type": "text",
+    "window_seconds": -5,
+    "sequence": 98,
+    "is_tiebreak": false
+  }
+}
+
+script:post-response {
+  test("window_seconds <= 0 is rejected (400)", function () {
+      expect([400]).to.include(res.status);
+  });
+}
+
+docs {
+  Exercises QA4's questions_window_seconds_positive CHECK constraint. Placed here (pre-activation) for the same reason as the T8a advancement_n negative test above: after activate_event, any new-question insert is already blocked by the separate "questions cannot be added once left draft" trigger. Expects a 400 check_violation.
+}

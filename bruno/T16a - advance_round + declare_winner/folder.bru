@@ -1,0 +1,8 @@
+meta {
+  name: T16a - advance_round + declare_winner
+  seq: 15
+}
+
+docs {
+  Ships advance_round and declare_winner (final QA12-amended definitions, which consult a resolved sudden-death tiebreak at the boundary rank before falling back to co-advance). Because declare_winner requires the FINAL round to already be fully played and calculated — the same pipeline QA5 through T16 already demonstrated for round 1 — the "[Final Round Setup]" requests in this folder replay that pipeline once more against round 2's question before advance_round's final-round counterpart, declare_winner, is called. Same timing notes apply as QA5/QA6/QA7 (window_seconds=20s, 10s grace).
+}

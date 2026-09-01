@@ -1,0 +1,46 @@
+meta {
+  name: Create Tiebreak Reserve Question (Round 1)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{base_url}}/rest/v1/questions
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{admin_jwt}}
+  Content-Type: application/json
+  Prefer: return=representation
+}
+
+body:json {
+  {
+    "segment_id": "{{segment1_id}}",
+    "prompt": "Tiebreak reserve — capital of Japan?",
+    "answer_type": "text",
+    "window_seconds": 20,
+    "sequence": 2,
+    "is_tiebreak": true
+  }
+}
+
+script:post-response {
+  if (res.status < 300) {
+      const json = res.body;
+      const value = Array.isArray(json) ? json[0].id : json.id;
+      if (value) {
+          bru.setEnvVar("tiebreak_reserve_question_id", value);
+      }
+  }
+  test("status is 2xx", function () {
+      expect(res.status).to.be.below(300);
+  });
+}
+
+docs {
+  QA4's is_tiebreak=true pool question, authored in draft alongside the normal question but only drawn/revealed later by QA12's draw_tiebreak_question. Captures {{tiebreak_reserve_question_id}}.
+}
