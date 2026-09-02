@@ -41,7 +41,7 @@ const HomeLink = styled(Link, {
   },
 })
 
-function Home() {
+const Home = () => {
   return (
     <HomeMain>
       <HomeHeading>Event Scoring App</HomeHeading>
@@ -53,7 +53,7 @@ function Home() {
   )
 }
 
-function App() {
+const App = () => {
   return (
     <BrowserRouter>
       <AuthProvider>

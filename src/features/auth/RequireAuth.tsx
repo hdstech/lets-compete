@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './useAuth'
 import { LoadingScreen } from './auth-ui'
 
-export function RequireAuth({ children }: { children: ReactNode }) {
+export const RequireAuth = ({ children }: { children: ReactNode }) => {
   const { session, loading } = useAuth()
   const location = useLocation()
 

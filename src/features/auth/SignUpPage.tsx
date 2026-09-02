@@ -18,7 +18,7 @@ import {
   SubmitButton,
 } from './auth-ui'
 
-export function SignUpPage() {
+export const SignUpPage = () => {
   const { session } = useAuth()
   const navigate = useNavigate()
   const [name, setName] = useState('')
@@ -32,7 +32,7 @@ export function SignUpPage() {
     return <Navigate to="/dashboard" replace />
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError(null)
     setSubmitting(true)
