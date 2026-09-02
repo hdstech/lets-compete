@@ -4,6 +4,9 @@ export default defineConfig({
   // Whether to use css reset
   preflight: true,
 
+  // Enables the styled-system/jsx `styled` factory (styled-component style)
+  jsxFramework: "react",
+
   // Where to look for your css declarations
   include: ["./src/**/*.{js,jsx,ts,tsx}"],
 

@@ -1,20 +1,29 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { css } from '../styled-system/css'
+import { styled } from '../styled-system/jsx'
+
+const HomeMain = styled('main', {
+  base: {
+    display: 'flex',
+    minHeight: '100vh',
+    alignItems: 'center',
+    justifyContent: 'center',
+    bg: 'slate.950',
+    color: 'slate.100',
+  },
+})
+
+const HomeHeading = styled('h1', {
+  base: {
+    fontSize: '2xl',
+    fontWeight: 'semibold',
+  },
+})
 
 function Home() {
   return (
-    <main
-      className={css({
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bg: 'slate.950',
-        color: 'slate.100',
-      })}
-    >
-      <h1 className={css({ fontSize: '2xl', fontWeight: 'semibold' })}>Event Scoring App</h1>
-    </main>
+    <HomeMain>
+      <HomeHeading>Event Scoring App</HomeHeading>
+    </HomeMain>
   )
 }
 
