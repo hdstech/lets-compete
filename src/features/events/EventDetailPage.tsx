@@ -21,6 +21,7 @@ import {
   DefinitionValue,
   FormatBadge,
   HelpText,
+  LinkButton,
   PageHeader,
   PageInner,
   PageShell,
@@ -205,6 +206,21 @@ export function EventDetailPage() {
             )}
           </DefinitionGrid>
         </Card>
+
+        {event.format === 'quiz' && (
+          <Card>
+            <SectionTitle>Rounds</SectionTitle>
+            <HelpText>
+              Configure the round(s) participants play and how many advance at each cutoff. At
+              least one round must exist before this event can be activated.
+            </HelpText>
+            <Row>
+              <LinkButton to={`/events/${event.id}/rounds`} tone="secondary">
+                Manage rounds
+              </LinkButton>
+            </Row>
+          </Card>
+        )}
 
         <Card>
           <SectionTitle>Edit event</SectionTitle>

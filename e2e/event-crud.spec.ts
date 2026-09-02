@@ -2,11 +2,11 @@ import { expect, test } from '@playwright/test'
 import { createDraftEvent, deleteCurrentEvent, uniqueEventName } from './helpers'
 
 // Covers T20 (admin event CRUD + lifecycle controls) against the real
-// Supabase backend: create/list/view, edit persistence, the
-// activate_event RPC's error path (no round 1 configured yet — T21a isn't
-// built), and delete. Deliberately skips visual-only assertions (badge
-// colors, copy-to-clipboard) — see the T20 PR for what was checked manually
-// instead.
+// Supabase backend: create/list/view, edit persistence, the activate_event
+// RPC's error path (a fresh event has no round 1 configured yet — see
+// rounds-crud.spec.ts for the T21a round builder that unblocks this), and
+// delete. Deliberately skips visual-only assertions (badge colors,
+// copy-to-clipboard) — see the T20 PR for what was checked manually instead.
 
 test('creating an event lists it and shows its details', async ({ page }) => {
   const name = uniqueEventName('Create List')
