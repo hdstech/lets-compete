@@ -57,9 +57,10 @@ An event can optionally run as **rounds**: progressive elimination stages where 
 
 ## Stack recommendation
 
-- **Vite + React (TypeScript) + Tailwind**, installable as a **PWA** (`vite-plugin-pwa`), deployed as a static bundle on a free-tier host (Vercel / Netlify / Cloudflare Pages). Routing via React Router.
+- **Vite + React (TypeScript) + Panda CSS**, installable as a **PWA** (`vite-plugin-pwa`), deployed as a static bundle on a free-tier host (Vercel / Netlify / Cloudflare Pages). Routing via React Router.
   - React specifically because this project is written by an **AI agent** and reviewed by a **solo developer**: agent output is most idiomatic in React, and mainstream JS/JSX keeps the human an effective reviewer.
   - Note: the quiz format is **online-required** during live questioning; the offline-first/service-worker story is a V2 (judged) priority, not a V1 gate. V1 still ships as a PWA for installability and the disconnection draft-replay path.
+  - **Styling convention**: prefer Panda's **styled-component style** (`styled-system/jsx`'s `styled` factory, e.g. `styled.div({ ... })`) for authoring components. Fall back to the `css-in-js` style (`styled-system/css`'s `css()` function) only when necessary — e.g. one-off style overrides on a non-Panda element, or composing style objects dynamically where a styled factory doesn't fit.
 - **Supabase** (free tier): Postgres + Auth + **Realtime** + Storage.
   - Domain logic pushed **down into Postgres** (RPC functions, RLS, triggers) and exposed over Supabase's HTTP surfaces, so ~90% of core functionality is testable headless (Yaak/HTTP) before any UI exists.
   - **Realtime** is the new V1 dependency: it broadcasts question reveals/countdowns to participant devices.
@@ -280,7 +281,7 @@ Sequenced **API-first**: the backend is built and verified via HTTP/Yaak before 
 ### V1 — Quiz MVP
 
 **Foundations**
-- **T0** Project brief & conventions. **T1** Scaffold Vite + React + TS + Tailwind (PWA). **T2** Provision Supabase (+ Realtime) + env + migrations.
+- **T0** Project brief & conventions. **T1** Scaffold Vite + React + TS + Panda CSS (PWA). **T2** Provision Supabase (+ Realtime) + env + migrations.
 
 **Backend / API (Track A, verified headless)**
 - **QA0** `events.format` enum + immutability trigger.
