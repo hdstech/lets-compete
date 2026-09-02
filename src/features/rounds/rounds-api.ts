@@ -22,6 +22,13 @@ export async function listRounds(eventId: string): Promise<RoundRow[]> {
   return data as RoundRow[]
 }
 
+export async function getRound(roundId: string): Promise<RoundRow> {
+  const { data, error } = await supabase.from('rounds').select('*').eq('id', roundId).single()
+
+  if (error) throw error
+  return data as RoundRow
+}
+
 export type RoundInput = {
   name: string
   sequence: number
