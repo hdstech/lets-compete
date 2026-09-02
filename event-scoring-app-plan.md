@@ -320,6 +320,25 @@ Sequenced **API-first**: the backend is built and verified via HTTP/Yaak before 
 **Polish & verification (Track C)**
 - **T31** Mobile responsiveness (participant answering surface priority). **T32** Empty/error/loading states. **T33** Full E2E walkthrough (author → reveal/timer → answer + focus integrity → close → adjudicate → calculate → advance/tiebreak → champion → conclude).
 
+**Design system — admin UI redesign (Track D, detour)**
+
+Cross-cutting visual/UX redesign of the admin (organizer) side, sequenced independently of the V1 build order above. Responsive strategy is split by audience: admin is **desktop-first** (this track); participant/grader is **mobile-first** and gets its own design pass once those screens exist (out of scope here). Reference: Lovable.dev sample app (light theme default with a dark-mode toggle, Geist font, pill-shaped buttons/tabs, warm-neutral palette, collapsible sidebar shell with an in-place-expanding workspace switcher). Full spec incl. Panda token translation lives in the PR that introduces DS1.
+
+- **DS1** Panda token foundation — light/dark semantic color tokens (`bg.*`/`text.*`/`border.*`/`accent.default`), radii scale (`control`/`card`/`pill`), Geist font tokens, `dark` condition via `[data-theme="dark"]`.
+- **DS2** Theme provider — `data-theme` toggle on `<html>`, `localStorage` persistence, light default, no flash-of-wrong-theme.
+- **DS3** Self-host Geist font, wired into Panda `globalCss`.
+- **DS4** Icon library (`lucide-react`).
+- **DS5** Admin shell skeleton — collapsible sidebar (full-hide, not icon-rail), nav list w/ active-item pill, content header w/ fixed collapse toggle.
+- **DS6** Events switcher — in-place expanding sidebar accordion (recent events + "+ Create event"), not a popover.
+- **DS7** Retheme `events-ui.tsx` shared primitives (pill `buttonRecipe`, card/empty-state radii) — must preserve exact `StatusBadge`/`FormatBadge` text and `PageTitle`/`SectionTitle` tags for e2e.
+- **DS8** Retheme `auth-ui.tsx` shared primitives (inputs, submit button) — reused outside auth by event/round forms; must preserve `Label`/`htmlFor` wiring.
+- **DS9** Wire `AdminLayout` into routing (nested layout route) + rebuild `DashboardPage` as an "Overview" page (card-grid). Route path `/dashboard` and the "Manage your events" link must survive unchanged (asserted in `auth.setup.ts`).
+- **DS10** Retheme `EventsListPage`.
+- **DS11** Retheme `EventDetailPage` + swap its delete-event `window.confirm()` for `ConfirmDialog` (DS14); requires rewriting `event-crud.spec.ts`'s dialog-handling block.
+- **DS12** Retheme `RoundsPage` + swap its delete-round `window.confirm()` for `ConfirmDialog`; requires rewriting `rounds-crud.spec.ts`'s dialog-handling block.
+- **DS13** Retheme `NewEventPage`.
+- **DS14** Reusable `ConfirmDialog` component (accessible modal, `tone="danger"`) for all destructive actions app-wide — built once, consumed by DS11/DS12.
+
 ### V2 — Judged panel (future)
 
 Layered on the shipped V1 core: **judge-tables migration** (`scores`, `score_feedback`, `event_judges`, `round_final_submissions`, `scoring_criteria`, `participant_segments`); **T5** blind-judge RLS; **T7** judged roster-freeze at `draft→active`; **T8** criteria CRUD (min/max); **T11** scoring write API; **T12** score_feedback API; **T13** storage bucket + photo; **T14** per-round completeness gate + close-round; **T15** multi-judge dual-lock trigger; `calculate_results` judged branch; **T21** admin segment/criteria/participant mgmt; **T23** judge join + dashboard; **T24** judge scoring screen; **T25/T26** offline caching + sync; **T27** judge final-submit + locked UI; **T30** DQ/segment-zeroing UI.
