@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { styled } from '../../styled-system/jsx'
 import { useAuth } from '../features/auth/useAuth'
 
@@ -27,6 +27,15 @@ const DashboardText = styled('p', {
   base: {
     fontSize: 'sm',
     color: 'slate.400',
+  },
+})
+
+const DashboardLink = styled(Link, {
+  base: {
+    mt: '2',
+    color: 'slate.100',
+    fontSize: 'sm',
+    textDecoration: 'underline',
   },
 })
 
@@ -59,6 +68,7 @@ export function DashboardPage() {
         {user?.user_metadata.name ? `Welcome, ${user.user_metadata.name}` : 'Welcome'}
       </DashboardHeading>
       <DashboardText>{user?.email}</DashboardText>
+      <DashboardLink to="/events">Manage your events</DashboardLink>
       <SignOutButton type="button" onClick={handleSignOut}>
         Sign out
       </SignOutButton>
