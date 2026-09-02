@@ -68,6 +68,26 @@ export default defineConfig({
     },
   },
 
+  // Self-hosted Geist (DS3): the variable font file is sourced from the
+  // `geist` package's static assets (dist/fonts/geist-sans/Geist-Variable.woff2,
+  // copied into public/fonts/) rather than imported at runtime — the package
+  // ships its font loader for next/font, which isn't usable outside Next.js.
+  globalCss: {
+    "@font-face": {
+      fontFamily: "Geist",
+      src: 'url(/fonts/Geist-Variable.woff2) format("woff2")',
+      fontWeight: "100 900",
+      fontStyle: "normal",
+      fontDisplay: "swap",
+    },
+    "html, body": {
+      fontFamily: "body",
+    },
+    "h1, h2, h3, h4, h5, h6": {
+      fontFamily: "heading",
+    },
+  },
+
   // The output directory for your css system
   outdir: "styled-system",
 });
