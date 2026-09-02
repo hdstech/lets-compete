@@ -1,9 +1,19 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { css } from '../styled-system/css'
 
 function Home() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100">
-      <h1 className="text-2xl font-semibold">Event Scoring App</h1>
+    <main
+      className={css({
+        display: 'flex',
+        minHeight: '100vh',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bg: 'slate.950',
+        color: 'slate.100',
+      })}
+    >
+      <h1 className={css({ fontSize: '2xl', fontWeight: 'semibold' })}>Event Scoring App</h1>
     </main>
   )
 }

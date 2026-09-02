@@ -28,3 +28,7 @@ dev-dist
 .env
 .env.*
 !.env.example
+
+## Panda
+styled-system
+styled-system-studio
