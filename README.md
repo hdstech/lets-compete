@@ -14,6 +14,10 @@ npm run dev            # http://localhost:5173
 
 Other scripts: `npm run build` (type-check + production build), `npm run preview`, `npm run lint`.
 
+## Testing
+
+`npm run test:e2e` runs the [Playwright](https://playwright.dev) suite under [`e2e/`](e2e/) against a real dev server and the Supabase project configured in `.env` — there's no mocking or local Supabase emulator, so these are true end-to-end checks. `e2e/auth.setup.ts` logs into (or, on first run, signs up) one reused organizer account rather than creating a fresh signup per run, since the anon key has no way to delete an `auth.users` row afterward; see `E2E_ORGANIZER_EMAIL`/`E2E_ORGANIZER_PASSWORD` in `.env.example` to point it at a different account. Each spec cleans up the events it creates.
+
 ## Environment variables
 
 | Variable | Where | Purpose |
