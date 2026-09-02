@@ -26,7 +26,7 @@ this folder should be re-translated the same way.
 | `bruno.json` | Collection manifest (name/type/ignore) that marks this folder as a Bruno collection. |
 | `<folder>/folder.bru` | One per ticket folder (17 total) — `meta { name, seq }` plus a `docs { }` block carrying the same explanatory text as that folder's `description` in the Postman collection. |
 | `<folder>/<Request Name>.bru` | One per request (60 total) — `meta`, the HTTP method block (`post`/`patch`), `headers`, `body:json`, an optional `script:post-response` (translated from the Postman test/capture script), and a `docs` block (translated from the Postman request description). |
-| `environments/local.bru` | The 38 variables the collection references (`base_url`, JWTs, fixture ids, ...). Every value ships **empty** — no real secrets are committed here. The three password fields are declared under `vars:secret`. |
+| `environments/local.bru` | The 38 variables the collection references (`base_url`, JWTs, fixture ids, ...). Every value ships **empty** — no real secrets are committed here. `anon_key` and the three `*_jwt`/`*_password` pairs (7 vars total) are declared under `vars:secret`, so Bruno keeps their real values in its own local secret store instead of writing them into this file. |
 | `README.md` | This file. |
 
 ## Opening in Bruno
@@ -51,19 +51,35 @@ icon, or the collection's Environments settings) and fill in:
   (e.g. `https://YOUR-PROJECT-REF.supabase.co`).
 - `anon_key` — from `.env`, this is `VITE_SUPABASE_ANON_KEY` (the
   publishable/anon key — safe to use here since RLS is the real security
-  boundary; still don't commit it into this collection).
+  boundary, but still declared `vars:secret` below out of caution).
 - `admin_email` / `admin_password`, `participant_email` / `participant_password`,
   `grader_email` / `grader_password` — pick any test credentials for three
   throwaway Supabase Auth users. These aren't org secrets, just fixture
   data for the suite's three seeded roles (organizer/admin, participant,
   grader — see T4's profiles-mirror trigger and QA2's per-event
-  `organizer_id` / `grader_id` / participant model). The three password
-  fields are declared under `vars:secret` in `environments/local.bru`, so
-  Bruno masks them in the UI and excludes them from any collection export.
-- Everything else (`*_jwt`, `*_user_id`, `event_id`, `join_code`, every
-  `*_id`, `*_reveal_token`, `*_calculation_id`, `tiebreak_id`, ...) is
-  populated automatically by each request's own `script:post-response`
-  block as you run requests — leave these blank.
+  `organizer_id` / `grader_id` / participant model).
+- `admin_jwt` / `participant_jwt` / `grader_jwt` — normally populated
+  automatically (see below), but declared here as inputs too since they're
+  `vars:secret`.
+- `anon_key`, the three `*_password` fields, and the three `*_jwt` fields
+  are all declared under `vars:secret` in `environments/local.bru`, so
+  Bruno masks them in the UI, excludes them from any collection export,
+  and — this is the important part — **keeps their real values out of
+  this checked-in file entirely**, storing them instead in Bruno's own
+  local, unsynced secret store. Everything else (`*_user_id`, `event_id`,
+  `join_code`, every other `*_id`, `*_reveal_token`,
+  `*_calculation_id`, ...) is a plain, non-secret `var` populated
+  automatically by each request's own `script:post-response` block as you
+  run requests — leave these blank.
+
+  **Why this matters**: an earlier version of this file kept `anon_key`
+  and the JWTs as plain `vars` instead of `vars:secret`. Running the
+  collection then wrote real captured values — a live project URL, an
+  anon key, and three real user JWTs — directly into this tracked file.
+  Nothing was committed, but it's worth knowing the failure mode: **after
+  any run, `git diff environments/local.bru` before staging anything** —
+  a plain `vars` block that comes back non-empty means a real secret just
+  landed in a git-tracked file.
 
 One manual prerequisite outside this collection: in the Supabase dashboard,
 enable **Email** auth and **disable "confirm email"**, so the Auth folder's
