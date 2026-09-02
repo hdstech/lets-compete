@@ -7,6 +7,9 @@ import { RequireAuth } from './features/auth/RequireAuth'
 import { SignUpPage } from './features/auth/SignUpPage'
 import { LoadingScreen } from './features/auth/auth-ui'
 import { useAuth } from './features/auth/useAuth'
+import { EventDetailPage } from './features/events/EventDetailPage'
+import { EventsListPage } from './features/events/EventsListPage'
+import { NewEventPage } from './features/events/NewEventPage'
 import { DashboardPage } from './pages/DashboardPage'
 
 const HomeMain = styled('main', {
@@ -81,6 +84,30 @@ function App() {
             element={
               <RequireAuth>
                 <DashboardPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events"
+            element={
+              <RequireAuth>
+                <EventsListPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events/new"
+            element={
+              <RequireAuth>
+                <NewEventPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events/:eventId"
+            element={
+              <RequireAuth>
+                <EventDetailPage />
               </RequireAuth>
             }
           />
