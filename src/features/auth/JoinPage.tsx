@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { SubmitEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from './useAuth'
 import {
@@ -18,20 +18,15 @@ import {
   SubmitButton,
 } from './auth-ui'
 
-type LocationState = { from?: { pathname: string } }
-
-export const LoginPage = () => {
+export const JoinPage = () => {
   const { session } = useAuth()
-  const location = useLocation()
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [linkSent, setLinkSent] = useState(false)
 
   if (session) {
-    const redirectTo = (location.state as LocationState | null)?.from?.pathname ?? '/dashboard'
-    return <Navigate to={redirectTo} replace />
+    return <Navigate to="/dashboard" replace />
   }
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -39,7 +34,7 @@ export const LoginPage = () => {
     setError(null)
     setSubmitting(true)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithOtp({ email })
 
     setSubmitting(false)
     if (error) {
@@ -47,16 +42,31 @@ export const LoginPage = () => {
       return
     }
 
-    const redirectTo = (location.state as LocationState | null)?.from?.pathname ?? '/dashboard'
-    navigate(redirectTo, { replace: true })
+    setLinkSent(true)
+  }
+
+  if (linkSent) {
+    return (
+      <AuthShell>
+        <AuthCard>
+          <AuthTitle>Check your email</AuthTitle>
+          <AuthSubtitle>
+            We sent a sign-in link to {email}. Open it on this device to continue — no password
+            needed.
+          </AuthSubtitle>
+        </AuthCard>
+      </AuthShell>
+    )
   }
 
   return (
     <AuthShell>
       <AuthCard>
         <div>
-          <AuthTitle>Organizer log in</AuthTitle>
-          <AuthSubtitle>Log in to create and run an event.</AuthSubtitle>
+          <AuthTitle>Join an event</AuthTitle>
+          <AuthSubtitle>
+            Participants and graders sign in with an emailed link — no password needed.
+          </AuthSubtitle>
         </div>
         <AuthForm onSubmit={handleSubmit}>
           <Field>
@@ -71,28 +81,13 @@ export const LoginPage = () => {
               onChange={(event) => setEmail(event.target.value)}
             />
           </Field>
-          <Field>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </Field>
           {error && <ErrorText role="alert">{error}</ErrorText>}
           <SubmitButton type="submit" disabled={submitting}>
-            {submitting ? 'Logging in…' : 'Log in'}
+            {submitting ? 'Sending link…' : 'Email me a sign-in link'}
           </SubmitButton>
         </AuthForm>
         <AuthFooterText>
-          Need an account? <AuthLink to="/signup">Sign up</AuthLink>
-        </AuthFooterText>
-        <AuthFooterText>
-          Participant or grader? <AuthLink to="/join">Use your email link</AuthLink>
+          Organizing an event? <AuthLink to="/login">Log in with a password</AuthLink>
         </AuthFooterText>
       </AuthCard>
     </AuthShell>

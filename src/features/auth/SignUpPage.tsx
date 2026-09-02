@@ -76,8 +76,8 @@ export const SignUpPage = () => {
     <AuthShell>
       <AuthCard>
         <div>
-          <AuthTitle>Sign up</AuthTitle>
-          <AuthSubtitle>Create an account to organize, grade, or join an event.</AuthSubtitle>
+          <AuthTitle>Organizer sign up</AuthTitle>
+          <AuthSubtitle>Create an account to organize and run events.</AuthSubtitle>
         </div>
         <AuthForm onSubmit={handleSubmit}>
           <Field>
@@ -124,6 +124,9 @@ export const SignUpPage = () => {
         </AuthForm>
         <AuthFooterText>
           Already have an account? <AuthLink to="/login">Log in</AuthLink>
+        </AuthFooterText>
+        <AuthFooterText>
+          Participant or grader? <AuthLink to="/join">Use your email link</AuthLink>
         </AuthFooterText>
       </AuthCard>
     </AuthShell>

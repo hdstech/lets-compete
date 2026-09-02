@@ -1,9 +1,12 @@
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
 import { styled } from '../styled-system/jsx'
 import { AuthProvider } from './features/auth/AuthProvider'
+import { JoinPage } from './features/auth/JoinPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { RequireAuth } from './features/auth/RequireAuth'
 import { SignUpPage } from './features/auth/SignUpPage'
+import { LoadingScreen } from './features/auth/auth-ui'
+import { useAuth } from './features/auth/useAuth'
 import { DashboardPage } from './pages/DashboardPage'
 
 const HomeMain = styled('main', {
@@ -42,12 +45,23 @@ const HomeLink = styled(Link, {
 })
 
 const Home = () => {
+  const { session, loading } = useAuth()
+
+  if (loading) {
+    return <LoadingScreen>Loading…</LoadingScreen>
+  }
+
+  if (session) {
+    return <Navigate to="/dashboard" replace />
+  }
+
   return (
     <HomeMain>
       <HomeHeading>Event Scoring App</HomeHeading>
       <HomeNav>
-        <HomeLink to="/login">Log in</HomeLink>
-        <HomeLink to="/signup">Sign up</HomeLink>
+        <HomeLink to="/login">Organizer log in</HomeLink>
+        <HomeLink to="/signup">Organizer sign up</HomeLink>
+        <HomeLink to="/join">Join with email link</HomeLink>
       </HomeNav>
     </HomeMain>
   )
@@ -61,6 +75,7 @@ const App = () => {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/join" element={<JoinPage />} />
           <Route
             path="/dashboard"
             element={
