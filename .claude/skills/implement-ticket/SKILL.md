@@ -140,6 +140,19 @@ they're local run artifacts, not something to commit.
 
 ## 8. Ship it
 
+Before committing, **re-run the step 4 dependency check**, even though it already passed once at
+branch-creation time: `git fetch origin` then, for each dependency branch this branch is stacked
+on, `git merge-base --is-ancestor <dep-branch> origin/main`. The user reviews and merges PRs on
+their own schedule, sometimes mid-session — a dependency that was correctly "not yet merged" when
+you branched can land in `main` (often via a squash or rebase merge, which produces a new commit
+hash disconnected from the branch you stacked on) before you're done implementing. Skipping this
+re-check is exactly what caused DS2 and DS3 to each ship a PR against an already-orphaned
+dependency branch instead of `main`, requiring both to be rebuilt after the fact. If the dependency
+has since landed in `main`: don't open the PR against the stale branch. Rebuild this branch fresh —
+`git checkout -B <this-branch> origin/main && git cherry-pick <this-branch's own commit(s)>` — force
+push it, and proceed with `main` as the base below. This costs one command; skipping it costs a
+rebuild after the user notices.
+
 Commit with a message in this repo's existing style (a `type(scope): summary` subject, a body
 explaining the *why* when it's not obvious, ending with the `Co-Authored-By: Claude Sonnet 5
 <noreply@anthropic.com>` trailer). Push the branch, then open the PR:
