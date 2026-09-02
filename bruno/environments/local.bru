@@ -1,14 +1,10 @@
 vars {
   base_url:
-  anon_key:
   admin_email:
-  admin_jwt:
   admin_user_id:
   participant_email:
-  participant_jwt:
   participant_user_id:
   grader_email:
-  grader_jwt:
   grader_user_id:
   event_id:
   join_code:
@@ -37,7 +33,11 @@ vars {
 }
 
 vars:secret [
+  anon_key,
   admin_password,
+  admin_jwt,
   participant_password,
-  grader_password
+  participant_jwt,
+  grader_password,
+  grader_jwt
 ]
