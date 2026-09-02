@@ -10,7 +10,9 @@ import { useAuth } from './features/auth/useAuth'
 import { EventDetailPage } from './features/events/EventDetailPage'
 import { EventsListPage } from './features/events/EventsListPage'
 import { NewEventPage } from './features/events/NewEventPage'
+import { QuestionsPage } from './features/questions/QuestionsPage'
 import { RoundsPage } from './features/rounds/RoundsPage'
+import { SegmentsPage } from './features/segments/SegmentsPage'
 import { DashboardPage } from './pages/DashboardPage'
 
 const HomeMain = styled('main', {
@@ -117,6 +119,22 @@ function App() {
             element={
               <RequireAuth>
                 <RoundsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events/:eventId/rounds/:roundId/segments"
+            element={
+              <RequireAuth>
+                <SegmentsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events/:eventId/rounds/:roundId/segments/:segmentId/questions"
+            element={
+              <RequireAuth>
+                <QuestionsPage />
               </RequireAuth>
             }
           />

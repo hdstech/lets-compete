@@ -13,6 +13,7 @@ import {
   DefinitionValue,
   EmptyState,
   HelpText,
+  LinkButton,
   PageHeader,
   PageInner,
   PageShell,
@@ -327,21 +328,26 @@ export function RoundsPage() {
                 <DefinitionTerm>Status</DefinitionTerm>
                 <DefinitionValue>{round.status.replace('_', ' ')}</DefinitionValue>
               </DefinitionGrid>
-              {isDraft && (
-                <Row>
-                  <Button type="button" tone="secondary" onClick={() => startEdit(round)}>
-                    Edit
-                  </Button>
-                  <Button
-                    type="button"
-                    tone="danger"
-                    onClick={() => handleDelete(round)}
-                    disabled={deletingId === round.id}
-                  >
-                    {deletingId === round.id ? 'Deleting…' : 'Delete'}
-                  </Button>
-                </Row>
-              )}
+              <Row>
+                <LinkButton to={`/events/${event.id}/rounds/${round.id}/segments`} tone="secondary">
+                  Manage segments
+                </LinkButton>
+                {isDraft && (
+                  <>
+                    <Button type="button" tone="secondary" onClick={() => startEdit(round)}>
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      tone="danger"
+                      onClick={() => handleDelete(round)}
+                      disabled={deletingId === round.id}
+                    >
+                      {deletingId === round.id ? 'Deleting…' : 'Delete'}
+                    </Button>
+                  </>
+                )}
+              </Row>
             </Card>
           ),
         )}
