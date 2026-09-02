@@ -20,7 +20,7 @@ import {
 
 type LocationState = { from?: { pathname: string } }
 
-export const LoginPage = () => {
+export function LoginPage() {
   const { session } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -34,7 +34,7 @@ export const LoginPage = () => {
     return <Navigate to={redirectTo} replace />
   }
 
-  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
     setSubmitting(true)

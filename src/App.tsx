@@ -44,7 +44,7 @@ const HomeLink = styled(Link, {
   },
 })
 
-const Home = () => {
+function Home() {
   const { session, loading } = useAuth()
 
   if (loading) {
@@ -67,7 +67,7 @@ const Home = () => {
   )
 }
 
-const App = () => {
+function App() {
   return (
     <BrowserRouter>
       <AuthProvider>

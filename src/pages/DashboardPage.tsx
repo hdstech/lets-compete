@@ -44,11 +44,11 @@ const SignOutButton = styled('button', {
   },
 })
 
-export const DashboardPage = () => {
+export function DashboardPage() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
 
-  const handleSignOut = async () => {
+  async function handleSignOut() {
     await signOut()
     navigate('/login', { replace: true })
   }
