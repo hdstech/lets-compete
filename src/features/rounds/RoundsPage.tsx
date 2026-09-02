@@ -229,6 +229,7 @@ export function RoundsPage() {
   }
 
   const isDraft = event.status === 'draft'
+  const finalRound = rounds.find((round) => round.is_final_round)
 
   return (
     <PageShell>
@@ -278,22 +279,24 @@ export function RoundsPage() {
                     onChange={(e) => setEditRound({ ...editRound, sequence: e.target.value })}
                   />
                 </Field>
-                <Field>
-                  <CheckboxField>
-                    <input
-                      type="checkbox"
-                      checked={editRound.isFinalRound}
-                      onChange={(e) =>
-                        setEditRound({
-                          ...editRound,
-                          isFinalRound: e.target.checked,
-                          advancementN: e.target.checked ? '' : editRound.advancementN,
-                        })
-                      }
-                    />
-                    This is the final round
-                  </CheckboxField>
-                </Field>
+                {(!finalRound || finalRound.id === round.id) && (
+                  <Field>
+                    <CheckboxField>
+                      <input
+                        type="checkbox"
+                        checked={editRound.isFinalRound}
+                        onChange={(e) =>
+                          setEditRound({
+                            ...editRound,
+                            isFinalRound: e.target.checked,
+                            advancementN: e.target.checked ? '' : editRound.advancementN,
+                          })
+                        }
+                      />
+                      This is the final round
+                    </CheckboxField>
+                  </Field>
+                )}
                 <Field>
                   <Label htmlFor="round_advancement_n">Participants advancing</Label>
                   <Input
@@ -379,22 +382,24 @@ export function RoundsPage() {
                   onChange={(e) => setNewRound({ ...newRound, sequence: e.target.value })}
                 />
               </Field>
-              <Field>
-                <CheckboxField>
-                  <input
-                    type="checkbox"
-                    checked={newRound.isFinalRound}
-                    onChange={(e) =>
-                      setNewRound({
-                        ...newRound,
-                        isFinalRound: e.target.checked,
-                        advancementN: e.target.checked ? '' : newRound.advancementN,
-                      })
-                    }
-                  />
-                  This is the final round
-                </CheckboxField>
-              </Field>
+              {!finalRound && (
+                <Field>
+                  <CheckboxField>
+                    <input
+                      type="checkbox"
+                      checked={newRound.isFinalRound}
+                      onChange={(e) =>
+                        setNewRound({
+                          ...newRound,
+                          isFinalRound: e.target.checked,
+                          advancementN: e.target.checked ? '' : newRound.advancementN,
+                        })
+                      }
+                    />
+                    This is the final round
+                  </CheckboxField>
+                </Field>
+              )}
               <Field>
                 <Label htmlFor="new_round_advancement_n">Participants advancing</Label>
                 <Input

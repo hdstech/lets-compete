@@ -24,17 +24,27 @@ test('adding a round shows it in the list with its advancement config', async ({
   await deleteCurrentEvent(page)
 })
 
-test('marking a second round final is rejected while one is already final', async ({ page }) => {
+test('the final-round checkbox is hidden once a round is already final', async ({ page }) => {
   const name = uniqueEventName('Round Final Guard')
   await createDraftEvent(page, name)
   await goToRounds(page)
 
   await addRound(page, { name: 'Round 1', advancementN: 4 })
   await addRound(page, { name: 'Round 2', isFinal: true })
-  await addRound(page, { name: 'Round 3', isFinal: true })
 
-  await expect(page.getByRole('alert')).toContainText('Only one round can be final')
-  await expect(page.getByText('Round 3: Round 3')).toHaveCount(0)
+  // Only one round can be final, so the "Add round" form no longer offers
+  // the checkbox once one exists — this replaced a post-submit validation
+  // error with hiding the impossible choice up front.
+  await expect(page.getByLabel('This is the final round')).toHaveCount(0)
+
+  // Editing the non-final round shouldn't offer it either...
+  await page.getByRole('button', { name: 'Edit' }).first().click()
+  await expect(page.getByLabel('This is the final round')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Cancel' }).click()
+
+  // ...but editing the final round itself still does, so it can be unmarked.
+  await page.getByRole('button', { name: 'Edit' }).last().click()
+  await expect(page.getByLabel('This is the final round')).toBeVisible()
 
   await page.goto(`/events`)
   await page.getByRole('link', { name: new RegExp(name) }).click()
