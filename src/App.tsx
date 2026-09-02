@@ -10,6 +10,7 @@ import { useAuth } from './features/auth/useAuth'
 import { EventDetailPage } from './features/events/EventDetailPage'
 import { EventsListPage } from './features/events/EventsListPage'
 import { NewEventPage } from './features/events/NewEventPage'
+import { RoundsPage } from './features/rounds/RoundsPage'
 import { DashboardPage } from './pages/DashboardPage'
 
 const HomeMain = styled('main', {
@@ -108,6 +109,14 @@ function App() {
             element={
               <RequireAuth>
                 <EventDetailPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events/:eventId/rounds"
+            element={
+              <RequireAuth>
+                <RoundsPage />
               </RequireAuth>
             }
           />
