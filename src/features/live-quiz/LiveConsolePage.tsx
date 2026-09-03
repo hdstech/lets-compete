@@ -4,7 +4,7 @@ import { styled } from '../../../styled-system/jsx'
 import { supabase } from '../../lib/supabase'
 import { getDeadlineMs, formatClock } from '../../lib/quiz-timing'
 import { ErrorText } from '../auth/auth-ui'
-import { Button } from '../../components/ui/Button'
+import { Button, LinkButton } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import {
   Title as PageTitle,
@@ -30,6 +30,7 @@ import type { QuestionRow } from '../questions/types'
 import { getRound } from '../rounds/rounds-api'
 import type { RoundRow } from '../rounds/types'
 import {
+  autoMarkQuestionAnswers,
   closeQuestionWindow,
   closeRound,
   getErrorMessage,
@@ -317,13 +318,27 @@ export function LiveConsolePage() {
   }
 
   async function confirmCloseRound() {
-    if (!roundId) return
+    if (!roundId || !questions) return
     setConfirmingCloseRound(false)
     setActionError(null)
     setClosingRound(true)
     try {
+      // Auto pre-mark every closed question before locking the round for
+      // grading (QA7) — best-effort: a question whose 10s post-close grace
+      // hasn't elapsed yet (an edge case only reachable by closing the round
+      // the instant the last window closes) is simply left for the grader to
+      // decide manually rather than blocking the round close on it.
+      for (const question of questions) {
+        if (question.status !== 'window_closed') continue
+        try {
+          await autoMarkQuestionAnswers(question.id)
+        } catch (err) {
+          if (!getErrorMessage(err, '').includes('grace period')) throw err
+        }
+      }
       await closeRound(roundId)
       setRound(await getRound(roundId))
+      await refreshAnswers()
     } catch (err) {
       setActionError(getErrorMessage(err, 'Failed to close round'))
     } finally {
@@ -371,6 +386,17 @@ export function LiveConsolePage() {
               ? 'This round has not opened for scoring yet.'
               : `This round is ${round.status.replace('_', ' ')} — no further questions can be revealed.`}
           </HelpText>
+        )}
+
+        {(round.status === 'scoring_closed' || round.status === 'advanced') && (
+          <Row>
+            <LinkButton
+              to={`/events/${eventId}/rounds/${roundId}/grade`}
+              tone="primary"
+            >
+              Grade round
+            </LinkButton>
+          </Row>
         )}
 
         {actionError && <ErrorText role="alert">{actionError}</ErrorText>}

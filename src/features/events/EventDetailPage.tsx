@@ -31,6 +31,7 @@ import {
 import type { ParticipantRow as ParticipantRecord } from '../participants/types'
 import {
   activateEvent,
+  assignGrader,
   concludeEvent,
   deleteEvent,
   getErrorMessage,
@@ -86,6 +87,11 @@ export function EventDetailPage() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const [copied, setCopied] = useState(false)
+
+  const [graderEmail, setGraderEmail] = useState('')
+  const [assigningGrader, setAssigningGrader] = useState(false)
+  const [graderError, setGraderError] = useState<string | null>(null)
+  const [lastAssignedGraderEmail, setLastAssignedGraderEmail] = useState<string | null>(null)
 
   const [participants, setParticipants] = useState<ParticipantRecord[] | null>(null)
   const [participantsError, setParticipantsError] = useState<string | null>(null)
@@ -246,6 +252,24 @@ export function EventDetailPage() {
     }
   }
 
+  async function handleAssignGrader(formEvent: SubmitEvent<HTMLFormElement>) {
+    formEvent.preventDefault()
+    if (!eventId) return
+
+    setGraderError(null)
+    setAssigningGrader(true)
+    try {
+      const updated = await assignGrader(eventId, graderEmail)
+      setEvent(updated)
+      setLastAssignedGraderEmail(graderEmail)
+      setGraderEmail('')
+    } catch (err) {
+      setGraderError(getErrorMessage(err, 'Failed to assign grader'))
+    } finally {
+      setAssigningGrader(false)
+    }
+  }
+
   async function handleCopyJoinCode() {
     if (!event) return
     await navigator.clipboard.writeText(event.join_code)
@@ -367,6 +391,53 @@ export function EventDetailPage() {
             ))}
           </ParticipantListEl>
         )}
+      </Card>
+
+      <Card>
+        <SectionTitle>Grader</SectionTitle>
+        <HelpText>
+          The grader reviews and confirms auto pre-marked answers once a
+          round closes. They sign in with the same emailed link as
+          participants — no password needed.
+        </HelpText>
+        <DefinitionGrid>
+          <DefinitionTerm>Status</DefinitionTerm>
+          <DefinitionValue>
+            {event.grader_id
+              ? lastAssignedGraderEmail
+                ? `Assigned (${lastAssignedGraderEmail})`
+                : 'Assigned'
+              : 'Not assigned'}
+          </DefinitionValue>
+        </DefinitionGrid>
+        <AuthForm onSubmit={handleAssignGrader}>
+          <Field>
+            <Label htmlFor="grader_email">Grader's email</Label>
+            <Input
+              id="grader_email"
+              name="grader_email"
+              type="email"
+              required
+              placeholder="grader@example.com"
+              value={graderEmail}
+              onChange={(changeEvent) => setGraderEmail(changeEvent.target.value)}
+            />
+            <HelpText>
+              They must have already signed in at least once (via the join
+              page) before they can be assigned.
+            </HelpText>
+          </Field>
+          {graderError && <ErrorText role="alert">{graderError}</ErrorText>}
+          <Row>
+            <SubmitButton type="submit" disabled={assigningGrader}>
+              {assigningGrader
+                ? 'Assigning…'
+                : event.grader_id
+                  ? 'Reassign grader'
+                  : 'Assign grader'}
+            </SubmitButton>
+          </Row>
+        </AuthForm>
       </Card>
 
       {event.format === 'quiz' && (

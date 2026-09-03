@@ -402,6 +402,14 @@ export function RoundsPage() {
                     Live console
                   </LinkButton>
                 )}
+                {(round.status === 'scoring_closed' || round.status === 'advanced') && (
+                  <LinkButton
+                    to={`/events/${event.id}/rounds/${round.id}/grade`}
+                    tone="secondary"
+                  >
+                    Grade round
+                  </LinkButton>
+                )}
                 {isDraft && (
                   <>
                     <Button
