@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { SubmitEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from './useAuth'
 import {
@@ -19,10 +19,19 @@ import {
   Title as AuthTitle,
   Subtitle as AuthSubtitle,
 } from '../../components/ui/Typography'
+import { CheckboxField, Row } from '../events/events-ui'
+import { setPendingJoin } from '../participants/pending-join'
+import type { ParticipantType } from '../participants/types'
 
 export function JoinPage() {
   const { session } = useAuth()
+  const [searchParams] = useSearchParams()
+
   const [email, setEmail] = useState('')
+  const [joinCode, setJoinCode] = useState(searchParams.get('code') ?? '')
+  const [name, setName] = useState('')
+  const [type, setType] = useState<ParticipantType>('individual')
+  const [members, setMembers] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [linkSent, setLinkSent] = useState(false)
@@ -31,10 +40,27 @@ export function JoinPage() {
     return <Navigate to="/dashboard" replace />
   }
 
+  const wantsToJoin = joinCode.trim() !== ''
+
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
+
+    if (wantsToJoin && name.trim() === '') {
+      setError('Enter your name to join with a code.')
+      return
+    }
+
     setSubmitting(true)
+
+    if (wantsToJoin) {
+      setPendingJoin({
+        joinCode: joinCode.trim(),
+        name: name.trim(),
+        type,
+        members: type === 'team' ? members.trim() || undefined : undefined,
+      })
+    }
 
     const { error } = await supabase.auth.signInWithOtp({ email })
 
@@ -72,6 +98,73 @@ export function JoinPage() {
           </AuthSubtitle>
         </div>
         <AuthForm onSubmit={handleSubmit}>
+          <Field>
+            <Label htmlFor="joinCode">Join code (participants only)</Label>
+            <Input
+              id="joinCode"
+              name="joinCode"
+              type="text"
+              autoComplete="off"
+              placeholder="Leave blank if you're a grader"
+              value={joinCode}
+              onChange={(event) => setJoinCode(event.target.value)}
+            />
+          </Field>
+
+          {wantsToJoin && (
+            <>
+              <Field>
+                <Label htmlFor="name">Your name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </Field>
+
+              <Field>
+                <Label>Registering as</Label>
+                <Row>
+                  <CheckboxField>
+                    <input
+                      type="radio"
+                      name="participant_type"
+                      checked={type === 'individual'}
+                      onChange={() => setType('individual')}
+                    />
+                    Individual
+                  </CheckboxField>
+                  <CheckboxField>
+                    <input
+                      type="radio"
+                      name="participant_type"
+                      checked={type === 'team'}
+                      onChange={() => setType('team')}
+                    />
+                    Team
+                  </CheckboxField>
+                </Row>
+              </Field>
+
+              {type === 'team' && (
+                <Field>
+                  <Label htmlFor="members">Team members</Label>
+                  <Input
+                    id="members"
+                    name="members"
+                    type="text"
+                    value={members}
+                    onChange={(event) => setMembers(event.target.value)}
+                  />
+                </Field>
+              )}
+            </>
+          )}
+
           <Field>
             <Label htmlFor="email">Email</Label>
             <Input

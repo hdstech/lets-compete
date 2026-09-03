@@ -167,3 +167,52 @@ export async function deleteEventViaApi(page: Page, eventId: string) {
     throw new Error(`Failed to delete event ${eventId} via API: ${res.status} ${await res.text()}`)
   }
 }
+
+// Assumes the current page is an event's detail page — reads the join code
+// shown there (the only <code> element on the page).
+export async function getJoinCode(page: Page): Promise<string> {
+  return page.locator('code').innerText()
+}
+
+// Registers `page`'s already-authenticated user as a participant via the
+// join_event RPC directly over the REST API, rather than through JoinPage's
+// UI. JoinPage's OTP flow only runs for a session-less browser (it redirects
+// straight to /dashboard once a session exists — see App.tsx's Home), and
+// the e2e participant session is pre-authenticated by participant.setup.ts,
+// so this is the only way to drive a fresh join_event call in these specs.
+export async function joinEventViaApi(
+  page: Page,
+  joinCode: string,
+  name: string,
+  type: 'individual' | 'team' = 'individual',
+): Promise<{ id: string; event_id: string }> {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !anonKey) {
+    throw new Error('VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY are required to join via the API')
+  }
+
+  const accessToken = await page.evaluate(() => {
+    const storageKey = Object.keys(localStorage).find((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
+    if (!storageKey) return null
+    const raw = localStorage.getItem(storageKey)
+    return raw ? (JSON.parse(raw).access_token as string) : null
+  })
+  if (!accessToken) {
+    throw new Error('No Supabase session found in localStorage to authorize the join request')
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/rpc/join_event`, {
+    method: 'POST',
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_join_code: joinCode, p_name: name, p_type: type }),
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to join event via API: ${res.status} ${await res.text()}`)
+  }
+  return (await res.json()) as { id: string; event_id: string }
+}
