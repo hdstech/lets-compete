@@ -9,14 +9,16 @@ import {
   AuthForm,
   AuthLink,
   AuthShell,
-  AuthSubtitle,
-  AuthTitle,
   ErrorText,
   Field,
   Input,
   Label,
-  SubmitButton,
 } from './auth-ui'
+import { Button as SubmitButton } from '../../components/ui/Button'
+import {
+  Title as AuthTitle,
+  Subtitle as AuthSubtitle,
+} from '../../components/ui/Typography'
 
 type LocationState = { from?: { pathname: string } }
 
@@ -30,7 +32,8 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (session) {
-    const redirectTo = (location.state as LocationState | null)?.from?.pathname ?? '/dashboard'
+    const redirectTo =
+      (location.state as LocationState | null)?.from?.pathname ?? '/dashboard'
     return <Navigate to={redirectTo} replace />
   }
 
@@ -39,7 +42,10 @@ export function LoginPage() {
     setError(null)
     setSubmitting(true)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
     setSubmitting(false)
     if (error) {
@@ -47,7 +53,8 @@ export function LoginPage() {
       return
     }
 
-    const redirectTo = (location.state as LocationState | null)?.from?.pathname ?? '/dashboard'
+    const redirectTo =
+      (location.state as LocationState | null)?.from?.pathname ?? '/dashboard'
     navigate(redirectTo, { replace: true })
   }
 
@@ -92,7 +99,8 @@ export function LoginPage() {
           Need an account? <AuthLink to="/signup">Sign up</AuthLink>
         </AuthFooterText>
         <AuthFooterText>
-          Participant or grader? <AuthLink to="/join">Use your email link</AuthLink>
+          Participant or grader?{' '}
+          <AuthLink to="/join">Use your email link</AuthLink>
         </AuthFooterText>
       </AuthCard>
     </AuthShell>

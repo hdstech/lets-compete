@@ -9,14 +9,16 @@ import {
   AuthForm,
   AuthLink,
   AuthShell,
-  AuthSubtitle,
-  AuthTitle,
   ErrorText,
   Field,
   Input,
   Label,
-  SubmitButton,
 } from './auth-ui'
+import { Button as SubmitButton } from '../../components/ui/Button'
+import {
+  Title as AuthTitle,
+  Subtitle as AuthSubtitle,
+} from '../../components/ui/Typography'
 
 export function JoinPage() {
   const { session } = useAuth()
@@ -51,8 +53,8 @@ export function JoinPage() {
         <AuthCard>
           <AuthTitle>Check your email</AuthTitle>
           <AuthSubtitle>
-            We sent a sign-in link to {email}. Open it on this device to continue — no password
-            needed.
+            We sent a sign-in link to {email}. Open it on this device to
+            continue — no password needed.
           </AuthSubtitle>
         </AuthCard>
       </AuthShell>
@@ -65,7 +67,8 @@ export function JoinPage() {
         <div>
           <AuthTitle>Join an event</AuthTitle>
           <AuthSubtitle>
-            Participants and graders sign in with an emailed link — no password needed.
+            Participants and graders sign in with an emailed link — no password
+            needed.
           </AuthSubtitle>
         </div>
         <AuthForm onSubmit={handleSubmit}>
@@ -87,7 +90,8 @@ export function JoinPage() {
           </SubmitButton>
         </AuthForm>
         <AuthFooterText>
-          Organizing an event? <AuthLink to="/login">Log in with a password</AuthLink>
+          Organizing an event?{' '}
+          <AuthLink to="/login">Log in with a password</AuthLink>
         </AuthFooterText>
       </AuthCard>
     </AuthShell>

@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useParams } from 'react-router-dom'
-import { AuthForm, ErrorText, Field, Input, Label, SubmitButton } from '../auth/auth-ui'
+import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
+import { Button, Button as SubmitButton } from '../../components/ui/Button'
+import {
+  Title as PageTitle,
+  Subtitle as PageSubtitle,
+} from '../../components/ui/Typography'
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
-  Button,
   Card,
   CheckboxField,
   DefinitionGrid,
@@ -16,8 +20,6 @@ import {
   PageHeader,
   PageInner,
   PageShell,
-  PageSubtitle,
-  PageTitle,
   Row,
   SectionTitle,
 } from '../events/events-ui'
@@ -74,14 +76,20 @@ function validate(
     return { error: 'Sequence must be a positive whole number.' }
   }
 
-  const sequenceConflict = questions.find((q) => q.sequence === sequence && q.id !== excludeId)
+  const sequenceConflict = questions.find(
+    (q) => q.sequence === sequence && q.id !== excludeId,
+  )
   if (sequenceConflict) {
-    return { error: `Sequence ${sequence} is already used by another question in this segment.` }
+    return {
+      error: `Sequence ${sequence} is already used by another question in this segment.`,
+    }
   }
 
   const windowSeconds = Number(values.windowSeconds)
   if (!Number.isInteger(windowSeconds) || windowSeconds < 1) {
-    return { error: 'Answer window must be a positive whole number of seconds.' }
+    return {
+      error: 'Answer window must be a positive whole number of seconds.',
+    }
   }
 
   return {
@@ -111,25 +119,33 @@ export function QuestionsPage() {
   const [event, setEvent] = useState<EventRow | null>(null)
   const [segment, setSegment] = useState<SegmentRow | null>(null)
   const [questions, setQuestions] = useState<QuestionRow[] | null>(null)
-  const [answersByQuestion, setAnswersByQuestion] = useState<Record<string, AcceptableAnswerRow[]>>(
-    {},
-  )
+  const [answersByQuestion, setAnswersByQuestion] = useState<
+    Record<string, AcceptableAnswerRow[]>
+  >({})
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [newQuestion, setNewQuestion] = useState<QuestionFormValues>(emptyForm(1))
+  const [newQuestion, setNewQuestion] = useState<QuestionFormValues>(
+    emptyForm(1),
+  )
   const [addError, setAddError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editQuestion, setEditQuestion] = useState<QuestionFormValues>(emptyForm(1))
+  const [editQuestion, setEditQuestion] = useState<QuestionFormValues>(
+    emptyForm(1),
+  )
   const [editError, setEditError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const [newAnswer, setNewAnswer] = useState<Record<string, AnswerFormValues>>({})
-  const [answerError, setAnswerError] = useState<Record<string, string | null>>({})
+  const [newAnswer, setNewAnswer] = useState<Record<string, AnswerFormValues>>(
+    {},
+  )
+  const [answerError, setAnswerError] = useState<Record<string, string | null>>(
+    {},
+  )
   const [addingAnswerFor, setAddingAnswerFor] = useState<string | null>(null)
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null)
 
@@ -137,7 +153,11 @@ export function QuestionsPage() {
     if (!eventId || !segmentId) return
 
     let cancelled = false
-    Promise.all([getEvent(eventId), getSegment(segmentId), listQuestions(segmentId)])
+    Promise.all([
+      getEvent(eventId),
+      getSegment(segmentId),
+      listQuestions(segmentId),
+    ])
       .then(async ([eventRow, segmentRow, questionRows]) => {
         if (cancelled) return
         const answersMap = await loadAnswersMap(questionRows)
@@ -157,8 +177,12 @@ export function QuestionsPage() {
     }
   }, [eventId, segmentId])
 
-  async function loadAnswersMap(rows: QuestionRow[]): Promise<Record<string, AcceptableAnswerRow[]>> {
-    const answerLists = await Promise.all(rows.map((q) => listAcceptableAnswers(q.id)))
+  async function loadAnswersMap(
+    rows: QuestionRow[],
+  ): Promise<Record<string, AcceptableAnswerRow[]>> {
+    const answerLists = await Promise.all(
+      rows.map((q) => listAcceptableAnswers(q.id)),
+    )
     const map: Record<string, AcceptableAnswerRow[]> = {}
     rows.forEach((q, i) => {
       map[q.id] = answerLists[i]
@@ -261,11 +285,17 @@ export function QuestionsPage() {
     return newAnswer[question.id] ?? emptyAnswerForm(question)
   }
 
-  async function handleAddAnswer(formEvent: SubmitEvent<HTMLFormElement>, question: QuestionRow) {
+  async function handleAddAnswer(
+    formEvent: SubmitEvent<HTMLFormElement>,
+    question: QuestionRow,
+  ) {
     formEvent.preventDefault()
     const form = answerFormFor(question)
     if (!form.value.trim()) {
-      setAnswerError((prev) => ({ ...prev, [question.id]: 'Enter an acceptable answer value.' }))
+      setAnswerError((prev) => ({
+        ...prev,
+        [question.id]: 'Enter an acceptable answer value.',
+      }))
       return
     }
 
@@ -274,7 +304,10 @@ export function QuestionsPage() {
     try {
       await addAcceptableAnswer(question.id, form.value, form.isNumeric)
       await refreshAnswers(question.id)
-      setNewAnswer((prev) => ({ ...prev, [question.id]: emptyAnswerForm(question) }))
+      setNewAnswer((prev) => ({
+        ...prev,
+        [question.id]: emptyAnswerForm(question),
+      }))
     } catch (err) {
       setAnswerError((prev) => ({
         ...prev,
@@ -293,7 +326,10 @@ export function QuestionsPage() {
     } catch (err) {
       setAnswerError((prev) => ({
         ...prev,
-        [answer.question_id]: getErrorMessage(err, 'Failed to remove acceptable answer'),
+        [answer.question_id]: getErrorMessage(
+          err,
+          'Failed to remove acceptable answer',
+        ),
       }))
     } finally {
       setDeletingAnswerId(null)
@@ -332,9 +368,9 @@ export function QuestionsPage() {
           <div>
             <PageTitle>Questions — {segment.name}</PageTitle>
             <PageSubtitle>
-              Author this segment's questions, their acceptable answers, and the timed answer
-              window. A tiebreak reserve question is held back for sudden-death instead of the
-              normal running order.
+              Author this segment's questions, their acceptable answers, and the
+              timed answer window. A tiebreak reserve question is held back for
+              sudden-death instead of the normal running order.
             </PageSubtitle>
           </div>
           <BackLink to={`/events/${event.id}/rounds/${roundId}/segments`}>
@@ -344,8 +380,9 @@ export function QuestionsPage() {
 
         {!isDraft && (
           <HelpText>
-            Question authoring is frozen because this event is no longer in draft — activating an
-            event locks prompts, answer type, window length, sequence, and the tiebreak flag.
+            Question authoring is frozen because this event is no longer in
+            draft — activating an event locks prompts, answer type, window
+            length, sequence, and the tiebreak flag.
           </HelpText>
         )}
 
@@ -367,7 +404,12 @@ export function QuestionsPage() {
                       type="text"
                       required
                       value={editQuestion.prompt}
-                      onChange={(e) => setEditQuestion({ ...editQuestion, prompt: e.target.value })}
+                      onChange={(e) =>
+                        setEditQuestion({
+                          ...editQuestion,
+                          prompt: e.target.value,
+                        })
+                      }
                     />
                   </Field>
                   <Field>
@@ -378,7 +420,12 @@ export function QuestionsPage() {
                           type="radio"
                           name="question_answer_type"
                           checked={editQuestion.answerType === 'text'}
-                          onChange={() => setEditQuestion({ ...editQuestion, answerType: 'text' })}
+                          onChange={() =>
+                            setEditQuestion({
+                              ...editQuestion,
+                              answerType: 'text',
+                            })
+                          }
                         />
                         Text
                       </CheckboxField>
@@ -388,7 +435,10 @@ export function QuestionsPage() {
                           name="question_answer_type"
                           checked={editQuestion.answerType === 'numeric'}
                           onChange={() =>
-                            setEditQuestion({ ...editQuestion, answerType: 'numeric' })
+                            setEditQuestion({
+                              ...editQuestion,
+                              answerType: 'numeric',
+                            })
                           }
                         />
                         Numeric
@@ -396,7 +446,9 @@ export function QuestionsPage() {
                     </Row>
                   </Field>
                   <Field>
-                    <Label htmlFor="question_window_seconds">Answer window (seconds)</Label>
+                    <Label htmlFor="question_window_seconds">
+                      Answer window (seconds)
+                    </Label>
                     <Input
                       id="question_window_seconds"
                       type="number"
@@ -404,7 +456,10 @@ export function QuestionsPage() {
                       required
                       value={editQuestion.windowSeconds}
                       onChange={(e) =>
-                        setEditQuestion({ ...editQuestion, windowSeconds: e.target.value })
+                        setEditQuestion({
+                          ...editQuestion,
+                          windowSeconds: e.target.value,
+                        })
                       }
                     />
                   </Field>
@@ -417,7 +472,10 @@ export function QuestionsPage() {
                       required
                       value={editQuestion.sequence}
                       onChange={(e) =>
-                        setEditQuestion({ ...editQuestion, sequence: e.target.value })
+                        setEditQuestion({
+                          ...editQuestion,
+                          sequence: e.target.value,
+                        })
                       }
                     />
                   </Field>
@@ -427,7 +485,10 @@ export function QuestionsPage() {
                         type="checkbox"
                         checked={editQuestion.isTiebreak}
                         onChange={(e) =>
-                          setEditQuestion({ ...editQuestion, isTiebreak: e.target.checked })
+                          setEditQuestion({
+                            ...editQuestion,
+                            isTiebreak: e.target.checked,
+                          })
                         }
                       />
                       Tiebreak reserve pool question
@@ -461,11 +522,15 @@ export function QuestionsPage() {
                 <DefinitionTerm>Answer window</DefinitionTerm>
                 <DefinitionValue>{question.window_seconds}s</DefinitionValue>
                 <DefinitionTerm>Status</DefinitionTerm>
-                <DefinitionValue>{question.status.replace('_', ' ')}</DefinitionValue>
+                <DefinitionValue>
+                  {question.status.replace('_', ' ')}
+                </DefinitionValue>
               </DefinitionGrid>
 
               <SectionTitle>Acceptable answers</SectionTitle>
-              {answers.length === 0 && <HelpText>No acceptable answers yet.</HelpText>}
+              {answers.length === 0 && (
+                <HelpText>No acceptable answers yet.</HelpText>
+              )}
               {answers.map((answer) => (
                 <Row key={answer.id}>
                   <HelpText>
@@ -496,7 +561,10 @@ export function QuestionsPage() {
                       onChange={(e) =>
                         setNewAnswer((prev) => ({
                           ...prev,
-                          [question.id]: { ...answerForm, value: e.target.value },
+                          [question.id]: {
+                            ...answerForm,
+                            value: e.target.value,
+                          },
                         }))
                       }
                     />
@@ -507,25 +575,39 @@ export function QuestionsPage() {
                         onChange={(e) =>
                           setNewAnswer((prev) => ({
                             ...prev,
-                            [question.id]: { ...answerForm, isNumeric: e.target.checked },
+                            [question.id]: {
+                              ...answerForm,
+                              isNumeric: e.target.checked,
+                            },
                           }))
                         }
                       />
                       Numeric
                     </CheckboxField>
-                    <SubmitButton type="submit" disabled={addingAnswerFor === question.id}>
-                      {addingAnswerFor === question.id ? 'Adding…' : 'Add answer'}
+                    <SubmitButton
+                      type="submit"
+                      disabled={addingAnswerFor === question.id}
+                    >
+                      {addingAnswerFor === question.id
+                        ? 'Adding…'
+                        : 'Add answer'}
                     </SubmitButton>
                   </Row>
                   {answerError[question.id] && (
-                    <ErrorText role="alert">{answerError[question.id]}</ErrorText>
+                    <ErrorText role="alert">
+                      {answerError[question.id]}
+                    </ErrorText>
                   )}
                 </AuthForm>
               )}
 
               {isDraft && (
                 <Row>
-                  <Button type="button" tone="secondary" onClick={() => startEdit(question)}>
+                  <Button
+                    type="button"
+                    tone="secondary"
+                    onClick={() => startEdit(question)}
+                  >
                     Edit
                   </Button>
                   <Button
@@ -555,7 +637,9 @@ export function QuestionsPage() {
                   type="text"
                   required
                   value={newQuestion.prompt}
-                  onChange={(e) => setNewQuestion({ ...newQuestion, prompt: e.target.value })}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, prompt: e.target.value })
+                  }
                 />
               </Field>
               <Field>
@@ -566,7 +650,9 @@ export function QuestionsPage() {
                       type="radio"
                       name="new_question_answer_type"
                       checked={newQuestion.answerType === 'text'}
-                      onChange={() => setNewQuestion({ ...newQuestion, answerType: 'text' })}
+                      onChange={() =>
+                        setNewQuestion({ ...newQuestion, answerType: 'text' })
+                      }
                     />
                     Text
                   </CheckboxField>
@@ -575,14 +661,21 @@ export function QuestionsPage() {
                       type="radio"
                       name="new_question_answer_type"
                       checked={newQuestion.answerType === 'numeric'}
-                      onChange={() => setNewQuestion({ ...newQuestion, answerType: 'numeric' })}
+                      onChange={() =>
+                        setNewQuestion({
+                          ...newQuestion,
+                          answerType: 'numeric',
+                        })
+                      }
                     />
                     Numeric
                   </CheckboxField>
                 </Row>
               </Field>
               <Field>
-                <Label htmlFor="new_question_window_seconds">Answer window (seconds)</Label>
+                <Label htmlFor="new_question_window_seconds">
+                  Answer window (seconds)
+                </Label>
                 <Input
                   id="new_question_window_seconds"
                   type="number"
@@ -590,7 +683,10 @@ export function QuestionsPage() {
                   required
                   value={newQuestion.windowSeconds}
                   onChange={(e) =>
-                    setNewQuestion({ ...newQuestion, windowSeconds: e.target.value })
+                    setNewQuestion({
+                      ...newQuestion,
+                      windowSeconds: e.target.value,
+                    })
                   }
                 />
               </Field>
@@ -602,7 +698,9 @@ export function QuestionsPage() {
                   min={1}
                   required
                   value={newQuestion.sequence}
-                  onChange={(e) => setNewQuestion({ ...newQuestion, sequence: e.target.value })}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, sequence: e.target.value })
+                  }
                 />
               </Field>
               <Field>
@@ -611,7 +709,10 @@ export function QuestionsPage() {
                     type="checkbox"
                     checked={newQuestion.isTiebreak}
                     onChange={(e) =>
-                      setNewQuestion({ ...newQuestion, isTiebreak: e.target.checked })
+                      setNewQuestion({
+                        ...newQuestion,
+                        isTiebreak: e.target.checked,
+                      })
                     }
                   />
                   Tiebreak reserve pool question

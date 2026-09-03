@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { AuthForm, ErrorText, Field, Input, Label, SubmitButton } from '../auth/auth-ui'
+import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
+import {
+  Button,
+  Button as SubmitButton,
+  LinkButton,
+} from '../../components/ui/Button'
+import {
+  Title as PageTitle,
+  Subtitle as PageSubtitle,
+} from '../../components/ui/Typography'
 import {
   activateEvent,
   concludeEvent,
@@ -12,7 +21,6 @@ import {
 } from './events-api'
 import {
   BackLink,
-  Button,
   Card,
   CheckboxField,
   CopyableCode,
@@ -21,12 +29,9 @@ import {
   DefinitionValue,
   FormatBadge,
   HelpText,
-  LinkButton,
   PageHeader,
   PageInner,
   PageShell,
-  PageSubtitle,
-  PageTitle,
   Row,
   SectionTitle,
   StatusBadge,
@@ -191,17 +196,25 @@ export function EventDetailPage() {
             <DefinitionValue>
               <Row>
                 <CopyableCode>{event.join_code}</CopyableCode>
-                <Button type="button" tone="secondary" onClick={handleCopyJoinCode}>
+                <Button
+                  type="button"
+                  tone="secondary"
+                  onClick={handleCopyJoinCode}
+                >
                   {copied ? 'Copied!' : 'Copy'}
                 </Button>
               </Row>
             </DefinitionValue>
             <DefinitionTerm>Created</DefinitionTerm>
-            <DefinitionValue>{new Date(event.created_at).toLocaleString()}</DefinitionValue>
+            <DefinitionValue>
+              {new Date(event.created_at).toLocaleString()}
+            </DefinitionValue>
             {event.concluded_at && (
               <>
                 <DefinitionTerm>Concluded</DefinitionTerm>
-                <DefinitionValue>{new Date(event.concluded_at).toLocaleString()}</DefinitionValue>
+                <DefinitionValue>
+                  {new Date(event.concluded_at).toLocaleString()}
+                </DefinitionValue>
               </>
             )}
           </DefinitionGrid>
@@ -211,8 +224,9 @@ export function EventDetailPage() {
           <Card>
             <SectionTitle>Rounds</SectionTitle>
             <HelpText>
-              Configure the round(s) participants play and how many advance at each cutoff. At
-              least one round must exist before this event can be activated.
+              Configure the round(s) participants play and how many advance at
+              each cutoff. At least one round must exist before this event can
+              be activated.
             </HelpText>
             <Row>
               <LinkButton to={`/events/${event.id}/rounds`} tone="secondary">
@@ -284,11 +298,17 @@ export function EventDetailPage() {
           {event.status === 'draft' && (
             <>
               <HelpText>
-                Activating opens round 1 for scoring and freezes the round/question setup. Make
-                sure at least one round is configured first.
+                Activating opens round 1 for scoring and freezes the
+                round/question setup. Make sure at least one round is configured
+                first.
               </HelpText>
               <Row>
-                <Button type="button" tone="success" onClick={handleActivate} disabled={lifecycleBusy}>
+                <Button
+                  type="button"
+                  tone="success"
+                  onClick={handleActivate}
+                  disabled={lifecycleBusy}
+                >
                   {lifecycleBusy ? 'Activating…' : 'Activate event'}
                 </Button>
               </Row>
@@ -315,17 +335,28 @@ export function EventDetailPage() {
             </>
           )}
 
-          {event.status === 'concluded' && <HelpText>This event has concluded.</HelpText>}
+          {event.status === 'concluded' && (
+            <HelpText>This event has concluded.</HelpText>
+          )}
 
-          {lifecycleError && <ErrorText role="alert">{lifecycleError}</ErrorText>}
+          {lifecycleError && (
+            <ErrorText role="alert">{lifecycleError}</ErrorText>
+          )}
         </Card>
 
         {event.status === 'draft' && (
           <Card>
             <SectionTitle>Danger zone</SectionTitle>
-            <HelpText>Deleting a draft event removes it and everything in it.</HelpText>
+            <HelpText>
+              Deleting a draft event removes it and everything in it.
+            </HelpText>
             <Row>
-              <Button type="button" tone="danger" onClick={handleDelete} disabled={deleting}>
+              <Button
+                type="button"
+                tone="danger"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
                 {deleting ? 'Deleting…' : 'Delete event'}
               </Button>
             </Row>

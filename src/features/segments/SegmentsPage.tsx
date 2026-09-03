@@ -1,23 +1,28 @@
 import { useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useParams } from 'react-router-dom'
-import { AuthForm, ErrorText, Field, Input, Label, SubmitButton } from '../auth/auth-ui'
+import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
+import {
+  Button,
+  Button as SubmitButton,
+  LinkButton,
+} from '../../components/ui/Button'
+import {
+  Title as PageTitle,
+  Subtitle as PageSubtitle,
+} from '../../components/ui/Typography'
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
-  Button,
   Card,
   DefinitionGrid,
   DefinitionTerm,
   DefinitionValue,
   EmptyState,
   HelpText,
-  LinkButton,
   PageHeader,
   PageInner,
   PageShell,
-  PageSubtitle,
-  PageTitle,
   Row,
   SectionTitle,
 } from '../events/events-ui'
@@ -58,9 +63,13 @@ function validate(
     return { error: 'Sequence must be a positive whole number.' }
   }
 
-  const sequenceConflict = segments.find((s) => s.sequence === sequence && s.id !== excludeId)
+  const sequenceConflict = segments.find(
+    (s) => s.sequence === sequence && s.id !== excludeId,
+  )
   if (sequenceConflict) {
-    return { error: `Sequence ${sequence} is already used by "${sequenceConflict.name}".` }
+    return {
+      error: `Sequence ${sequence} is already used by "${sequenceConflict.name}".`,
+    }
   }
 
   return { input: { name: values.name, sequence } }
@@ -79,7 +88,9 @@ export function SegmentsPage() {
   const [adding, setAdding] = useState(false)
 
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editSegment, setEditSegment] = useState<SegmentFormValues>(emptyForm(1))
+  const [editSegment, setEditSegment] = useState<SegmentFormValues>(
+    emptyForm(1),
+  )
   const [editError, setEditError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -171,7 +182,12 @@ export function SegmentsPage() {
   }
 
   async function handleDelete(segment: SegmentRow) {
-    if (!window.confirm(`Delete segment "${segment.name}"? This cannot be undone.`)) return
+    if (
+      !window.confirm(
+        `Delete segment "${segment.name}"? This cannot be undone.`,
+      )
+    )
+      return
 
     setDeleteError(null)
     setDeletingId(segment.id)
@@ -217,7 +233,8 @@ export function SegmentsPage() {
               Segments — Round {round.sequence}: {round.name}
             </PageTitle>
             <PageSubtitle>
-              Group this round's questions into segments (e.g. "History", "Science").
+              Group this round's questions into segments (e.g. "History",
+              "Science").
             </PageSubtitle>
           </div>
           <BackLink to={`/events/${event.id}/rounds`}>Back to rounds</BackLink>
@@ -225,8 +242,8 @@ export function SegmentsPage() {
 
         {!isDraft && (
           <HelpText>
-            Segments are frozen because this event is no longer in draft — activating an event
-            locks segment setup.
+            Segments are frozen because this event is no longer in draft —
+            activating an event locks segment setup.
           </HelpText>
         )}
 
@@ -244,7 +261,9 @@ export function SegmentsPage() {
                     type="text"
                     required
                     value={editSegment.name}
-                    onChange={(e) => setEditSegment({ ...editSegment, name: e.target.value })}
+                    onChange={(e) =>
+                      setEditSegment({ ...editSegment, name: e.target.value })
+                    }
                   />
                 </Field>
                 <Field>
@@ -255,7 +274,12 @@ export function SegmentsPage() {
                     min={1}
                     required
                     value={editSegment.sequence}
-                    onChange={(e) => setEditSegment({ ...editSegment, sequence: e.target.value })}
+                    onChange={(e) =>
+                      setEditSegment({
+                        ...editSegment,
+                        sequence: e.target.value,
+                      })
+                    }
                   />
                 </Field>
                 {editError && <ErrorText role="alert">{editError}</ErrorText>}
@@ -287,7 +311,11 @@ export function SegmentsPage() {
                 </LinkButton>
                 {isDraft && (
                   <>
-                    <Button type="button" tone="secondary" onClick={() => startEdit(segment)}>
+                    <Button
+                      type="button"
+                      tone="secondary"
+                      onClick={() => startEdit(segment)}
+                    >
                       Edit
                     </Button>
                     <Button
@@ -318,7 +346,9 @@ export function SegmentsPage() {
                   type="text"
                   required
                   value={newSegment.name}
-                  onChange={(e) => setNewSegment({ ...newSegment, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewSegment({ ...newSegment, name: e.target.value })
+                  }
                 />
               </Field>
               <Field>
@@ -329,7 +359,9 @@ export function SegmentsPage() {
                   min={1}
                   required
                   value={newSegment.sequence}
-                  onChange={(e) => setNewSegment({ ...newSegment, sequence: e.target.value })}
+                  onChange={(e) =>
+                    setNewSegment({ ...newSegment, sequence: e.target.value })
+                  }
                 />
               </Field>
               {addError && <ErrorText role="alert">{addError}</ErrorText>}

@@ -2,14 +2,9 @@ import { useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
-import {
-  AuthForm,
-  ErrorText,
-  Field,
-  Input,
-  Label,
-  SubmitButton,
-} from '../auth/auth-ui'
+import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
+import { Button as SubmitButton } from '../../components/ui/Button'
+import { Title as PageTitle } from '../../components/ui/Typography'
 import { createEvent, getErrorMessage } from './events-api'
 import {
   BackLink,
@@ -19,7 +14,6 @@ import {
   PageHeader,
   PageInner,
   PageShell,
-  PageTitle,
   Row,
 } from './events-ui'
 import type { EventFormat } from './types'
@@ -107,7 +101,9 @@ export function NewEventPage() {
                   Judged panel (coming in a future version)
                 </CheckboxField>
               </Row>
-              <HelpText>Format is permanent once the event is created.</HelpText>
+              <HelpText>
+                Format is permanent once the event is created.
+              </HelpText>
             </Field>
 
             <Field>

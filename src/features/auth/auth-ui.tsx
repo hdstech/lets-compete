@@ -1,19 +1,5 @@
-/* eslint-disable react-refresh/only-export-components --
- * This file re-exports shared components (Button, Title, Subtitle from
- * src/components/ui) alongside its own styled primitives. The rule's
- * whole-module check can't tell a same-identity re-export from a genuinely
- * non-component export, and once it sees one it flags every export in the
- * file — so the disable has to cover the whole module, not just the
- * re-export lines themselves.
- */
 import { Link } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
-import { Button as SharedButton } from '../../components/ui/Button'
-import { Title, Subtitle } from '../../components/ui/Typography'
-
-export const AuthTitle = Title
-export const AuthSubtitle = Subtitle
-export const SubmitButton = SharedButton
 
 export const AuthShell = styled('main', {
   base: {
