@@ -82,8 +82,11 @@ test('deleting a round removes it from the list', async ({ page }) => {
   await addRound(page, { name: 'Round 1', advancementN: 8 })
   await expect(page.getByRole('heading', { level: 2, name: 'Round 1: Round 1' })).toBeVisible()
 
-  page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: 'Delete' }).click()
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Delete' })
+    .click()
   await expect(page.getByText('No rounds yet.')).toBeVisible()
 
   await page.goto(`/events`)

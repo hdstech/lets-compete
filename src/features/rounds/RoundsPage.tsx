@@ -11,6 +11,7 @@ import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
 } from '../../components/ui/Typography'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
@@ -133,6 +134,9 @@ export function RoundsPage() {
 
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [roundPendingDelete, setRoundPendingDelete] = useState<RoundRow | null>(
+    null,
+  )
 
   useEffect(() => {
     if (!eventId) return
@@ -222,9 +226,14 @@ export function RoundsPage() {
     }
   }
 
-  async function handleDelete(round: RoundRow) {
-    if (!window.confirm(`Delete round "${round.name}"? This cannot be undone.`))
-      return
+  function handleDelete(round: RoundRow) {
+    setRoundPendingDelete(round)
+  }
+
+  async function confirmDelete() {
+    if (!roundPendingDelete) return
+    const round = roundPendingDelete
+    setRoundPendingDelete(null)
 
     setDeleteError(null)
     setDeletingId(round.id)
@@ -484,6 +493,20 @@ export function RoundsPage() {
           </Card>
         )}
       </PageInner>
+
+      <ConfirmDialog
+        open={roundPendingDelete !== null}
+        title="Delete round"
+        description={
+          roundPendingDelete
+            ? `Delete round "${roundPendingDelete.name}"? This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        tone="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setRoundPendingDelete(null)}
+      />
     </PageShell>
   )
 }
