@@ -174,6 +174,21 @@ export async function getJoinCode(page: Page): Promise<string> {
   return page.locator('code').innerText()
 }
 
+// Simulates the tab going into the background (an app switch, a tab
+// switch) for focus-integrity tests. Real OS-level backgrounding isn't
+// something Playwright can trigger directly, so this overrides
+// `document.visibilityState` and fires the same `visibilitychange` event
+// the page's own listener reacts to.
+export async function setPageHidden(page: Page, hidden: boolean) {
+  await page.evaluate((h) => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => (h ? 'hidden' : 'visible'),
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+  }, hidden)
+}
+
 // Registers `page`'s already-authenticated user as a participant via the
 // join_event RPC directly over the REST API, rather than through JoinPage's
 // UI. JoinPage's OTP flow only runs for a session-less browser (it redirects
