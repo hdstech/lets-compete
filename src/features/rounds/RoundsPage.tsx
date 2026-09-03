@@ -415,6 +415,14 @@ export function RoundsPage() {
                     Grade round
                   </LinkButton>
                 )}
+                {(round.status === 'scoring_closed' || round.status === 'advanced') && (
+                  <LinkButton
+                    to={`/events/${event.id}/rounds/${round.id}/advance`}
+                    tone="secondary"
+                  >
+                    Review advancement
+                  </LinkButton>
+                )}
                 {isDraft && (
                   <>
                     <Button

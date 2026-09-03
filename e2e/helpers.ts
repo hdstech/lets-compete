@@ -195,6 +195,137 @@ export async function setPageHidden(page: Page, hidden: boolean) {
 // straight to /dashboard once a session exists — see App.tsx's Home), and
 // the e2e participant session is pre-authenticated by participant.setup.ts,
 // so this is the only way to drive a fresh join_event call in these specs.
+// Shared by every direct-REST helper below: reads the current page's
+// Supabase session out of localStorage, the same way deleteEventViaApi does.
+async function getAccessToken(page: Page): Promise<string> {
+  const accessToken = await page.evaluate(() => {
+    const storageKey = Object.keys(localStorage).find((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
+    if (!storageKey) return null
+    const raw = localStorage.getItem(storageKey)
+    return raw ? (JSON.parse(raw).access_token as string) : null
+  })
+  if (!accessToken) {
+    throw new Error('No Supabase session found in localStorage to authorize the request')
+  }
+  return accessToken
+}
+
+// Decodes the `sub` (user id) claim out of a Supabase JWT access token,
+// without pulling in a JWT library for one field.
+function decodeUserId(accessToken: string): string {
+  const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString('utf-8')) as {
+    sub: string
+  }
+  return payload.sub
+}
+
+async function restInsert<T>(page: Page, table: string, body: unknown): Promise<T[]> {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !anonKey) {
+    throw new Error('VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY are required to call the API')
+  }
+  const accessToken = await getAccessToken(page)
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    throw new Error(`Insert into ${table} failed via API: ${res.status} ${await res.text()}`)
+  }
+  return (await res.json()) as T[]
+}
+
+export async function callRpcViaApi<T>(
+  page: Page,
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<T> {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !anonKey) {
+    throw new Error('VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY are required to call the API')
+  }
+  const accessToken = await getAccessToken(page)
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  })
+  if (!res.ok) {
+    throw new Error(`RPC ${fn} failed via API: ${res.status} ${await res.text()}`)
+  }
+  return (await res.json()) as T
+}
+
+// Organizer-only direct insert, bypassing the join flow entirely — used to
+// fabricate a second (and third, ...) tied participant for QB7's tiebreak
+// e2e coverage, since the shared Playwright fixtures only provide one
+// authenticated participant identity. participants_insert_organizer's RLS
+// policy allows an organizer to write a participant row directly (a
+// "walk-in" with no linked user_id), not just via the join_event RPC.
+export async function createWalkInParticipant(
+  page: Page,
+  eventId: string,
+  name: string,
+): Promise<{ id: string }> {
+  const [row] = await restInsert<{ id: string }>(page, 'participants', {
+    event_id: eventId,
+    name,
+    type: 'individual',
+    admission_status: 'approved',
+    status: 'eligible',
+  })
+  return row
+}
+
+// Fabricates a final result_calculations row + its entries directly
+// (result_calculations_insert_organizer / result_calculation_entries_insert_organizer
+// let an organizer write these outside of calculate_results too), so a tie
+// at a given rank can be set up deterministically without needing enough
+// real participant identities to actually tie a live score.
+export async function seedFinalCalculation(
+  page: Page,
+  params: { eventId: string; roundId: string },
+  entries: { participantId: string; totalScore: number; rank: number }[],
+): Promise<{ id: string }> {
+  const organizerId = decodeUserId(await getAccessToken(page))
+
+  const [calc] = await restInsert<{ id: string }>(page, 'result_calculations', {
+    event_id: params.eventId,
+    round_id: params.roundId,
+    segment_id: null,
+    is_final: true,
+    calculated_by: organizerId,
+    reason: 'e2e seed',
+  })
+
+  await restInsert(
+    page,
+    'result_calculation_entries',
+    entries.map((e) => ({
+      calculation_id: calc.id,
+      participant_id: e.participantId,
+      total_score: e.totalScore,
+      rank: e.rank,
+    })),
+  )
+
+  return calc
+}
+
 export async function joinEventViaApi(
   page: Page,
   joinCode: string,

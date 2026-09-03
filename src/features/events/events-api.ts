@@ -101,3 +101,13 @@ export async function assignGrader(eventId: string, email: string): Promise<Even
   if (error) throw error
   return data as EventRow
 }
+
+// Declares the champion from the final round's calculate_results entries:
+// requires an untied rank 1, or a resolved (non-stale) sudden-death tiebreak
+// naming exactly one advancing participant. Raises server-side on an
+// unresolved rank-1 tie.
+export async function declareWinner(eventId: string): Promise<EventRow> {
+  const { data, error } = await supabase.rpc('declare_winner', { p_event_id: eventId })
+  if (error) throw error
+  return data as EventRow
+}
