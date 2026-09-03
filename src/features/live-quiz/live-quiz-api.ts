@@ -89,6 +89,14 @@ export async function voidQuestion(questionId: string): Promise<QuestionRow> {
   return data as QuestionRow
 }
 
+export async function autoMarkQuestionAnswers(questionId: string): Promise<AnswerRow[]> {
+  const { data, error } = await supabase.rpc('auto_mark_question_answers', {
+    p_question_id: questionId,
+  })
+  if (error) throw error
+  return data as AnswerRow[]
+}
+
 export async function closeRound(roundId: string): Promise<void> {
   const { error } = await supabase.rpc('close_round', { p_round_id: roundId })
   if (error) throw error

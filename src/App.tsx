@@ -12,6 +12,7 @@ import { useAuth } from './features/auth/useAuth'
 import { EventDetailPage } from './features/events/EventDetailPage'
 import { EventsListPage } from './features/events/EventsListPage'
 import { NewEventPage } from './features/events/NewEventPage'
+import { GradingPage } from './features/grading/GradingPage'
 import { LiveAnswerPage } from './features/live-answer/LiveAnswerPage'
 import { LiveConsolePage } from './features/live-quiz/LiveConsolePage'
 import { WaitingRoomPage } from './features/participants/WaitingRoomPage'
@@ -170,6 +171,14 @@ function App() {
             element={
               <RequireAuth>
                 <LiveConsolePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events/:eventId/rounds/:roundId/grade"
+            element={
+              <RequireAuth>
+                <GradingPage />
               </RequireAuth>
             }
           />
