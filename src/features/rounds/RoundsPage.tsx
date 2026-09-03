@@ -394,6 +394,14 @@ export function RoundsPage() {
                 >
                   Manage segments
                 </LinkButton>
+                {!isDraft && (
+                  <LinkButton
+                    to={`/events/${event.id}/rounds/${round.id}/live`}
+                    tone="primary"
+                  >
+                    Live console
+                  </LinkButton>
+                )}
                 {isDraft && (
                   <>
                     <Button
