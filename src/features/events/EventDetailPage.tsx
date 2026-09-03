@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
+import { supabase } from '../../lib/supabase'
 import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
 import {
   Button,
@@ -13,6 +14,21 @@ import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
 } from '../../components/ui/Typography'
+import {
+  approveParticipant,
+  getErrorMessage as getParticipantErrorMessage,
+  listEventParticipants,
+  revokeParticipant,
+} from '../participants/participants-api'
+import {
+  AdmissionBadge,
+  ParticipantIdentity,
+  ParticipantListEl,
+  ParticipantListItem,
+  ParticipantMeta,
+  ParticipantName,
+} from '../participants/participants-ui'
+import type { ParticipantRow as ParticipantRecord } from '../participants/types'
 import {
   activateEvent,
   concludeEvent,
@@ -71,6 +87,13 @@ export function EventDetailPage() {
 
   const [copied, setCopied] = useState(false)
 
+  const [participants, setParticipants] = useState<ParticipantRecord[] | null>(null)
+  const [participantsError, setParticipantsError] = useState<string | null>(null)
+  const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [revokeTarget, setRevokeTarget] = useState<ParticipantRecord | null>(null)
+  const [revoking, setRevoking] = useState(false)
+  const [participantActionError, setParticipantActionError] = useState<string | null>(null)
+
   useEffect(() => {
     if (!eventId) return
 
@@ -89,6 +112,41 @@ export function EventDetailPage() {
 
     return () => {
       cancelled = true
+    }
+  }, [eventId])
+
+  function refreshParticipants(id: string) {
+    return listEventParticipants(id)
+      .then((rows) => setParticipants(rows))
+      .catch((err) => {
+        setParticipantsError(getParticipantErrorMessage(err, 'Failed to load participants'))
+      })
+  }
+
+  useEffect(() => {
+    if (!eventId) return
+    void refreshParticipants(eventId)
+  }, [eventId])
+
+  // A participant self-registering (or another admin tab approving/revoking
+  // one) should show up here live. Re-fetching on any change is simpler and
+  // less error-prone than merging individual payloads into local state.
+  useEffect(() => {
+    if (!eventId) return
+
+    const channel = supabase
+      .channel(`event-detail-participants-${eventId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${eventId}` },
+        () => {
+          void refreshParticipants(eventId)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
     }
   }, [eventId])
 
@@ -158,6 +216,36 @@ export function EventDetailPage() {
     }
   }
 
+  async function handleApprove(participantId: string) {
+    if (!eventId) return
+    setParticipantActionError(null)
+    setApprovingId(participantId)
+    try {
+      await approveParticipant(participantId)
+      await refreshParticipants(eventId)
+    } catch (err) {
+      setParticipantActionError(getParticipantErrorMessage(err, 'Failed to approve participant'))
+    } finally {
+      setApprovingId(null)
+    }
+  }
+
+  async function handleRevokeConfirm() {
+    if (!eventId || !revokeTarget) return
+    const target = revokeTarget
+    setRevokeTarget(null)
+    setParticipantActionError(null)
+    setRevoking(true)
+    try {
+      await revokeParticipant(target.id)
+      await refreshParticipants(eventId)
+    } catch (err) {
+      setParticipantActionError(getParticipantErrorMessage(err, 'Failed to revoke participant'))
+    } finally {
+      setRevoking(false)
+    }
+  }
+
   async function handleCopyJoinCode() {
     if (!event) return
     await navigator.clipboard.writeText(event.join_code)
@@ -224,6 +312,61 @@ export function EventDetailPage() {
             </>
           )}
         </DefinitionGrid>
+      </Card>
+
+      <Card>
+        <SectionTitle>Participants</SectionTitle>
+        {participantsError && <ErrorText role="alert">{participantsError}</ErrorText>}
+        {participantActionError && (
+          <ErrorText role="alert">{participantActionError}</ErrorText>
+        )}
+        {participants === null ? (
+          <HelpText>Loading…</HelpText>
+        ) : participants.length === 0 ? (
+          <HelpText>
+            No one has registered yet. Share the join code above to let
+            participants self-register.
+          </HelpText>
+        ) : (
+          <ParticipantListEl>
+            {participants.map((participant) => (
+              <ParticipantListItem key={participant.id}>
+                <ParticipantIdentity>
+                  <ParticipantName>{participant.name}</ParticipantName>
+                  <ParticipantMeta>
+                    {participant.type === 'team' ? 'Team' : 'Individual'}
+                    {participant.members ? ` · ${participant.members}` : ''}
+                  </ParticipantMeta>
+                </ParticipantIdentity>
+                <Row>
+                  <AdmissionBadge admissionStatus={participant.admission_status}>
+                    {participant.admission_status}
+                  </AdmissionBadge>
+                  {participant.admission_status !== 'approved' && (
+                    <Button
+                      type="button"
+                      tone="success"
+                      onClick={() => handleApprove(participant.id)}
+                      disabled={approvingId === participant.id}
+                    >
+                      {approvingId === participant.id ? 'Approving…' : 'Approve'}
+                    </Button>
+                  )}
+                  {participant.admission_status !== 'revoked' && (
+                    <Button
+                      type="button"
+                      tone="danger"
+                      onClick={() => setRevokeTarget(participant)}
+                      disabled={revoking}
+                    >
+                      Revoke
+                    </Button>
+                  )}
+                </Row>
+              </ParticipantListItem>
+            ))}
+          </ParticipantListEl>
+        )}
       </Card>
 
       {event.format === 'quiz' && (
@@ -378,6 +521,20 @@ export function EventDetailPage() {
         tone="danger"
         onConfirm={handleDelete}
         onCancel={() => setConfirmingDelete(false)}
+      />
+
+      <ConfirmDialog
+        open={revokeTarget !== null}
+        title="Revoke this participant?"
+        description={
+          revokeTarget
+            ? `${revokeTarget.name} will lose access to this event until re-approved.`
+            : ''
+        }
+        confirmLabel="Revoke"
+        tone="danger"
+        onConfirm={handleRevokeConfirm}
+        onCancel={() => setRevokeTarget(null)}
       />
     </PageContent>
   )

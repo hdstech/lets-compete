@@ -14,9 +14,19 @@ export default defineConfig({
     { name: 'setup', testMatch: /.*\.setup\.ts/ },
     {
       name: 'chromium',
+      testIgnore: /participant-waiting-room\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/organizer.json',
+      },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'participant',
+      testMatch: /participant-waiting-room\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/participant.json',
       },
       dependencies: ['setup'],
     },

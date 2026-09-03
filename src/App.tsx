@@ -1,4 +1,5 @@
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { styled } from '../styled-system/jsx'
 import { AdminLayout } from './features/admin-shell/AdminLayout'
 import { AuthProvider } from './features/auth/AuthProvider'
@@ -6,12 +7,15 @@ import { JoinPage } from './features/auth/JoinPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { RequireAuth } from './features/auth/RequireAuth'
 import { SignUpPage } from './features/auth/SignUpPage'
-import { LoadingScreen } from './features/auth/auth-ui'
+import { ErrorText, LoadingScreen } from './features/auth/auth-ui'
 import { useAuth } from './features/auth/useAuth'
 import { EventDetailPage } from './features/events/EventDetailPage'
 import { EventsListPage } from './features/events/EventsListPage'
 import { NewEventPage } from './features/events/NewEventPage'
 import { LiveConsolePage } from './features/live-quiz/LiveConsolePage'
+import { WaitingRoomPage } from './features/participants/WaitingRoomPage'
+import { getErrorMessage, joinEvent } from './features/participants/participants-api'
+import { hasPendingJoin, takePendingJoin } from './features/participants/pending-join'
 import { QuestionsPage } from './features/questions/QuestionsPage'
 import { RoundsPage } from './features/rounds/RoundsPage'
 import { SegmentsPage } from './features/segments/SegmentsPage'
@@ -52,11 +56,58 @@ const HomeLink = styled(Link, {
   },
 })
 
+type JoinState = 'idle' | 'joining' | 'error'
+
 function Home() {
   const { session, loading } = useAuth()
+  const navigate = useNavigate()
+  // Read synchronously at mount (not via an effect) so the very first render
+  // already knows whether to show the marketing page or a "joining" state —
+  // this is what lets the effect below only ever call setState from inside
+  // an async callback, never directly in the effect body.
+  const [joinState, setJoinState] = useState<JoinState>(() =>
+    hasPendingJoin() ? 'joining' : 'idle',
+  )
+  const [joinError, setJoinError] = useState<string | null>(null)
 
-  if (loading) {
-    return <LoadingScreen>Loading…</LoadingScreen>
+  // A magic-link click reloads the app here regardless of which page sent
+  // the OTP email, so this is the one place that can pick up a pending
+  // participant join (stashed by JoinPage) once a session actually exists.
+  useEffect(() => {
+    if (loading || !session || joinState !== 'joining') return
+
+    const pending = takePendingJoin()
+    if (!pending) return
+
+    joinEvent(pending.joinCode, pending.name, pending.type, pending.members)
+      .then((participant) => {
+        navigate(`/events/${participant.event_id}/waiting-room`, { replace: true })
+      })
+      .catch((err) => {
+        setJoinError(getErrorMessage(err, 'Failed to join the event'))
+        setJoinState('error')
+      })
+  }, [session, loading, joinState, navigate])
+
+  if (loading || joinState === 'joining') {
+    return (
+      <LoadingScreen>
+        {joinState === 'joining' ? 'Joining event…' : 'Loading…'}
+      </LoadingScreen>
+    )
+  }
+
+  if (joinState === 'error') {
+    return (
+      <HomeMain>
+        <HomeHeading>Couldn't join the event</HomeHeading>
+        <ErrorText role="alert">{joinError}</ErrorText>
+        <HomeNav>
+          <HomeLink to="/join">Try again</HomeLink>
+          <HomeLink to="/dashboard">Continue to dashboard</HomeLink>
+        </HomeNav>
+      </HomeMain>
+    )
   }
 
   if (session) {
@@ -97,6 +148,14 @@ function App() {
             <Route path="/events/:eventId" element={<EventDetailPage />} />
             <Route path="/events/:eventId/rounds" element={<RoundsPage />} />
           </Route>
+          <Route
+            path="/events/:eventId/waiting-room"
+            element={
+              <RequireAuth>
+                <WaitingRoomPage />
+              </RequireAuth>
+            }
+          />
           <Route
             path="/events/:eventId/rounds/:roundId/live"
             element={
