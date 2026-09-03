@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { styled } from '../../../styled-system/jsx'
 import { ErrorText } from '../auth/auth-ui'
-import { Button } from '../../components/ui/Button'
+import { Button, LinkButton } from '../../components/ui/Button'
 import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
@@ -10,12 +9,12 @@ import {
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
-  Card,
   EmptyState,
   HelpText,
   PageHeader,
   PageInner,
   PageShell,
+  Row,
   SectionTitle,
 } from '../events/events-ui'
 import type { EventRow } from '../events/types'
@@ -30,120 +29,11 @@ import {
   getErrorMessage,
   listCalculationEntries,
   listFinalCalculations,
+  scopeKey,
 } from './results-api'
+import { ResultBoard } from './ResultBoard'
+import { BoardHeader, RoundSection } from './results-ui'
 import type { ResultCalculationEntryRow, ResultCalculationRow } from './types'
-
-// Keys a scope the same way result_calculations' one-final-per-scope index
-// does: round_id/segment_id null-ness distinguishes segment / round / event
-// scopes (see the T16 migration's comment).
-function scopeKey(roundId: string | null, segmentId: string | null): string {
-  return `${roundId ?? 'none'}:${segmentId ?? 'none'}`
-}
-
-const RoundSection = styled('section', {
-  base: { display: 'flex', flexDirection: 'column', gap: '4' },
-})
-
-const BoardHeader = styled('div', {
-  base: {
-    display: 'flex',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: '3',
-    flexWrap: 'wrap',
-  },
-})
-
-const BoardMeta = styled('span', {
-  base: { fontSize: 'xs', color: 'text.placeholder' },
-})
-
-const BoardTable = styled('table', {
-  base: { width: 'full', borderCollapse: 'collapse', fontSize: 'sm' },
-})
-
-const BoardHeadCell = styled('th', {
-  base: {
-    textAlign: 'left',
-    color: 'text.placeholder',
-    fontSize: 'xs',
-    textTransform: 'uppercase',
-    letterSpacing: 'wide',
-    pb: '2',
-    borderBottomWidth: '1px',
-    borderColor: 'border.default',
-  },
-})
-
-const BoardCell = styled('td', {
-  base: {
-    py: '1.5',
-    borderBottomWidth: '1px',
-    borderColor: 'border.default',
-    color: 'text.primary',
-  },
-})
-
-const RankCell = styled('td', {
-  base: {
-    py: '1.5',
-    borderBottomWidth: '1px',
-    borderColor: 'border.default',
-    color: 'text.muted',
-    fontVariantNumeric: 'tabular-nums',
-  },
-})
-
-function ResultBoard({
-  title,
-  calculation,
-  entries,
-  participantsById,
-}: {
-  title: string
-  calculation: ResultCalculationRow | undefined
-  entries: ResultCalculationEntryRow[]
-  participantsById: Map<string, ParticipantRow>
-}) {
-  return (
-    <Card>
-      <BoardHeader>
-        <SectionTitle>{title}</SectionTitle>
-        {calculation && (
-          <BoardMeta>
-            Current · calculated {new Date(calculation.calculated_at).toLocaleString()}
-          </BoardMeta>
-        )}
-      </BoardHeader>
-      {!calculation ? (
-        <HelpText>Not yet calculated.</HelpText>
-      ) : entries.length === 0 ? (
-        <HelpText>No eligible participants scored in this scope.</HelpText>
-      ) : (
-        <BoardTable>
-          <thead>
-            <tr>
-              <BoardHeadCell scope="col">Rank</BoardHeadCell>
-              <BoardHeadCell scope="col">Participant</BoardHeadCell>
-              <BoardHeadCell scope="col">Score</BoardHeadCell>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.id}>
-                <RankCell>{entry.rank}</RankCell>
-                <BoardCell>
-                  {participantsById.get(entry.participant_id)?.name ?? 'Unknown participant'}
-                </BoardCell>
-                <BoardCell>{entry.total_score}</BoardCell>
-              </tr>
-            ))}
-          </tbody>
-        </BoardTable>
-      )}
-    </Card>
-  )
-}
 
 export function ResultsPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -298,7 +188,12 @@ export function ResultsPage() {
               Frozen, versioned leaderboards read from each scope's current calculation.
             </PageSubtitle>
           </div>
-          <BackLink to={`/events/${event.id}/rounds`}>Back to rounds</BackLink>
+          <Row>
+            <LinkButton to={`/events/${event.id}/results/history`} tone="secondary">
+              View history
+            </LinkButton>
+            <BackLink to={`/events/${event.id}/rounds`}>Back to rounds</BackLink>
+          </Row>
         </PageHeader>
 
         {actionError && <ErrorText role="alert">{actionError}</ErrorText>}
