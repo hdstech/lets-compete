@@ -19,6 +19,7 @@ import { WaitingRoomPage } from './features/participants/WaitingRoomPage'
 import { getErrorMessage, joinEvent } from './features/participants/participants-api'
 import { hasPendingJoin, takePendingJoin } from './features/participants/pending-join'
 import { QuestionsPage } from './features/questions/QuestionsPage'
+import { ResultsPage } from './features/results/ResultsPage'
 import { RoundsPage } from './features/rounds/RoundsPage'
 import { SegmentsPage } from './features/segments/SegmentsPage'
 import { DashboardPage } from './pages/DashboardPage'
@@ -195,6 +196,14 @@ function App() {
             element={
               <RequireAuth>
                 <QuestionsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events/:eventId/results"
+            element={
+              <RequireAuth>
+                <ResultsPage />
               </RequireAuth>
             }
           />
