@@ -14,8 +14,11 @@ export async function createDraftEvent(page: Page, name: string) {
 
 // Assumes the current page is an event's detail page.
 export async function deleteCurrentEvent(page: Page) {
-  page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: 'Delete event' }).click()
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Delete event' })
+    .click()
   await page.waitForURL('**/events')
 }
 
