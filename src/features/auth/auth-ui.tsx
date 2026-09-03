@@ -7,8 +7,8 @@ export const AuthShell = styled('main', {
     minHeight: '100vh',
     alignItems: 'center',
     justifyContent: 'center',
-    bg: 'slate.950',
-    color: 'slate.100',
+    bg: 'bg.canvas',
+    color: 'text.primary',
     px: '4',
   },
 })
@@ -20,10 +20,10 @@ export const AuthCard = styled('div', {
     gap: '5',
     width: 'full',
     maxWidth: '96',
-    bg: 'slate.900',
+    bg: 'bg.surface',
     borderWidth: '1px',
-    borderColor: 'slate.800',
-    borderRadius: 'lg',
+    borderColor: 'border.default',
+    borderRadius: 'card',
     p: '6',
   },
 })
@@ -38,7 +38,7 @@ export const AuthTitle = styled('h1', {
 export const AuthSubtitle = styled('p', {
   base: {
     fontSize: 'sm',
-    color: 'slate.400',
+    color: 'text.muted',
   },
 })
 
@@ -61,23 +61,23 @@ export const Field = styled('div', {
 export const Label = styled('label', {
   base: {
     fontSize: 'sm',
-    color: 'slate.300',
+    color: 'text.primary',
   },
 })
 
 export const Input = styled('input', {
   base: {
-    bg: 'slate.950',
+    bg: 'bg.sunken',
     borderWidth: '1px',
-    borderColor: 'slate.700',
-    borderRadius: 'md',
+    borderColor: 'border.default',
+    borderRadius: 'control',
     px: '3',
     py: '2',
-    color: 'slate.100',
+    color: 'text.primary',
     fontSize: 'sm',
     _focus: {
       outline: 'none',
-      borderColor: 'slate.400',
+      borderColor: 'accent.default',
     },
   },
 })
@@ -91,13 +91,21 @@ export const ErrorText = styled('p', {
 
 export const SubmitButton = styled('button', {
   base: {
-    bg: 'slate.100',
-    color: 'slate.950',
-    borderRadius: 'md',
+    bg: 'text.primary',
+    color: 'bg.surface',
+    borderRadius: 'pill',
     py: '2',
     fontSize: 'sm',
     fontWeight: 'semibold',
     cursor: 'pointer',
+    _hover: {
+      bg: 'ink.800',
+    },
+    _focusVisible: {
+      outline: '2px solid',
+      outlineColor: 'accent.default',
+      outlineOffset: '2px',
+    },
     _disabled: {
       opacity: 0.6,
       cursor: 'not-allowed',
@@ -108,13 +116,13 @@ export const SubmitButton = styled('button', {
 export const AuthFooterText = styled('p', {
   base: {
     fontSize: 'sm',
-    color: 'slate.400',
+    color: 'text.muted',
   },
 })
 
 export const AuthLink = styled(Link, {
   base: {
-    color: 'slate.100',
+    color: 'text.primary',
     textDecoration: 'underline',
   },
 })
@@ -125,8 +133,8 @@ export const LoadingScreen = styled('div', {
     minHeight: '100vh',
     alignItems: 'center',
     justifyContent: 'center',
-    bg: 'slate.950',
-    color: 'slate.400',
+    bg: 'bg.canvas',
+    color: 'text.muted',
     fontSize: 'sm',
   },
 })
