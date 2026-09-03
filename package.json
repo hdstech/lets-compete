@@ -10,10 +10,12 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "supabase:smoke-test": "node --env-file=.env scripts/smoke-test-supabase.ts",
+    "icon:smoke-test": "node scripts/smoke-test-icon.ts",
     "test:e2e": "node --env-file=.env node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",
+    "lucide-react": "^1.39.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2"
