@@ -69,6 +69,20 @@ When the PR eventually gets opened (step 8), the base branch must match whicheve
 — a stacked PR targets the dependency's branch, not `main`, and the PR description should say so
 explicitly so the reviewer isn't confused by an unexpectedly large diff.
 
+**The ancestor check above can give a false "not merged" from the very start, not just mid-session.**
+Most PRs in this repo land via squash or rebase merge, which produces a brand-new commit hash on
+`main` disconnected from the original feature branch — so `git merge-base --is-ancestor <dep-branch>
+main` is checking whether that exact branch's commits are literal ancestors, not whether the ticket's
+code has actually landed. QB2's dependencies (QA5, QA7, QA8, T20) were all already squash-merged into
+`main` before work even started, each under a different commit hash than its feature branch (QA8 via
+PR #17, for example) — the ancestor check reported all four as "not merged," which nearly triggered a
+needless, risky rebase of T20's long-stale branch against the newer design-system retheme. Before
+trusting a "not merged" result, corroborate it: `git log --oneline main --grep="(<TICKET-ID>)"` (PR
+squash-merge commit subjects keep the original `(T20)`-style suffix), or check whether a file the
+dependency is known to introduce already exists on `main` (`git show main:<path>` or `git ls-tree -r
+main --name-only | grep <name>`). Only fall back to branching off the dependency's own branch once
+you've confirmed via one of those that the code genuinely isn't on `main` yet.
+
 ## 5. Research before writing code
 
 Spawn an Explore (or general-purpose) agent to map out what this ticket touches: the relevant
