@@ -1,5 +1,6 @@
 import { Calendar } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { styled } from '../../../styled-system/jsx'
 import { useAuth } from '../auth/useAuth'
 import { ErrorText } from '../auth/auth-ui'
 import { LinkButton } from '../../components/ui/Button'
@@ -18,12 +19,20 @@ import {
   EventName,
   FormatBadge,
   PageHeader,
-  PageInner,
-  PageShell,
   Row,
   StatusBadge,
 } from './events-ui'
 import type { EventRow } from './types'
+
+const PageContent = styled('div', {
+  base: {
+    px: '6',
+    py: '6',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6',
+  },
+})
 
 export function EventsListPage() {
   const { user } = useAuth()
@@ -48,55 +57,53 @@ export function EventsListPage() {
   }, [user])
 
   return (
-    <PageShell>
-      <PageInner>
-        <PageHeader>
-          <div>
-            <PageTitle>Your events</PageTitle>
-            <PageSubtitle>
-              Create and manage the events you organize.
-            </PageSubtitle>
-          </div>
-          <LinkButton to="/events/new">New event</LinkButton>
-        </PageHeader>
+    <PageContent>
+      <PageHeader>
+        <div>
+          <PageTitle>Your events</PageTitle>
+          <PageSubtitle>
+            Create and manage the events you organize.
+          </PageSubtitle>
+        </div>
+        <LinkButton to="/events/new">New event</LinkButton>
+      </PageHeader>
 
-        {error && <ErrorText role="alert">{error}</ErrorText>}
+      {error && <ErrorText role="alert">{error}</ErrorText>}
 
-        {events === null && !error && <PageSubtitle>Loading…</PageSubtitle>}
+      {events === null && !error && <PageSubtitle>Loading…</PageSubtitle>}
 
-        {events !== null && events.length === 0 && (
-          <EmptyState>
-            <EmptyStateIcon>
-              <Calendar size={20} />
-            </EmptyStateIcon>
-            You haven't created an event yet.
-          </EmptyState>
-        )}
+      {events !== null && events.length === 0 && (
+        <EmptyState>
+          <EmptyStateIcon>
+            <Calendar size={20} />
+          </EmptyStateIcon>
+          You haven't created an event yet.
+        </EmptyState>
+      )}
 
-        {events !== null && events.length > 0 && (
-          <EventList>
-            {events.map((event) => (
-              <EventListItem key={event.id} to={`/events/${event.id}`}>
-                <EventListItemTitleRow>
-                  <EventName>{event.name}</EventName>
-                  <StatusBadge status={event.status}>
-                    {event.status}
-                  </StatusBadge>
-                </EventListItemTitleRow>
-                <Row>
-                  <FormatBadge>{event.format}</FormatBadge>
-                  <EventMeta>
-                    {event.event_date
-                      ? `Event date: ${event.event_date}`
-                      : 'No date set'}
-                  </EventMeta>
-                  <EventMeta>Join code: {event.join_code}</EventMeta>
-                </Row>
-              </EventListItem>
-            ))}
-          </EventList>
-        )}
-      </PageInner>
-    </PageShell>
+      {events !== null && events.length > 0 && (
+        <EventList>
+          {events.map((event) => (
+            <EventListItem key={event.id} to={`/events/${event.id}`}>
+              <EventListItemTitleRow>
+                <EventName>{event.name}</EventName>
+                <StatusBadge status={event.status}>
+                  {event.status}
+                </StatusBadge>
+              </EventListItemTitleRow>
+              <Row>
+                <FormatBadge>{event.format}</FormatBadge>
+                <EventMeta>
+                  {event.event_date
+                    ? `Event date: ${event.event_date}`
+                    : 'No date set'}
+                </EventMeta>
+                <EventMeta>Join code: {event.join_code}</EventMeta>
+              </Row>
+            </EventListItem>
+          ))}
+        </EventList>
+      )}
+    </PageContent>
   )
 }
