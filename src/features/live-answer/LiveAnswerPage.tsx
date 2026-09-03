@@ -19,6 +19,7 @@ import { listRounds } from '../rounds/rounds-api'
 import type { RoundRow } from '../rounds/types'
 import { getAnswerDraft, setAnswerDraft } from './answer-draft'
 import { getErrorMessage as getSubmitErrorMessage, getMyAnswer, submitAnswer } from './live-answer-api'
+import { useFocusIntegrity } from './useFocusIntegrity'
 
 const ScreenCard = styled('div', {
   base: {
@@ -74,6 +75,19 @@ const SubmitStatus = styled('p', {
   base: { fontSize: 'xs', color: 'text.muted' },
 })
 
+const WarningBanner = styled('p', {
+  base: {
+    fontSize: 'sm',
+    fontWeight: 'medium',
+    color: 'amber.400',
+    borderWidth: '1px',
+    borderColor: 'amber.400',
+    borderRadius: 'card',
+    p: '2',
+    textAlign: 'center',
+  },
+})
+
 export function LiveAnswerPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const { user } = useAuth()
@@ -88,6 +102,7 @@ export function LiveAnswerPage() {
   const [answerText, setAnswerText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [locked, setLocked] = useState(false)
 
   const [now, setNow] = useState(() => Date.now())
 
@@ -230,6 +245,16 @@ export function LiveAnswerPage() {
 
   const focusedQuestionId = focusedQuestion?.id ?? null
 
+  // A lock from a prior question's grace-timeout auto-submit shouldn't
+  // carry over once the next question is revealed. Reset during render
+  // (React's documented pattern for adjusting state when a prop/derived
+  // value changes) rather than in an effect, to avoid an extra commit.
+  const [lockedForQuestionId, setLockedForQuestionId] = useState(focusedQuestionId)
+  if (focusedQuestionId !== lockedForQuestionId) {
+    setLockedForQuestionId(focusedQuestionId)
+    setLocked(false)
+  }
+
   // Load (or reset) the answer draft whenever the focused question changes:
   // prefer what was actually submitted (server truth) over a local draft,
   // since a submitted answer is never stale relative to a leftover draft.
@@ -278,6 +303,14 @@ export function LiveAnswerPage() {
       setSubmitting(false)
     }
   }
+
+  const { warning, graceRemainingMs } = useFocusIntegrity({
+    participantId: participant?.id ?? null,
+    question: focusedQuestion,
+    answerText,
+    onAutoSubmitted: (answer) => setMyAnswer(answer),
+    onLocked: () => setLocked(true),
+  })
 
   if (loadError) {
     return (
@@ -362,18 +395,25 @@ export function LiveAnswerPage() {
           <HelpText>Time's up. Waiting for the next question…</HelpText>
         )}
 
+        {warning && (
+          <WarningBanner role="alert" aria-live="assertive">
+            You left the screen — your answer auto-submits in{' '}
+            {Math.ceil(graceRemainingMs / 1000)}s unless you return.
+          </WarningBanner>
+        )}
+
         <Input
           value={answerText}
           onChange={(e) => handleAnswerChange(e.target.value)}
           inputMode={focusedQuestion.answer_type === 'numeric' ? 'decimal' : 'text'}
           placeholder="Your answer"
-          disabled={!isOpen}
+          disabled={!isOpen || locked}
           aria-label="Your answer"
         />
 
         {submitError && <ErrorText role="alert">{submitError}</ErrorText>}
 
-        {isOpen && (
+        {isOpen && !locked && (
           <Button
             type="button"
             tone="success"
@@ -384,16 +424,21 @@ export function LiveAnswerPage() {
           </Button>
         )}
 
-        {!isOpen && myAnswer?.submitted_text && (
+        {locked && (
+          <SubmitStatus>
+            Auto-submitted because you left the screen — you can't edit this answer anymore.
+          </SubmitStatus>
+        )}
+        {!locked && !isOpen && myAnswer?.submitted_text && (
           <SubmitStatus>Your answer: {myAnswer.submitted_text}</SubmitStatus>
         )}
-        {!isOpen && !myAnswer?.submitted_text && (
+        {!locked && !isOpen && !myAnswer?.submitted_text && (
           <SubmitStatus>You didn't submit an answer for this question.</SubmitStatus>
         )}
-        {isOpen && myAnswer && !hasUnsavedChanges && (
+        {!locked && isOpen && myAnswer && !hasUnsavedChanges && (
           <SubmitStatus>Submitted ✓ — you can still change it until time's up.</SubmitStatus>
         )}
-        {isOpen && hasUnsavedChanges && (
+        {!locked && isOpen && hasUnsavedChanges && (
           <SubmitStatus>Not yet submitted.</SubmitStatus>
         )}
       </ScreenCard>
