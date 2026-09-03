@@ -282,7 +282,12 @@ export function RoundsPage() {
               each cutoff.
             </PageSubtitle>
           </div>
-          <BackLink to={`/events/${event.id}`}>Back to event</BackLink>
+          <Row>
+            <LinkButton to={`/events/${event.id}/results`} tone="secondary">
+              View results
+            </LinkButton>
+            <BackLink to={`/events/${event.id}`}>Back to event</BackLink>
+          </Row>
         </PageHeader>
 
         {!isDraft && (
