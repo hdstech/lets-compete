@@ -30,6 +30,19 @@ Other scripts: `npm run build` (type-check + production build), `npm run preview
 
 `.env` is git-ignored; set the production copies in **Vercel → Settings → Environment Variables**.
 
+## Auth setup (magic links)
+
+Participants sign in via emailed magic links. Supabase Auth must allow redirects back to this app — otherwise links fall back to the default `http://localhost:3000` and won't work.
+
+In the **hosted** Supabase project (**Authentication → URL Configuration**):
+
+- **Site URL** — `http://localhost:5173` for local dev; your production Vercel URL in prod.
+- **Redirect URLs** — add `http://localhost:5173/**`, plus your Vercel production and preview URLs (e.g. `https://your-app.vercel.app/**`, `https://*.vercel.app/**`).
+
+The app sends `emailRedirectTo: window.location.origin` from `/join`, so no frontend env var is needed — the allow list just has to match where the app actually runs. If you use `supabase start` locally, the same origins are set in [`supabase/config.toml`](supabase/config.toml).
+
+Request a **new** magic link after changing these settings; emails already sent keep the old redirect.
+
 ## Database migrations (Supabase)
 
 Schema changes are version-controlled SQL files under [`supabase/migrations/`](supabase/migrations/), applied with the Supabase CLI:
