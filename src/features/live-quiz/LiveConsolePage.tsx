@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
 import { supabase } from '../../lib/supabase'
+import { getDeadlineMs, formatClock } from '../../lib/quiz-timing'
 import { ErrorText } from '../auth/auth-ui'
 import { Button } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -80,13 +81,6 @@ const RosterItem = styled('div', {
     },
   },
 })
-
-function formatClock(ms: number): string {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000))
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${minutes}:${String(seconds).padStart(2, '0')}`
-}
 
 export function LiveConsolePage() {
   const { eventId, roundId } = useParams<{ eventId: string; roundId: string }>()
@@ -230,10 +224,10 @@ export function LiveConsolePage() {
     [questions],
   )
 
-  const deadlineMs = useMemo(() => {
-    if (!openQuestion?.revealed_at) return null
-    return new Date(openQuestion.revealed_at).getTime() + openQuestion.window_seconds * 1000
-  }, [openQuestion])
+  const deadlineMs = useMemo(
+    () => (openQuestion ? getDeadlineMs(openQuestion) : null),
+    [openQuestion],
+  )
 
   const remainingMs = deadlineMs !== null ? deadlineMs - now : null
 

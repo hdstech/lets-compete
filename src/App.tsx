@@ -12,6 +12,7 @@ import { useAuth } from './features/auth/useAuth'
 import { EventDetailPage } from './features/events/EventDetailPage'
 import { EventsListPage } from './features/events/EventsListPage'
 import { NewEventPage } from './features/events/NewEventPage'
+import { LiveAnswerPage } from './features/live-answer/LiveAnswerPage'
 import { LiveConsolePage } from './features/live-quiz/LiveConsolePage'
 import { WaitingRoomPage } from './features/participants/WaitingRoomPage'
 import { getErrorMessage, joinEvent } from './features/participants/participants-api'
@@ -153,6 +154,14 @@ function App() {
             element={
               <RequireAuth>
                 <WaitingRoomPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events/:eventId/play"
+            element={
+              <RequireAuth>
+                <LiveAnswerPage />
               </RequireAuth>
             }
           />
