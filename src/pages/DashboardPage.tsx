@@ -1,77 +1,99 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Calendar } from 'lucide-react'
 import { styled } from '../../styled-system/jsx'
+import {
+  Card,
+  DefinitionGrid,
+  DefinitionTerm,
+  DefinitionValue,
+  LinkButton,
+  PageSubtitle,
+  PageTitle,
+  SectionTitle,
+} from '../features/events/events-ui'
 import { useAuth } from '../features/auth/useAuth'
 
-const DashboardMain = styled('main', {
+const OverviewPage = styled('div', {
+  base: {
+    px: '6',
+    py: '6',
+  },
+})
+
+const PageHeader = styled('div', {
   base: {
     display: 'flex',
-    minHeight: '100vh',
     flexDirection: 'column',
+    gap: '1',
+    mb: '6',
+  },
+})
+
+const OverviewGrid = styled('div', {
+  base: {
+    display: 'grid',
+    gridTemplateColumns: { base: '1fr', lg: '2fr 1fr' },
+    gap: '5',
+  },
+})
+
+const WelcomeText = styled('p', {
+  base: {
+    fontSize: 'sm',
+    color: 'text.muted',
+  },
+})
+
+const IconBadge = styled('div', {
+  base: {
+    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '3',
-    bg: 'slate.950',
-    color: 'slate.100',
-    px: '4',
-  },
-})
-
-const DashboardHeading = styled('h1', {
-  base: {
-    fontSize: 'xl',
-    fontWeight: 'semibold',
-  },
-})
-
-const DashboardText = styled('p', {
-  base: {
-    fontSize: 'sm',
-    color: 'slate.400',
-  },
-})
-
-const DashboardLink = styled(Link, {
-  base: {
-    mt: '2',
-    color: 'slate.100',
-    fontSize: 'sm',
-    textDecoration: 'underline',
-  },
-})
-
-const SignOutButton = styled('button', {
-  base: {
-    mt: '4',
-    bg: 'slate.100',
-    color: 'slate.950',
-    borderRadius: 'md',
-    px: '4',
-    py: '2',
-    fontSize: 'sm',
-    fontWeight: 'semibold',
-    cursor: 'pointer',
+    width: '10',
+    height: '10',
+    borderRadius: 'control',
+    bg: 'bg.sunken',
+    color: 'text.primary',
   },
 })
 
 export function DashboardPage() {
-  const { user, signOut } = useAuth()
-  const navigate = useNavigate()
-
-  async function handleSignOut() {
-    await signOut()
-    navigate('/login', { replace: true })
-  }
+  const { user } = useAuth()
+  const name = user?.user_metadata.name as string | undefined
 
   return (
-    <DashboardMain>
-      <DashboardHeading>
-        {user?.user_metadata.name ? `Welcome, ${user.user_metadata.name}` : 'Welcome'}
-      </DashboardHeading>
-      <DashboardText>{user?.email}</DashboardText>
-      <DashboardLink to="/events">Manage your events</DashboardLink>
-      <SignOutButton type="button" onClick={handleSignOut}>
-        Sign out
-      </SignOutButton>
-    </DashboardMain>
+    <OverviewPage>
+      <PageHeader>
+        <PageTitle>Overview</PageTitle>
+        <PageSubtitle>{name ? `Welcome back, ${name}` : 'Welcome back'}</PageSubtitle>
+      </PageHeader>
+
+      <OverviewGrid>
+        <Card>
+          <IconBadge>
+            <Calendar size={18} />
+          </IconBadge>
+          <SectionTitle>Your events</SectionTitle>
+          <WelcomeText>
+            Create, configure, and run scored events from one place — rounds, segments, and
+            questions all live under each event.
+          </WelcomeText>
+          <div>
+            <LinkButton to="/events" tone="primary">
+              Manage your events
+            </LinkButton>
+          </div>
+        </Card>
+
+        <Card>
+          <SectionTitle>Account</SectionTitle>
+          <DefinitionGrid>
+            <DefinitionTerm>Name</DefinitionTerm>
+            <DefinitionValue>{name ?? '—'}</DefinitionValue>
+            <DefinitionTerm>Email</DefinitionTerm>
+            <DefinitionValue>{user?.email ?? '—'}</DefinitionValue>
+          </DefinitionGrid>
+        </Card>
+      </OverviewGrid>
+    </OverviewPage>
   )
 }

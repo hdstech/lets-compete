@@ -1,5 +1,6 @@
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
 import { styled } from '../styled-system/jsx'
+import { AdminLayout } from './features/admin-shell/AdminLayout'
 import { AuthProvider } from './features/auth/AuthProvider'
 import { JoinPage } from './features/auth/JoinPage'
 import { LoginPage } from './features/auth/LoginPage'
@@ -83,45 +84,18 @@ function App() {
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/join" element={<JoinPage />} />
           <Route
-            path="/dashboard"
             element={
               <RequireAuth>
-                <DashboardPage />
+                <AdminLayout />
               </RequireAuth>
             }
-          />
-          <Route
-            path="/events"
-            element={
-              <RequireAuth>
-                <EventsListPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/events/new"
-            element={
-              <RequireAuth>
-                <NewEventPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/events/:eventId"
-            element={
-              <RequireAuth>
-                <EventDetailPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/events/:eventId/rounds"
-            element={
-              <RequireAuth>
-                <RoundsPage />
-              </RequireAuth>
-            }
-          />
+          >
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/events" element={<EventsListPage />} />
+            <Route path="/events/new" element={<NewEventPage />} />
+            <Route path="/events/:eventId" element={<EventDetailPage />} />
+            <Route path="/events/:eventId/rounds" element={<RoundsPage />} />
+          </Route>
           <Route
             path="/events/:eventId/rounds/:roundId/segments"
             element={
