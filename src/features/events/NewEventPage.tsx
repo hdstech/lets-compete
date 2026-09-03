@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { styled } from '../../../styled-system/jsx'
 import { useAuth } from '../auth/useAuth'
 import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
 import { Button as SubmitButton } from '../../components/ui/Button'
@@ -12,11 +13,19 @@ import {
   CheckboxField,
   HelpText,
   PageHeader,
-  PageInner,
-  PageShell,
   Row,
 } from './events-ui'
 import type { EventFormat } from './types'
+
+const PageContent = styled('div', {
+  base: {
+    px: '6',
+    py: '6',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6',
+  },
+})
 
 export function NewEventPage() {
   const { user } = useAuth()
@@ -51,79 +60,77 @@ export function NewEventPage() {
   }
 
   return (
-    <PageShell>
-      <PageInner>
-        <PageHeader>
-          <PageTitle>New event</PageTitle>
-          <BackLink to="/events">Back to events</BackLink>
-        </PageHeader>
+    <PageContent>
+      <PageHeader>
+        <PageTitle>New event</PageTitle>
+        <BackLink to="/events">Back to events</BackLink>
+      </PageHeader>
 
-        <Card>
-          <AuthForm onSubmit={handleSubmit}>
-            <Field>
-              <Label htmlFor="name">Event name</Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                required
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </Field>
+      <Card>
+        <AuthForm onSubmit={handleSubmit}>
+          <Field>
+            <Label htmlFor="name">Event name</Label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              required
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </Field>
 
-            <Field>
-              <Label htmlFor="event_date">Event date</Label>
-              <Input
-                id="event_date"
-                name="event_date"
-                type="date"
-                value={eventDate}
-                onChange={(event) => setEventDate(event.target.value)}
-              />
-            </Field>
+          <Field>
+            <Label htmlFor="event_date">Event date</Label>
+            <Input
+              id="event_date"
+              name="event_date"
+              type="date"
+              value={eventDate}
+              onChange={(event) => setEventDate(event.target.value)}
+            />
+          </Field>
 
-            <Field>
-              <Label htmlFor="format">Format</Label>
-              <Row>
-                <CheckboxField>
-                  <input
-                    type="radio"
-                    name="format"
-                    value="quiz"
-                    checked={format === 'quiz'}
-                    onChange={() => setFormat('quiz')}
-                  />
-                  Quiz / Bible Bowl
-                </CheckboxField>
-                <CheckboxField>
-                  <input type="radio" name="format" value="judged" disabled />
-                  Judged panel (coming in a future version)
-                </CheckboxField>
-              </Row>
-              <HelpText>
-                Format is permanent once the event is created.
-              </HelpText>
-            </Field>
-
-            <Field>
+          <Field>
+            <Label htmlFor="format">Format</Label>
+            <Row>
               <CheckboxField>
                 <input
-                  type="checkbox"
-                  checked={hasRounds}
-                  onChange={(event) => setHasRounds(event.target.checked)}
+                  type="radio"
+                  name="format"
+                  value="quiz"
+                  checked={format === 'quiz'}
+                  onChange={() => setFormat('quiz')}
                 />
-                This event has elimination rounds
+                Quiz / Bible Bowl
               </CheckboxField>
-            </Field>
+              <CheckboxField>
+                <input type="radio" name="format" value="judged" disabled />
+                Judged panel (coming in a future version)
+              </CheckboxField>
+            </Row>
+            <HelpText>
+              Format is permanent once the event is created.
+            </HelpText>
+          </Field>
 
-            {error && <ErrorText role="alert">{error}</ErrorText>}
-            <SubmitButton type="submit" disabled={submitting}>
-              {submitting ? 'Creating…' : 'Create event'}
-            </SubmitButton>
-          </AuthForm>
-        </Card>
-      </PageInner>
-    </PageShell>
+          <Field>
+            <CheckboxField>
+              <input
+                type="checkbox"
+                checked={hasRounds}
+                onChange={(event) => setHasRounds(event.target.checked)}
+              />
+              This event has elimination rounds
+            </CheckboxField>
+          </Field>
+
+          {error && <ErrorText role="alert">{error}</ErrorText>}
+          <SubmitButton type="submit" disabled={submitting}>
+            {submitting ? 'Creating…' : 'Create event'}
+          </SubmitButton>
+        </AuthForm>
+      </Card>
+    </PageContent>
   )
 }
