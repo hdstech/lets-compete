@@ -7,7 +7,7 @@ import { SidebarFooter } from './SidebarFooter'
 import type { NavItem } from './SidebarNav'
 import { SidebarNav } from './SidebarNav'
 import { SidebarShell } from './SidebarShell'
-import { SidebarSwitcherPlaceholder } from './SidebarSwitcherPlaceholder'
+import { SidebarSwitcher } from './SidebarSwitcher'
 
 // Mirrors the app's current top-level authenticated routes (src/App.tsx).
 // DS9 is responsible for wiring this layout into the router; until then it
@@ -28,7 +28,7 @@ export function AdminLayout() {
     <AdminShellRoot>
       {!collapsed && (
         <SidebarShell>
-          <SidebarSwitcherPlaceholder />
+          <SidebarSwitcher />
           <SidebarNav items={NAV_ITEMS} />
           <SidebarFooter />
         </SidebarShell>
