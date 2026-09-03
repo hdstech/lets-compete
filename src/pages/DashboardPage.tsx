@@ -1,13 +1,12 @@
 import { Calendar } from 'lucide-react'
 import { styled } from '../../styled-system/jsx'
+import { LinkButton } from '../components/ui/Button'
+import { Title as PageTitle, Subtitle as PageSubtitle } from '../components/ui/Typography'
 import {
   Card,
   DefinitionGrid,
   DefinitionTerm,
   DefinitionValue,
-  LinkButton,
-  PageSubtitle,
-  PageTitle,
   SectionTitle,
 } from '../features/events/events-ui'
 import { useAuth } from '../features/auth/useAuth'
