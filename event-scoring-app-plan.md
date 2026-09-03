@@ -62,7 +62,7 @@ An event can optionally run as **rounds**: progressive elimination stages where 
   - Note: the quiz format is **online-required** during live questioning; the offline-first/service-worker story is a V2 (judged) priority, not a V1 gate. V1 still ships as a PWA for installability and the disconnection draft-replay path.
   - **Styling convention**: prefer Panda's **styled-component style** (`styled-system/jsx`'s `styled` factory, e.g. `styled.div({ ... })`) for authoring components. Fall back to the `css-in-js` style (`styled-system/css`'s `css()` function) only when necessary — e.g. one-off style overrides on a non-Panda element, or composing style objects dynamically where a styled factory doesn't fit.
 - **Supabase** (free tier): Postgres + Auth + **Realtime** + Storage.
-  - Domain logic pushed **down into Postgres** (RPC functions, RLS, triggers) and exposed over Supabase's HTTP surfaces, so ~90% of core functionality is testable headless (Yaak/HTTP) before any UI exists.
+  - Domain logic pushed **down into Postgres** (RPC functions, RLS, triggers) and exposed over Supabase's HTTP surfaces, so ~90% of core functionality is testable headless (Bruno/HTTP) before any UI exists.
   - **Realtime** is the new V1 dependency: it broadcasts question reveals/countdowns to participant devices.
   - **Auth (GoTrue)** issues admin / participant / grader JWTs; **PostgREST** exposes tables with **RLS per-JWT**; **RPC** holds guarded logic (lifecycle transitions, reveal/void, submit, close-round, adjudicate, `calculate_results`, `advance_round`, `declare_winner`, conclude).
 - Client keeps an IndexedDB draft for the current answer (survives a brief disconnect) plus a `sendBeacon` submit-on-exit path.
@@ -276,7 +276,7 @@ participant_segments     -- (participant_id, segment_id) membership; UI defaults
 
 ## Build phases
 
-Sequenced **API-first**: the backend is built and verified via HTTP/Yaak before the UI, so the highest-risk logic — server-authoritative timing, answer immutability, versioned ranking, advancement/tiebreak — is proven before any screen exists. The Yaak workspace becomes a living regression suite.
+Sequenced **API-first**: the backend is built and verified via HTTP/Bruno before the UI, so the highest-risk logic — server-authoritative timing, answer immutability, versioned ranking, advancement/tiebreak — is proven before any screen exists. The Bruno collection becomes a living regression suite. (Originally scaffolded with Yaak; the team switched to Bruno partway through T18 — see that ticket.)
 
 ### V1 — Quiz MVP
 
@@ -301,7 +301,7 @@ Sequenced **API-first**: the backend is built and verified via HTTP/Yaak before 
 - **QA11** Answer immutability trigger.
 - **T16** `calculate_results()` — quiz branch (sum `final_correct`), scope filtering, `RANK()`, exclusion snapshot, frozen entries, `is_final` flip, no-op on unchanged.
 - **QA12 / T16a** `advance_round` + **tiebreak sudden-death** (reserve pool, one at a time) + `declare_winner`.
-- **T17** Conclude RPC (terminal). **T18** Yaak regression suite.
+- **T17** Conclude RPC (terminal). **T18** Bruno regression suite.
 
 **Frontend / UI (Track B)**
 - **T19** Auth screens + session protection.
