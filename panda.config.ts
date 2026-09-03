@@ -1,4 +1,52 @@
-import { defineConfig } from '@pandacss/dev';
+import { defineConfig, defineRecipe } from '@pandacss/dev';
+
+// Registered as a config recipe (not an ad-hoc inline recipe) because it's
+// shared across two styled() calls (Button, LinkButton) in the same file —
+// Panda's static per-JSX-usage extractor was silently dropping the base
+// borderRadius and the primary-tone bg for that pattern; a config recipe is
+// pre-compiled at config-parse time instead, sidestepping the extractor.
+const buttonRecipe = defineRecipe({
+  className: 'button',
+  base: {
+    borderRadius: 'pill',
+    px: '4',
+    py: '2',
+    fontSize: 'sm',
+    fontWeight: 'semibold',
+    cursor: 'pointer',
+    borderWidth: '1px',
+    borderColor: 'transparent',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '1.5',
+    textDecoration: 'none',
+    textAlign: 'center',
+    _disabled: {
+      opacity: 0.5,
+      cursor: 'not-allowed',
+    },
+    _focusVisible: {
+      outline: '2px solid',
+      outlineColor: 'accent.default',
+      outlineOffset: '2px',
+    },
+  },
+  variants: {
+    tone: {
+      primary: { bg: 'text.primary', color: 'bg.surface', _hover: { bg: 'ink.800' } },
+      secondary: {
+        bg: 'transparent',
+        color: 'text.primary',
+        borderColor: 'border.default',
+        _hover: { bg: 'bg.sunken' },
+      },
+      danger: { bg: 'red.600', color: 'white', _hover: { bg: 'red.700' } },
+      success: { bg: 'green.600', color: 'white', _hover: { bg: 'green.700' } },
+    },
+  },
+  defaultVariants: { tone: 'primary' },
+})
 
 export default defineConfig({
   // Whether to use css reset
@@ -13,6 +61,19 @@ export default defineConfig({
   // Files to exclude
   exclude: [],
 
+  // The `button` recipe is shared across many files via two styled() calls
+  // (Button, LinkButton) in src/components/ui/Button.tsx — Panda's per-usage
+  // JSX extractor was unreliable at generating CSS for every tone from that
+  // indirection (notably dropping the primary tone, the recipe's own
+  // defaultVariants value, even where JSX explicitly passed tone="primary").
+  // Forcing all its variants to be pre-generated sidesteps extraction so the
+  // recipe's CSS is always complete regardless of how/where it's consumed.
+  staticCss: {
+    recipes: {
+      button: ['*'],
+    },
+  },
+
   // Data-attribute selector instead of Panda's default `.dark` class,
   // since theming is driven by our own ThemeProvider (DS2) via [data-theme].
   conditions: {
@@ -22,6 +83,10 @@ export default defineConfig({
   // Useful for theme customization
   theme: {
     extend: {
+      recipes: {
+        button: buttonRecipe,
+      },
+
       tokens: {
         colors: {
           // Warm-neutral scale — Panda's built-in slate/gray skew cooler
