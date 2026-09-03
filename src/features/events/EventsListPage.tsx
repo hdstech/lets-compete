@@ -1,9 +1,11 @@
+import { Calendar } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { ErrorText } from '../auth/auth-ui'
 import { listOrganizerEvents } from './events-api'
 import {
   EmptyState,
+  EmptyStateIcon,
   EventList,
   EventListItem,
   EventListItemTitleRow,
@@ -59,7 +61,12 @@ export function EventsListPage() {
         {events === null && !error && <PageSubtitle>Loading…</PageSubtitle>}
 
         {events !== null && events.length === 0 && (
-          <EmptyState>You haven't created an event yet.</EmptyState>
+          <EmptyState>
+            <EmptyStateIcon>
+              <Calendar size={20} />
+            </EmptyStateIcon>
+            You haven't created an event yet.
+          </EmptyState>
         )}
 
         {events !== null && events.length > 0 && (
