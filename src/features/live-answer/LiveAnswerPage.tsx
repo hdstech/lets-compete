@@ -25,14 +25,39 @@ const ScreenCard = styled('div', {
   base: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '4',
     width: 'full',
     maxWidth: '96',
-    bg: 'bg.surface',
-    borderWidth: '1px',
+    minWidth: '0',
+    minHeight: '100dvh',
+    mx: 'auto',
+  },
+})
+
+const PlayBody = styled('div', {
+  base: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4',
+    flex: '1',
+    px: { base: '4', sm: '6' },
+    pt: { base: '4', sm: '6' },
+    pb: '3',
+  },
+})
+
+const PlayComposer = styled('div', {
+  base: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '3',
+    position: 'sticky',
+    bottom: '0',
+    px: { base: '4', sm: '6' },
+    pt: '3',
+    bg: 'bg.canvas',
+    borderTopWidth: '1px',
     borderColor: 'border.default',
-    borderRadius: 'card',
-    p: '6',
+    paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
   },
 })
 
@@ -43,11 +68,12 @@ const CenteredCard = styled('div', {
     gap: '4',
     width: 'full',
     maxWidth: '96',
+    minWidth: '0',
     bg: 'bg.surface',
     borderWidth: '1px',
     borderColor: 'border.default',
     borderRadius: 'card',
-    p: '6',
+    p: { base: '4', sm: '6' },
     textAlign: 'center',
     alignItems: 'center',
   },
@@ -58,12 +84,17 @@ const StatusMessage = styled('p', {
 })
 
 const QuestionPrompt = styled('p', {
-  base: { fontSize: 'lg', fontWeight: 'semibold', color: 'text.primary' },
+  base: {
+    fontSize: { base: 'xl', sm: 'lg' },
+    fontWeight: 'semibold',
+    color: 'text.primary',
+    overflowWrap: 'anywhere',
+  },
 })
 
 const Countdown = styled('div', {
   base: {
-    fontSize: '4xl',
+    fontSize: { base: '3xl', sm: '4xl' },
     fontWeight: 'bold',
     fontVariantNumeric: 'tabular-nums',
     color: 'text.primary',
@@ -368,79 +399,84 @@ export function LiveAnswerPage() {
   const hasUnsavedChanges = answerText !== (myAnswer?.submitted_text ?? '')
 
   return (
-    <AuthShell>
+    <AuthShell layout="fill">
       <ScreenCard>
-        <div>
-          <PageTitle>{event.name}</PageTitle>
-          <PageSubtitle>{participant.name}</PageSubtitle>
-        </div>
+        <PlayBody>
+          <div>
+            <PageTitle>{event.name}</PageTitle>
+            <PageSubtitle>{participant.name}</PageSubtitle>
+          </div>
 
-        <QuestionPrompt>{focusedQuestion.prompt}</QuestionPrompt>
-        <DefinitionGrid>
-          <DefinitionTerm>Segment</DefinitionTerm>
-          <DefinitionValue>{focusedQuestion.segment_name}</DefinitionValue>
-          <DefinitionTerm>Answer type</DefinitionTerm>
-          <DefinitionValue>{focusedQuestion.answer_type}</DefinitionValue>
-        </DefinitionGrid>
+          <QuestionPrompt>{focusedQuestion.prompt}</QuestionPrompt>
+          <DefinitionGrid>
+            <DefinitionTerm>Segment</DefinitionTerm>
+            <DefinitionValue>{focusedQuestion.segment_name}</DefinitionValue>
+            <DefinitionTerm>Answer type</DefinitionTerm>
+            <DefinitionValue>{focusedQuestion.answer_type}</DefinitionValue>
+          </DefinitionGrid>
 
-        {isOpen && (
-          <Countdown aria-live="polite">{formatClock(remainingMs ?? 0)}</Countdown>
-        )}
+          {isOpen && (
+            <Countdown aria-live="polite">{formatClock(remainingMs ?? 0)}</Countdown>
+          )}
 
-        {focusedQuestion.status === 'voided' && (
-          <HelpText>This question was voided — it won't be scored.</HelpText>
-        )}
+          {focusedQuestion.status === 'voided' && (
+            <HelpText>This question was voided — it won't be scored.</HelpText>
+          )}
 
-        {focusedQuestion.status === 'window_closed' && (
-          <HelpText>Time's up. Waiting for the next question…</HelpText>
-        )}
+          {focusedQuestion.status === 'window_closed' && (
+            <HelpText>Time's up. Waiting for the next question…</HelpText>
+          )}
 
-        {warning && (
-          <WarningBanner role="alert" aria-live="assertive">
-            You left the screen — your answer auto-submits in{' '}
-            {Math.ceil(graceRemainingMs / 1000)}s unless you return.
-          </WarningBanner>
-        )}
+          {warning && (
+            <WarningBanner role="alert" aria-live="assertive">
+              You left the screen — your answer auto-submits in{' '}
+              {Math.ceil(graceRemainingMs / 1000)}s unless you return.
+            </WarningBanner>
+          )}
+        </PlayBody>
 
-        <Input
-          value={answerText}
-          onChange={(e) => handleAnswerChange(e.target.value)}
-          inputMode={focusedQuestion.answer_type === 'numeric' ? 'decimal' : 'text'}
-          placeholder="Your answer"
-          disabled={!isOpen || locked}
-          aria-label="Your answer"
-        />
+        <PlayComposer>
+          <Input
+            value={answerText}
+            onChange={(e) => handleAnswerChange(e.target.value)}
+            inputMode={focusedQuestion.answer_type === 'numeric' ? 'decimal' : 'text'}
+            placeholder="Your answer"
+            disabled={!isOpen || locked}
+            aria-label="Your answer"
+          />
 
-        {submitError && <ErrorText role="alert">{submitError}</ErrorText>}
+          {submitError && <ErrorText role="alert">{submitError}</ErrorText>}
 
-        {isOpen && !locked && (
-          <Button
-            type="button"
-            tone="success"
-            onClick={handleSubmit}
-            disabled={submitting || answerText.trim() === ''}
-          >
-            {submitting ? 'Submitting…' : 'Submit answer'}
-          </Button>
-        )}
+          {isOpen && !locked && (
+            <Button
+              type="button"
+              tone="success"
+              width="full"
+              onClick={handleSubmit}
+              disabled={submitting || answerText.trim() === ''}
+            >
+              {submitting ? 'Submitting…' : 'Submit answer'}
+            </Button>
+          )}
 
-        {locked && (
-          <SubmitStatus>
-            Auto-submitted because you left the screen — you can't edit this answer anymore.
-          </SubmitStatus>
-        )}
-        {!locked && !isOpen && myAnswer?.submitted_text && (
-          <SubmitStatus>Your answer: {myAnswer.submitted_text}</SubmitStatus>
-        )}
-        {!locked && !isOpen && !myAnswer?.submitted_text && (
-          <SubmitStatus>You didn't submit an answer for this question.</SubmitStatus>
-        )}
-        {!locked && isOpen && myAnswer && !hasUnsavedChanges && (
-          <SubmitStatus>Submitted ✓ — you can still change it until time's up.</SubmitStatus>
-        )}
-        {!locked && isOpen && hasUnsavedChanges && (
-          <SubmitStatus>Not yet submitted.</SubmitStatus>
-        )}
+          {locked && (
+            <SubmitStatus>
+              Auto-submitted because you left the screen — you can't edit this answer anymore.
+            </SubmitStatus>
+          )}
+          {!locked && !isOpen && myAnswer?.submitted_text && (
+            <SubmitStatus>Your answer: {myAnswer.submitted_text}</SubmitStatus>
+          )}
+          {!locked && !isOpen && !myAnswer?.submitted_text && (
+            <SubmitStatus>You didn't submit an answer for this question.</SubmitStatus>
+          )}
+          {!locked && isOpen && myAnswer && !hasUnsavedChanges && (
+            <SubmitStatus>Submitted ✓ — you can still change it until time's up.</SubmitStatus>
+          )}
+          {!locked && isOpen && hasUnsavedChanges && (
+            <SubmitStatus>Not yet submitted.</SubmitStatus>
+          )}
+        </PlayComposer>
       </ScreenCard>
     </AuthShell>
   )

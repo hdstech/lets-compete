@@ -1,7 +1,12 @@
 import { Calendar, Home } from 'lucide-react'
 import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
-import { AdminShellRoot, ContentArea, PageOutletWrapper } from './admin-shell-ui'
+import {
+  AdminShellRoot,
+  ContentArea,
+  PageOutletWrapper,
+  SidebarBackdrop,
+} from './admin-shell-ui'
 import { ContentHeader } from './ContentHeader'
 import { SidebarFooter } from './SidebarFooter'
 import type { NavItem } from './SidebarNav'
@@ -17,9 +22,18 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/events', label: 'Events', icon: Calendar },
 ]
 
+function isNarrowViewport() {
+  return window.matchMedia('(max-width: 767px)').matches
+}
+
 export function AdminLayout() {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(isNarrowViewport)
   const location = useLocation()
+  const [collapsedForPath, setCollapsedForPath] = useState(location.pathname)
+  if (location.pathname !== collapsedForPath) {
+    setCollapsedForPath(location.pathname)
+    if (isNarrowViewport()) setCollapsed(true)
+  }
 
   const breadcrumb =
     NAV_ITEMS.find((item) => location.pathname.startsWith(item.to))?.label ?? 'Admin'
@@ -27,11 +41,18 @@ export function AdminLayout() {
   return (
     <AdminShellRoot>
       {!collapsed && (
-        <SidebarShell>
-          <SidebarSwitcher />
-          <SidebarNav items={NAV_ITEMS} />
-          <SidebarFooter />
-        </SidebarShell>
+        <>
+          <SidebarBackdrop
+            type="button"
+            aria-label="Dismiss sidebar"
+            onClick={() => setCollapsed(true)}
+          />
+          <SidebarShell>
+            <SidebarSwitcher />
+            <SidebarNav items={NAV_ITEMS} />
+            <SidebarFooter />
+          </SidebarShell>
+        </>
       )}
       <ContentArea>
         <ContentHeader

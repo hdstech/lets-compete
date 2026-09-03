@@ -26,8 +26,8 @@ import type { EventRow } from './types'
 
 const PageContent = styled('div', {
   base: {
-    px: '6',
-    py: '6',
+    px: { base: '4', sm: '6' },
+    py: { base: '4', sm: '6' },
     display: 'flex',
     flexDirection: 'column',
     gap: '6',

@@ -91,7 +91,7 @@ export function LoginPage() {
             />
           </Field>
           {error && <ErrorText role="alert">{error}</ErrorText>}
-          <SubmitButton type="submit" disabled={submitting}>
+          <SubmitButton type="submit" width="full" disabled={submitting}>
             {submitting ? 'Logging in…' : 'Log in'}
           </SubmitButton>
         </AuthForm>

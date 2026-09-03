@@ -11,6 +11,7 @@ const buttonRecipe = defineRecipe({
     borderRadius: 'pill',
     px: '4',
     py: '2',
+    minHeight: '11',
     fontSize: 'sm',
     fontWeight: 'semibold',
     cursor: 'pointer',
