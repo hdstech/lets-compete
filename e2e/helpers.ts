@@ -115,3 +115,55 @@ export async function addAcceptableAnswer(
   await page.getByRole('button', { name: 'Add answer' }).click()
   await expect(page.getByRole('button', { name: 'Add answer' })).toBeVisible()
 }
+
+// Assumes the current page is an event's detail page, in draft status with
+// at least one round already configured.
+export async function activateEvent(page: Page) {
+  await page.getByRole('button', { name: 'Activate event' }).click()
+  // StatusBadge renders the raw event.status ("active") and CSS-capitalizes
+  // it for display, so the accessible/DOM text is lowercase.
+  await expect(page.getByText('active', { exact: true })).toBeVisible()
+}
+
+// Assumes the current page is a round's rounds list, with exactly one
+// "Live console" link (i.e. the event is active).
+export async function goToLiveConsole(page: Page) {
+  await page.getByRole('link', { name: 'Live console' }).click()
+  await page.waitForURL(
+    /\/events\/[0-9a-f-]{36}\/rounds\/[0-9a-f-]{36}\/live$/,
+  )
+}
+
+// Deletes an event directly via the Supabase REST API rather than through
+// the UI. Once an event is activated it has no delete affordance in the
+// UI (draft-only, deliberately — see rounds-crud.spec.ts), but RLS's
+// events_delete_organizer policy doesn't share that draft-only restriction,
+// so an authenticated organizer can still delete an active event over the
+// API. This is the only way to clean up an event this suite has to activate
+// (e.g. to reach the live quiz console, which only appears once a round is
+// scoring_open) without leaving an un-cleanable row behind.
+export async function deleteEventViaApi(page: Page, eventId: string) {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !anonKey) {
+    throw new Error('VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY are required to clean up via the API')
+  }
+
+  const accessToken = await page.evaluate(() => {
+    const storageKey = Object.keys(localStorage).find((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
+    if (!storageKey) return null
+    const raw = localStorage.getItem(storageKey)
+    return raw ? (JSON.parse(raw).access_token as string) : null
+  })
+  if (!accessToken) {
+    throw new Error('No Supabase session found in localStorage to authorize the cleanup request')
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/events?id=eq.${eventId}`, {
+    method: 'DELETE',
+    headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to delete event ${eventId} via API: ${res.status} ${await res.text()}`)
+  }
+}

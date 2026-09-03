@@ -11,6 +11,7 @@ import { useAuth } from './features/auth/useAuth'
 import { EventDetailPage } from './features/events/EventDetailPage'
 import { EventsListPage } from './features/events/EventsListPage'
 import { NewEventPage } from './features/events/NewEventPage'
+import { LiveConsolePage } from './features/live-quiz/LiveConsolePage'
 import { QuestionsPage } from './features/questions/QuestionsPage'
 import { RoundsPage } from './features/rounds/RoundsPage'
 import { SegmentsPage } from './features/segments/SegmentsPage'
@@ -96,6 +97,14 @@ function App() {
             <Route path="/events/:eventId" element={<EventDetailPage />} />
             <Route path="/events/:eventId/rounds" element={<RoundsPage />} />
           </Route>
+          <Route
+            path="/events/:eventId/rounds/:roundId/live"
+            element={
+              <RequireAuth>
+                <LiveConsolePage />
+              </RequireAuth>
+            }
+          />
           <Route
             path="/events/:eventId/rounds/:roundId/segments"
             element={
