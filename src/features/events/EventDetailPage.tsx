@@ -16,12 +16,15 @@ import {
 } from '../../components/ui/Typography'
 import {
   approveParticipant,
+  disqualifyParticipant,
   getErrorMessage as getParticipantErrorMessage,
   listEventParticipants,
+  reinstateParticipant,
   revokeParticipant,
 } from '../participants/participants-api'
 import {
   AdmissionBadge,
+  EligibilityBadge,
   ParticipantIdentity,
   ParticipantListEl,
   ParticipantListItem,
@@ -29,6 +32,11 @@ import {
   ParticipantName,
 } from '../participants/participants-ui'
 import type { ParticipantRow as ParticipantRecord } from '../participants/types'
+import {
+  getErrorMessage as getResultsErrorMessage,
+  listFinalCalculations,
+  recalculateAffectedScopes,
+} from '../results/results-api'
 import {
   activateEvent,
   assignGrader,
@@ -98,7 +106,21 @@ export function EventDetailPage() {
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [revokeTarget, setRevokeTarget] = useState<ParticipantRecord | null>(null)
   const [revoking, setRevoking] = useState(false)
+  const [dqTarget, setDqTarget] = useState<ParticipantRecord | null>(null)
+  const [disqualifying, setDisqualifying] = useState(false)
+  const [reinstatingId, setReinstatingId] = useState<string | null>(null)
   const [participantActionError, setParticipantActionError] = useState<string | null>(null)
+
+  // Set once a revoke/disqualify leaves at least one already-calculated scope
+  // stale — recalculate_results is deliberate, never automatic, so this is
+  // an offer, not a side effect of the revoke/disqualify action itself.
+  const [recalcPrompt, setRecalcPrompt] = useState<{
+    participantName: string
+    action: 'revoked' | 'disqualified'
+  } | null>(null)
+  const [recalculating, setRecalculating] = useState(false)
+  const [recalcResult, setRecalcResult] = useState<string | null>(null)
+  const [recalcError, setRecalcError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!eventId) return
@@ -245,10 +267,75 @@ export function EventDetailPage() {
     try {
       await revokeParticipant(target.id)
       await refreshParticipants(eventId)
+      await maybeOfferRecalc(target.name, 'revoked')
     } catch (err) {
       setParticipantActionError(getParticipantErrorMessage(err, 'Failed to revoke participant'))
     } finally {
       setRevoking(false)
+    }
+  }
+
+  async function handleDisqualifyConfirm() {
+    if (!eventId || !dqTarget) return
+    const target = dqTarget
+    setDqTarget(null)
+    setParticipantActionError(null)
+    setDisqualifying(true)
+    try {
+      await disqualifyParticipant(target.id)
+      await refreshParticipants(eventId)
+      await maybeOfferRecalc(target.name, 'disqualified')
+    } catch (err) {
+      setParticipantActionError(getParticipantErrorMessage(err, 'Failed to disqualify participant'))
+    } finally {
+      setDisqualifying(false)
+    }
+  }
+
+  async function handleReinstate(participantId: string) {
+    if (!eventId) return
+    setParticipantActionError(null)
+    setReinstatingId(participantId)
+    try {
+      await reinstateParticipant(participantId)
+      await refreshParticipants(eventId)
+    } catch (err) {
+      setParticipantActionError(getParticipantErrorMessage(err, 'Failed to reinstate participant'))
+    } finally {
+      setReinstatingId(null)
+    }
+  }
+
+  // Only offers a recalculation if there's actually a stale, already-final
+  // calculation somewhere in the event — no point prompting for an event
+  // that's never had results calculated at all.
+  async function maybeOfferRecalc(participantName: string, action: 'revoked' | 'disqualified') {
+    if (!eventId) return
+    try {
+      const finalCalcs = await listFinalCalculations(eventId)
+      if (finalCalcs.length > 0) {
+        setRecalcResult(null)
+        setRecalcPrompt({ participantName, action })
+      }
+    } catch {
+      // Best-effort: the admin can still recalculate manually from the
+      // Results page if this check fails.
+    }
+  }
+
+  async function handleRecalculate() {
+    if (!eventId || !recalcPrompt) return
+    setRecalculating(true)
+    setRecalcError(null)
+    try {
+      const reason = `Participant ${recalcPrompt.participantName} was ${recalcPrompt.action}`
+      const count = await recalculateAffectedScopes(eventId, reason)
+      setRecalcResult(`Recalculated ${count} scope${count === 1 ? '' : 's'}.`)
+      setRecalcPrompt(null)
+    } catch (err) {
+      setRecalcError(getResultsErrorMessage(err, 'Failed to recalculate results.'))
+    } finally {
+      setRecalculating(false)
     }
   }
 
@@ -338,6 +425,37 @@ export function EventDetailPage() {
         </DefinitionGrid>
       </Card>
 
+      {recalcPrompt && (
+        <Card>
+          <SectionTitle>Results may be out of date</SectionTitle>
+          <HelpText>
+            {recalcPrompt.participantName} was {recalcPrompt.action} after results were already
+            calculated for this event. Recalculating updates every already-calculated scope to
+            exclude them, and records why in the calculation history.
+          </HelpText>
+          {recalcError && <ErrorText role="alert">{recalcError}</ErrorText>}
+          <Row>
+            <Button
+              type="button"
+              tone="primary"
+              onClick={handleRecalculate}
+              disabled={recalculating}
+            >
+              {recalculating ? 'Recalculating…' : 'Recalculate results'}
+            </Button>
+            <Button
+              type="button"
+              tone="secondary"
+              onClick={() => setRecalcPrompt(null)}
+              disabled={recalculating}
+            >
+              Dismiss
+            </Button>
+          </Row>
+        </Card>
+      )}
+      {recalcResult && <HelpText>{recalcResult}</HelpText>}
+
       <Card>
         <SectionTitle>Participants</SectionTitle>
         {participantsError && <ErrorText role="alert">{participantsError}</ErrorText>}
@@ -366,6 +484,9 @@ export function EventDetailPage() {
                   <AdmissionBadge admissionStatus={participant.admission_status}>
                     {participant.admission_status}
                   </AdmissionBadge>
+                  <EligibilityBadge eligibilityStatus={participant.status}>
+                    {participant.status}
+                  </EligibilityBadge>
                   {participant.admission_status !== 'approved' && (
                     <Button
                       type="button"
@@ -384,6 +505,26 @@ export function EventDetailPage() {
                       disabled={revoking}
                     >
                       Revoke
+                    </Button>
+                  )}
+                  {participant.status === 'eligible' && (
+                    <Button
+                      type="button"
+                      tone="danger"
+                      onClick={() => setDqTarget(participant)}
+                      disabled={disqualifying}
+                    >
+                      Disqualify
+                    </Button>
+                  )}
+                  {participant.status === 'disqualified' && (
+                    <Button
+                      type="button"
+                      tone="success"
+                      onClick={() => handleReinstate(participant.id)}
+                      disabled={reinstatingId === participant.id}
+                    >
+                      {reinstatingId === participant.id ? 'Reinstating…' : 'Reinstate'}
                     </Button>
                   )}
                 </Row>
@@ -606,6 +747,20 @@ export function EventDetailPage() {
         tone="danger"
         onConfirm={handleRevokeConfirm}
         onCancel={() => setRevokeTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={dqTarget !== null}
+        title="Disqualify this participant?"
+        description={
+          dqTarget
+            ? `${dqTarget.name} will be excluded from any results calculated after this. Already-calculated results are unaffected until you recalculate them.`
+            : ''
+        }
+        confirmLabel="Disqualify"
+        tone="danger"
+        onConfirm={handleDisqualifyConfirm}
+        onCancel={() => setDqTarget(null)}
       />
     </PageContent>
   )

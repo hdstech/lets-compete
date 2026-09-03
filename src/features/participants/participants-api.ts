@@ -75,3 +75,21 @@ export async function revokeParticipant(participantId: string): Promise<Particip
   if (error) throw error
   return data as ParticipantRow
 }
+
+export async function disqualifyParticipant(participantId: string): Promise<ParticipantRow> {
+  const { data, error } = await supabase.rpc('disqualify_participant', {
+    p_participant_id: participantId,
+  })
+
+  if (error) throw error
+  return data as ParticipantRow
+}
+
+export async function reinstateParticipant(participantId: string): Promise<ParticipantRow> {
+  const { data, error } = await supabase.rpc('reinstate_participant', {
+    p_participant_id: participantId,
+  })
+
+  if (error) throw error
+  return data as ParticipantRow
+}

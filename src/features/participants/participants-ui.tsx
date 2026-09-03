@@ -18,6 +18,24 @@ export const AdmissionBadge = styled('span', {
   },
 })
 
+export const EligibilityBadge = styled('span', {
+  base: {
+    fontSize: 'xs',
+    fontWeight: 'semibold',
+    borderRadius: 'full',
+    px: '2.5',
+    py: '1',
+    textTransform: 'capitalize',
+  },
+  variants: {
+    eligibilityStatus: {
+      eligible: { bg: 'bg.sunken', color: 'text.muted' },
+      disqualified: { bg: 'red.700', color: 'red.50' },
+      withdrawn: { bg: 'bg.sunken', color: 'text.muted' },
+    },
+  },
+})
+
 export const ParticipantListEl = styled('div', {
   base: { display: 'flex', flexDirection: 'column', gap: '2' },
 })
