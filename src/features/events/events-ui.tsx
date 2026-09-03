@@ -4,8 +4,8 @@ import { styled } from '../../../styled-system/jsx'
 export const PageShell = styled('main', {
   base: {
     minHeight: '100vh',
-    bg: 'slate.950',
-    color: 'slate.100',
+    bg: 'bg.canvas',
+    color: 'text.primary',
     px: '4',
     py: '10',
   },
@@ -35,11 +35,11 @@ export const PageTitle = styled('h1', {
 })
 
 export const PageSubtitle = styled('p', {
-  base: { fontSize: 'sm', color: 'slate.400' },
+  base: { fontSize: 'sm', color: 'text.muted' },
 })
 
 export const BackLink = styled(Link, {
-  base: { fontSize: 'sm', color: 'slate.400', textDecoration: 'underline' },
+  base: { fontSize: 'sm', color: 'text.muted', textDecoration: 'underline' },
 })
 
 export const Card = styled('div', {
@@ -47,20 +47,20 @@ export const Card = styled('div', {
     display: 'flex',
     flexDirection: 'column',
     gap: '4',
-    bg: 'slate.900',
+    bg: 'bg.surface',
     borderWidth: '1px',
-    borderColor: 'slate.800',
-    borderRadius: 'lg',
+    borderColor: 'border.default',
+    borderRadius: 'card',
     p: '5',
   },
 })
 
 export const SectionTitle = styled('h2', {
-  base: { fontSize: 'sm', fontWeight: 'semibold', color: 'slate.300' },
+  base: { fontSize: 'sm', fontWeight: 'semibold', color: 'text.muted' },
 })
 
 export const HelpText = styled('p', {
-  base: { fontSize: 'xs', color: 'slate.500' },
+  base: { fontSize: 'xs', color: 'text.placeholder' },
 })
 
 export const EventList = styled('div', {
@@ -72,14 +72,14 @@ export const EventListItem = styled(Link, {
     display: 'flex',
     flexDirection: 'column',
     gap: '1.5',
-    bg: 'slate.900',
+    bg: 'bg.surface',
     borderWidth: '1px',
-    borderColor: 'slate.800',
-    borderRadius: 'lg',
+    borderColor: 'border.default',
+    borderRadius: 'card',
     p: '4',
     textDecoration: 'none',
     color: 'inherit',
-    _hover: { borderColor: 'slate.600' },
+    _hover: { borderColor: 'accent.default' },
   },
 })
 
@@ -92,19 +92,36 @@ export const EventName = styled('span', {
 })
 
 export const EventMeta = styled('span', {
-  base: { fontSize: 'xs', color: 'slate.400' },
+  base: { fontSize: 'xs', color: 'text.muted' },
 })
 
 export const EmptyState = styled('div', {
   base: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '3',
     borderWidth: '1px',
     borderStyle: 'dashed',
-    borderColor: 'slate.800',
-    borderRadius: 'lg',
+    borderColor: 'border.default',
+    borderRadius: 'card',
     p: '6',
     textAlign: 'center',
-    color: 'slate.400',
+    color: 'text.muted',
     fontSize: 'sm',
+  },
+})
+
+export const EmptyStateIcon = styled('div', {
+  base: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '10',
+    height: '10',
+    borderRadius: 'control',
+    bg: 'bg.sunken',
+    color: 'text.muted',
   },
 })
 
@@ -119,7 +136,7 @@ export const StatusBadge = styled('span', {
   },
   variants: {
     status: {
-      draft: { bg: 'slate.700', color: 'slate.100' },
+      draft: { bg: 'bg.sunken', color: 'text.primary' },
       active: { bg: 'green.700', color: 'green.50' },
       concluded: { bg: 'indigo.700', color: 'indigo.50' },
     },
@@ -134,8 +151,8 @@ export const FormatBadge = styled('span', {
     px: '2.5',
     py: '1',
     textTransform: 'capitalize',
-    bg: 'slate.800',
-    color: 'slate.300',
+    bg: 'bg.sunken',
+    color: 'text.muted',
   },
 })
 
@@ -149,13 +166,13 @@ export const CheckboxField = styled('label', {
     alignItems: 'center',
     gap: '2',
     fontSize: 'sm',
-    color: 'slate.300',
+    color: 'text.primary',
   },
 })
 
 const buttonRecipe = {
   base: {
-    borderRadius: 'md',
+    borderRadius: 'pill',
     px: '4',
     py: '2',
     fontSize: 'sm',
@@ -163,20 +180,27 @@ const buttonRecipe = {
     cursor: 'pointer',
     borderWidth: '1px',
     borderColor: 'transparent',
-    display: 'inline-block',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '1.5',
     textDecoration: 'none',
     textAlign: 'center',
     _disabled: {
       opacity: 0.5,
       cursor: 'not-allowed',
     },
+    _focusVisible: {
+      outline: '2px solid',
+      outlineColor: 'accent.default',
+      outlineOffset: '2px',
+    },
   },
   variants: {
     tone: {
-      primary: { bg: 'slate.100', color: 'slate.950' },
-      secondary: { bg: 'transparent', color: 'slate.100', borderColor: 'slate.700' },
-      danger: { bg: 'red.600', color: 'white' },
-      success: { bg: 'green.600', color: 'white' },
+      primary: { bg: 'text.primary', color: 'bg.surface', _hover: { bg: 'ink.800' } },
+      secondary: { bg: 'transparent', color: 'text.primary', borderColor: 'border.default', _hover: { bg: 'bg.sunken' } },
+      danger: { bg: 'red.600', color: 'white', _hover: { bg: 'red.700' } },
+      success: { bg: 'green.600', color: 'white', _hover: { bg: 'green.700' } },
     },
   },
   defaultVariants: { tone: 'primary' },
@@ -189,9 +213,9 @@ export const CopyableCode = styled('code', {
   base: {
     fontFamily: 'mono',
     fontSize: 'sm',
-    bg: 'slate.950',
+    bg: 'bg.canvas',
     borderWidth: '1px',
-    borderColor: 'slate.700',
+    borderColor: 'border.default',
     borderRadius: 'md',
     px: '2.5',
     py: '1.5',
@@ -209,9 +233,9 @@ export const DefinitionGrid = styled('dl', {
 })
 
 export const DefinitionTerm = styled('dt', {
-  base: { color: 'slate.500', fontSize: 'xs', textTransform: 'uppercase', letterSpacing: 'wide' },
+  base: { color: 'text.placeholder', fontSize: 'xs', textTransform: 'uppercase', letterSpacing: 'wide' },
 })
 
 export const DefinitionValue = styled('dd', {
-  base: { color: 'slate.100' },
+  base: { color: 'text.primary' },
 })
