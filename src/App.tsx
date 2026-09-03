@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { styled } from '../styled-system/jsx'
+import { AdvancementPage } from './features/advancement/AdvancementPage'
 import { AdminLayout } from './features/admin-shell/AdminLayout'
 import { AuthProvider } from './features/auth/AuthProvider'
 import { JoinPage } from './features/auth/JoinPage'
@@ -181,6 +182,14 @@ function App() {
             element={
               <RequireAuth>
                 <GradingPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events/:eventId/rounds/:roundId/advance"
+            element={
+              <RequireAuth>
+                <AdvancementPage />
               </RequireAuth>
             }
           />

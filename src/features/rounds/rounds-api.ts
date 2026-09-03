@@ -74,3 +74,13 @@ export async function deleteRound(roundId: string): Promise<void> {
   const { error } = await supabase.from('rounds').delete().eq('id', roundId)
   if (error) throw error
 }
+
+// Advances a scoring_closed, non-final round: writes advanced/eliminated
+// round_participants from its final calculate_results entries and opens the
+// next round. Raises server-side if called on the final round (declareWinner
+// is the equivalent there) or before results have been calculated.
+export async function advanceRound(roundId: string): Promise<RoundRow> {
+  const { data, error } = await supabase.rpc('advance_round', { p_round_id: roundId })
+  if (error) throw error
+  return data as RoundRow
+}

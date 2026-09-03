@@ -22,6 +22,13 @@ export async function listQuestions(segmentId: string): Promise<QuestionRow[]> {
   return data as QuestionRow[]
 }
 
+export async function getQuestion(questionId: string): Promise<QuestionRow> {
+  const { data, error } = await supabase.from('questions').select('*').eq('id', questionId).single()
+
+  if (error) throw error
+  return data as QuestionRow
+}
+
 export type QuestionInput = {
   prompt: string
   answerType: AnswerType
