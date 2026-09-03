@@ -30,14 +30,6 @@ export const PageHeader = styled('div', {
   },
 })
 
-export const PageTitle = styled('h1', {
-  base: { fontSize: 'xl', fontWeight: 'semibold' },
-})
-
-export const PageSubtitle = styled('p', {
-  base: { fontSize: 'sm', color: 'text.muted' },
-})
-
 export const BackLink = styled(Link, {
   base: { fontSize: 'sm', color: 'text.muted', textDecoration: 'underline' },
 })
@@ -84,7 +76,12 @@ export const EventListItem = styled(Link, {
 })
 
 export const EventListItemTitleRow = styled('div', {
-  base: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '3' },
+  base: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '3',
+  },
 })
 
 export const EventName = styled('span', {
@@ -170,45 +167,6 @@ export const CheckboxField = styled('label', {
   },
 })
 
-const buttonRecipe = {
-  base: {
-    borderRadius: 'pill',
-    px: '4',
-    py: '2',
-    fontSize: 'sm',
-    fontWeight: 'semibold',
-    cursor: 'pointer',
-    borderWidth: '1px',
-    borderColor: 'transparent',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '1.5',
-    textDecoration: 'none',
-    textAlign: 'center',
-    _disabled: {
-      opacity: 0.5,
-      cursor: 'not-allowed',
-    },
-    _focusVisible: {
-      outline: '2px solid',
-      outlineColor: 'accent.default',
-      outlineOffset: '2px',
-    },
-  },
-  variants: {
-    tone: {
-      primary: { bg: 'text.primary', color: 'bg.surface', _hover: { bg: 'ink.800' } },
-      secondary: { bg: 'transparent', color: 'text.primary', borderColor: 'border.default', _hover: { bg: 'bg.sunken' } },
-      danger: { bg: 'red.600', color: 'white', _hover: { bg: 'red.700' } },
-      success: { bg: 'green.600', color: 'white', _hover: { bg: 'green.700' } },
-    },
-  },
-  defaultVariants: { tone: 'primary' },
-} as const
-
-export const Button = styled('button', buttonRecipe)
-export const LinkButton = styled(Link, buttonRecipe)
-
 export const CopyableCode = styled('code', {
   base: {
     fontFamily: 'mono',
@@ -233,7 +191,12 @@ export const DefinitionGrid = styled('dl', {
 })
 
 export const DefinitionTerm = styled('dt', {
-  base: { color: 'text.placeholder', fontSize: 'xs', textTransform: 'uppercase', letterSpacing: 'wide' },
+  base: {
+    color: 'text.placeholder',
+    fontSize: 'xs',
+    textTransform: 'uppercase',
+    letterSpacing: 'wide',
+  },
 })
 
 export const DefinitionValue = styled('dd', {

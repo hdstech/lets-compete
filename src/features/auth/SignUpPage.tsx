@@ -9,14 +9,16 @@ import {
   AuthForm,
   AuthLink,
   AuthShell,
-  AuthSubtitle,
-  AuthTitle,
   ErrorText,
   Field,
   Input,
   Label,
-  SubmitButton,
 } from './auth-ui'
+import { Button as SubmitButton } from '../../components/ui/Button'
+import {
+  Title as AuthTitle,
+  Subtitle as AuthSubtitle,
+} from '../../components/ui/Typography'
 
 export function SignUpPage() {
   const { session } = useAuth()
@@ -77,7 +79,9 @@ export function SignUpPage() {
       <AuthCard>
         <div>
           <AuthTitle>Organizer sign up</AuthTitle>
-          <AuthSubtitle>Create an account to organize and run events.</AuthSubtitle>
+          <AuthSubtitle>
+            Create an account to organize and run events.
+          </AuthSubtitle>
         </div>
         <AuthForm onSubmit={handleSubmit}>
           <Field>
@@ -126,7 +130,8 @@ export function SignUpPage() {
           Already have an account? <AuthLink to="/login">Log in</AuthLink>
         </AuthFooterText>
         <AuthFooterText>
-          Participant or grader? <AuthLink to="/join">Use your email link</AuthLink>
+          Participant or grader?{' '}
+          <AuthLink to="/join">Use your email link</AuthLink>
         </AuthFooterText>
       </AuthCard>
     </AuthShell>

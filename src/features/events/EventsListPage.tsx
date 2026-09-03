@@ -2,6 +2,11 @@ import { Calendar } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { ErrorText } from '../auth/auth-ui'
+import { LinkButton } from '../../components/ui/Button'
+import {
+  Title as PageTitle,
+  Subtitle as PageSubtitle,
+} from '../../components/ui/Typography'
 import { listOrganizerEvents } from './events-api'
 import {
   EmptyState,
@@ -12,12 +17,9 @@ import {
   EventMeta,
   EventName,
   FormatBadge,
-  LinkButton,
   PageHeader,
   PageInner,
   PageShell,
-  PageSubtitle,
-  PageTitle,
   Row,
   StatusBadge,
 } from './events-ui'
@@ -51,7 +53,9 @@ export function EventsListPage() {
         <PageHeader>
           <div>
             <PageTitle>Your events</PageTitle>
-            <PageSubtitle>Create and manage the events you organize.</PageSubtitle>
+            <PageSubtitle>
+              Create and manage the events you organize.
+            </PageSubtitle>
           </div>
           <LinkButton to="/events/new">New event</LinkButton>
         </PageHeader>
@@ -75,12 +79,16 @@ export function EventsListPage() {
               <EventListItem key={event.id} to={`/events/${event.id}`}>
                 <EventListItemTitleRow>
                   <EventName>{event.name}</EventName>
-                  <StatusBadge status={event.status}>{event.status}</StatusBadge>
+                  <StatusBadge status={event.status}>
+                    {event.status}
+                  </StatusBadge>
                 </EventListItemTitleRow>
                 <Row>
                   <FormatBadge>{event.format}</FormatBadge>
                   <EventMeta>
-                    {event.event_date ? `Event date: ${event.event_date}` : 'No date set'}
+                    {event.event_date
+                      ? `Event date: ${event.event_date}`
+                      : 'No date set'}
                   </EventMeta>
                   <EventMeta>Join code: {event.join_code}</EventMeta>
                 </Row>

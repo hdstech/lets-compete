@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useParams } from 'react-router-dom'
-import { AuthForm, ErrorText, Field, Input, Label, SubmitButton } from '../auth/auth-ui'
+import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
+import {
+  Button,
+  Button as SubmitButton,
+  LinkButton,
+} from '../../components/ui/Button'
+import {
+  Title as PageTitle,
+  Subtitle as PageSubtitle,
+} from '../../components/ui/Typography'
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
-  Button,
   Card,
   CheckboxField,
   DefinitionGrid,
@@ -13,12 +21,9 @@ import {
   DefinitionValue,
   EmptyState,
   HelpText,
-  LinkButton,
   PageHeader,
   PageInner,
   PageShell,
-  PageSubtitle,
-  PageTitle,
   Row,
   SectionTitle,
 } from '../events/events-ui'
@@ -51,7 +56,12 @@ type RoundFormValues = {
 }
 
 function emptyForm(sequence: number): RoundFormValues {
-  return { name: '', sequence: String(sequence), isFinalRound: false, advancementN: '' }
+  return {
+    name: '',
+    sequence: String(sequence),
+    isFinalRound: false,
+    advancementN: '',
+  }
 }
 
 function validate(
@@ -64,25 +74,45 @@ function validate(
     return { error: 'Sequence must be a positive whole number.' }
   }
 
-  const sequenceConflict = rounds.find((r) => r.sequence === sequence && r.id !== excludeId)
+  const sequenceConflict = rounds.find(
+    (r) => r.sequence === sequence && r.id !== excludeId,
+  )
   if (sequenceConflict) {
-    return { error: `Sequence ${sequence} is already used by "${sequenceConflict.name}".` }
+    return {
+      error: `Sequence ${sequence} is already used by "${sequenceConflict.name}".`,
+    }
   }
 
   if (values.isFinalRound) {
-    const finalConflict = rounds.find((r) => r.is_final_round && r.id !== excludeId)
+    const finalConflict = rounds.find(
+      (r) => r.is_final_round && r.id !== excludeId,
+    )
     if (finalConflict) {
-      return { error: `Only one round can be final — unmark "${finalConflict.name}" first.` }
+      return {
+        error: `Only one round can be final — unmark "${finalConflict.name}" first.`,
+      }
     }
-    return { input: { name: values.name, sequence, isFinalRound: true, advancementN: null } }
+    return {
+      input: {
+        name: values.name,
+        sequence,
+        isFinalRound: true,
+        advancementN: null,
+      },
+    }
   }
 
   const advancementN = Number(values.advancementN)
   if (!Number.isInteger(advancementN) || advancementN < 1) {
-    return { error: 'Enter how many participants advance, or mark this the final round.' }
+    return {
+      error:
+        'Enter how many participants advance, or mark this the final round.',
+    }
   }
 
-  return { input: { name: values.name, sequence, isFinalRound: false, advancementN } }
+  return {
+    input: { name: values.name, sequence, isFinalRound: false, advancementN },
+  }
 }
 
 export function RoundsPage() {
@@ -193,7 +223,8 @@ export function RoundsPage() {
   }
 
   async function handleDelete(round: RoundRow) {
-    if (!window.confirm(`Delete round "${round.name}"? This cannot be undone.`)) return
+    if (!window.confirm(`Delete round "${round.name}"? This cannot be undone.`))
+      return
 
     setDeleteError(null)
     setDeletingId(round.id)
@@ -238,7 +269,8 @@ export function RoundsPage() {
           <div>
             <PageTitle>Rounds — {event.name}</PageTitle>
             <PageSubtitle>
-              Configure the round(s) participants play and how many advance at each cutoff.
+              Configure the round(s) participants play and how many advance at
+              each cutoff.
             </PageSubtitle>
           </div>
           <BackLink to={`/events/${event.id}`}>Back to event</BackLink>
@@ -246,8 +278,8 @@ export function RoundsPage() {
 
         {!isDraft && (
           <HelpText>
-            Rounds are frozen because this event is no longer in draft — activating an event locks
-            round setup.
+            Rounds are frozen because this event is no longer in draft —
+            activating an event locks round setup.
           </HelpText>
         )}
 
@@ -265,7 +297,9 @@ export function RoundsPage() {
                     type="text"
                     required
                     value={editRound.name}
-                    onChange={(e) => setEditRound({ ...editRound, name: e.target.value })}
+                    onChange={(e) =>
+                      setEditRound({ ...editRound, name: e.target.value })
+                    }
                   />
                 </Field>
                 <Field>
@@ -276,7 +310,9 @@ export function RoundsPage() {
                     min={1}
                     required
                     value={editRound.sequence}
-                    onChange={(e) => setEditRound({ ...editRound, sequence: e.target.value })}
+                    onChange={(e) =>
+                      setEditRound({ ...editRound, sequence: e.target.value })
+                    }
                   />
                 </Field>
                 {(!finalRound || finalRound.id === round.id) && (
@@ -289,7 +325,9 @@ export function RoundsPage() {
                           setEditRound({
                             ...editRound,
                             isFinalRound: e.target.checked,
-                            advancementN: e.target.checked ? '' : editRound.advancementN,
+                            advancementN: e.target.checked
+                              ? ''
+                              : editRound.advancementN,
                           })
                         }
                       />
@@ -298,7 +336,9 @@ export function RoundsPage() {
                   </Field>
                 )}
                 <Field>
-                  <Label htmlFor="round_advancement_n">Participants advancing</Label>
+                  <Label htmlFor="round_advancement_n">
+                    Participants advancing
+                  </Label>
                   <Input
                     id="round_advancement_n"
                     type="number"
@@ -306,7 +346,12 @@ export function RoundsPage() {
                     required={!editRound.isFinalRound}
                     disabled={editRound.isFinalRound}
                     value={editRound.advancementN}
-                    onChange={(e) => setEditRound({ ...editRound, advancementN: e.target.value })}
+                    onChange={(e) =>
+                      setEditRound({
+                        ...editRound,
+                        advancementN: e.target.value,
+                      })
+                    }
                   />
                 </Field>
                 {editError && <ErrorText role="alert">{editError}</ErrorText>}
@@ -329,15 +374,24 @@ export function RoundsPage() {
                 <DefinitionTerm>Advancement</DefinitionTerm>
                 <DefinitionValue>{describeAdvancement(round)}</DefinitionValue>
                 <DefinitionTerm>Status</DefinitionTerm>
-                <DefinitionValue>{round.status.replace('_', ' ')}</DefinitionValue>
+                <DefinitionValue>
+                  {round.status.replace('_', ' ')}
+                </DefinitionValue>
               </DefinitionGrid>
               <Row>
-                <LinkButton to={`/events/${event.id}/rounds/${round.id}/segments`} tone="secondary">
+                <LinkButton
+                  to={`/events/${event.id}/rounds/${round.id}/segments`}
+                  tone="secondary"
+                >
                   Manage segments
                 </LinkButton>
                 {isDraft && (
                   <>
-                    <Button type="button" tone="secondary" onClick={() => startEdit(round)}>
+                    <Button
+                      type="button"
+                      tone="secondary"
+                      onClick={() => startEdit(round)}
+                    >
                       Edit
                     </Button>
                     <Button
@@ -368,7 +422,9 @@ export function RoundsPage() {
                   type="text"
                   required
                   value={newRound.name}
-                  onChange={(e) => setNewRound({ ...newRound, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewRound({ ...newRound, name: e.target.value })
+                  }
                 />
               </Field>
               <Field>
@@ -379,7 +435,9 @@ export function RoundsPage() {
                   min={1}
                   required
                   value={newRound.sequence}
-                  onChange={(e) => setNewRound({ ...newRound, sequence: e.target.value })}
+                  onChange={(e) =>
+                    setNewRound({ ...newRound, sequence: e.target.value })
+                  }
                 />
               </Field>
               {!finalRound && (
@@ -392,7 +450,9 @@ export function RoundsPage() {
                         setNewRound({
                           ...newRound,
                           isFinalRound: e.target.checked,
-                          advancementN: e.target.checked ? '' : newRound.advancementN,
+                          advancementN: e.target.checked
+                            ? ''
+                            : newRound.advancementN,
                         })
                       }
                     />
@@ -401,7 +461,9 @@ export function RoundsPage() {
                 </Field>
               )}
               <Field>
-                <Label htmlFor="new_round_advancement_n">Participants advancing</Label>
+                <Label htmlFor="new_round_advancement_n">
+                  Participants advancing
+                </Label>
                 <Input
                   id="new_round_advancement_n"
                   type="number"
@@ -409,7 +471,9 @@ export function RoundsPage() {
                   required={!newRound.isFinalRound}
                   disabled={newRound.isFinalRound}
                   value={newRound.advancementN}
-                  onChange={(e) => setNewRound({ ...newRound, advancementN: e.target.value })}
+                  onChange={(e) =>
+                    setNewRound({ ...newRound, advancementN: e.target.value })
+                  }
                 />
               </Field>
               {addError && <ErrorText role="alert">{addError}</ErrorText>}

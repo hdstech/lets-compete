@@ -28,20 +28,6 @@ export const AuthCard = styled('div', {
   },
 })
 
-export const AuthTitle = styled('h1', {
-  base: {
-    fontSize: 'xl',
-    fontWeight: 'semibold',
-  },
-})
-
-export const AuthSubtitle = styled('p', {
-  base: {
-    fontSize: 'sm',
-    color: 'text.muted',
-  },
-})
-
 export const AuthForm = styled('form', {
   base: {
     display: 'flex',
@@ -86,30 +72,6 @@ export const ErrorText = styled('p', {
   base: {
     fontSize: 'sm',
     color: 'red.400',
-  },
-})
-
-export const SubmitButton = styled('button', {
-  base: {
-    bg: 'text.primary',
-    color: 'bg.surface',
-    borderRadius: 'pill',
-    py: '2',
-    fontSize: 'sm',
-    fontWeight: 'semibold',
-    cursor: 'pointer',
-    _hover: {
-      bg: 'ink.800',
-    },
-    _focusVisible: {
-      outline: '2px solid',
-      outlineColor: 'accent.default',
-      outlineOffset: '2px',
-    },
-    _disabled: {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
   },
 })
 
