@@ -243,6 +243,22 @@ Deliberate admin action, never live. `calculate_results` for a scope: select the
 
 ---
 
+# V1.1 — Question bank, organizations & weighted scoring (planned)
+
+Requested after the V1 MVP shipped; not yet built. Full ticket detail lives on the Notion Build Board (`T34`–`T37`, `QA13`–`QA16`, `QB9`–`QB12`) — this section is the architecture summary kept in sync with it, in the same spirit as the "V2 — Judged panel" section below.
+
+**Weighted scoring.** `questions.points` (integer, default 1, `check (points > 0)`) replaces the implicit 1-point-per-question assumption. Locked at activation like every other question field (the existing QA4 draft-only guardrail). `calculate_results` sums `points` for correctly-answered questions instead of counting them (`QA13`).
+
+**Organizations.** A minimal but real multi-tenancy layer: `organizations` (`id, name, created_by, created_at`), `organization_role` enum (`owner`, `admin`), `organization_members` (`org_id, user_id, role`), `organization_invites` (email-invite flow, pending until signup — there's no prior invite/token infrastructure in this app to build on). `events.org_id` is added alongside the existing `organizer_id` (kept as historical creator attribution); RLS moves from an exact `organizer_id` match to org-membership (`private.is_org_member`), so any admin in an event's org — not just its original creator — can manage it (`T34`–`T36`).
+
+**Question bank.** `question_bank` + `question_bank_acceptable_answers`, scoped by `org_id`, reusable across every event that org runs. Picking a bank question for a segment is **copy-on-add**: it duplicates the content into a normal `questions` row (`source_bank_question_id` traces it back for a usage count) rather than linking live — editing the bank template later never retroactively changes a question already used in a scored event, consistent with this app's existing immutability posture (`QA14`–`QA15`).
+
+**Bilingual storage (not yet a display feature).** Real organizer question sets are bilingual (en/es). `question_bank`/`question_bank_acceptable_answers` gain nullable `prompt_translations`/`answer_translations` `jsonb` columns to hold the secondary locale. **The app only ever displays/grades the primary locale for now** — participant-facing language switching is an explicit non-goal here, revisit as a real `question_translations` table if that ever changes.
+
+**Bulk import.** Both JSON (matching the organizer's real export format: `{ questNo, question: {en, es}, answer: {en, es}, points, duration }`) and an equivalent CSV/XLSX are accepted. Import is a hard **two-step, two-RPC** flow — `preview_bulk_import` (pure validation, zero writes) and `commit_bulk_import` (the only path that persists anything) — so uploading a file can never itself save data; saving is always a separate, explicit organizer action (`QA16`).
+
+---
+
 # V2 — Judged panel (future)
 
 The original multi-judge design, preserved intact and layered onto the same core when V1 ships. `events.format = 'judged'` selects this path. **Not built in the MVP.**
@@ -319,6 +335,12 @@ Sequenced **API-first**: the backend is built and verified via HTTP/Bruno before
 
 **Polish & verification (Track C)**
 - **T31** Mobile responsiveness (participant answering surface priority). **T32** Empty/error/loading states. **T33** Full E2E walkthrough (author → reveal/timer → answer + focus integrity → close → adjudicate → calculate → advance/tiebreak → champion → conclude).
+
+**Question bank, organizations & weighted scoring (planned, follows T33 — see "V1.1" above)**
+- **T34** Organizations schema + membership + backfill. **T35** Org-aware RLS rework. **T36** Org admin invite flow (email invite, pending until signup).
+- **QA13** Question point values (schema + weighted `calculate_results`). **QA14** Question bank schema (bilingual) + CRUD. **QA15** "Add from bank" copy-on-add + usage tracking. **QA16** Bulk question upload (JSON + CSV/XLSX) into the bank.
+- **QB11** Admin UI — point value field on question authoring. **QB12** Org admin UI — org switcher, member list, invites. **QB9** Admin UI — browse/search the question bank + "Add from bank". **QB10** Admin UI — bulk upload screen (JSON + CSV/XLSX).
+- **T37** Update T0 brief + this plan doc's data model once the above ships.
 
 **Design system — admin UI redesign (Track D, detour)**
 
