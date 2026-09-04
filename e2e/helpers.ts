@@ -5,6 +5,27 @@ export function uniqueEventName(label: string) {
   return `${label} ${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
+export async function expectNoHorizontalOverflow(page: Page) {
+  const overflow = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+  }))
+  expect(
+    overflow.scrollWidth,
+    'page should not scroll horizontally',
+  ).toBeLessThanOrEqual(overflow.clientWidth)
+}
+
+export async function expectMinTapSize(
+  locator: { boundingBox: () => Promise<{ width: number; height: number } | null> },
+  min = 44,
+) {
+  const box = await locator.boundingBox()
+  expect(box, 'element should be visible for a tap-size check').toBeTruthy()
+  expect(box!.height).toBeGreaterThanOrEqual(min)
+  expect(box!.width).toBeGreaterThanOrEqual(min)
+}
+
 export async function createDraftEvent(page: Page, name: string) {
   await page.goto('/events/new')
   await page.getByLabel('Event name').fill(name)

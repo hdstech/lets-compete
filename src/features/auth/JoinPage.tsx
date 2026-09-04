@@ -181,7 +181,7 @@ export function JoinPage() {
             />
           </Field>
           {error && <ErrorText role="alert">{error}</ErrorText>}
-          <SubmitButton type="submit" disabled={submitting}>
+          <SubmitButton type="submit" width="full" disabled={submitting}>
             {submitting ? 'Sending link…' : 'Email me a sign-in link'}
           </SubmitButton>
         </AuthForm>

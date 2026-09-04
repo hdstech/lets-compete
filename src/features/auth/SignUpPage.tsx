@@ -122,7 +122,7 @@ export function SignUpPage() {
             />
           </Field>
           {error && <ErrorText role="alert">{error}</ErrorText>}
-          <SubmitButton type="submit" disabled={submitting}>
+          <SubmitButton type="submit" width="full" disabled={submitting}>
             {submitting ? 'Signing up…' : 'Sign up'}
           </SubmitButton>
         </AuthForm>

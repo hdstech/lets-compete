@@ -4,10 +4,11 @@ import { styled } from '../../../styled-system/jsx'
 export const AdminShellRoot = styled('div', {
   base: {
     display: 'flex',
-    minHeight: '100vh',
+    minHeight: '100dvh',
     bg: 'bg.canvas',
     color: 'text.primary',
     fontFamily: 'body',
+    overflowX: 'hidden',
   },
 })
 
@@ -18,10 +19,32 @@ export const SidebarShellRoot = styled('aside', {
     display: 'flex',
     flexDirection: 'column',
     gap: '4',
-    minHeight: '100vh',
+    minHeight: '100dvh',
     bg: 'bg.sidebar',
     px: '3',
     py: '4',
+    position: { base: 'fixed', md: 'relative' },
+    top: { base: '16', md: 'auto' },
+    right: { base: 'auto', md: 'auto' },
+    bottom: { base: '0', md: 'auto' },
+    left: { base: '0', md: 'auto' },
+    zIndex: { base: '20', md: 'auto' },
+    boxShadow: { base: '0 0 24px rgba(0, 0, 0, 0.18)', md: 'none' },
+  },
+})
+
+export const SidebarBackdrop = styled('button', {
+  base: {
+    position: 'fixed',
+    top: { base: '16', md: '0' },
+    right: '0',
+    bottom: '0',
+    left: '0',
+    bg: 'rgba(0, 0, 0, 0.4)',
+    borderWidth: '0',
+    cursor: 'pointer',
+    zIndex: '10',
+    display: { base: 'block', md: 'none' },
   },
 })
 
@@ -221,10 +244,15 @@ export const ContentHeaderRoot = styled('header', {
     display: 'flex',
     alignItems: 'center',
     gap: '3',
+    minHeight: '16',
     borderBottomWidth: '1px',
     borderColor: 'border.default',
-    px: '6',
+    px: { base: '3', sm: '6' },
     py: '3',
+    position: 'sticky',
+    top: '0',
+    zIndex: '30',
+    bg: 'bg.canvas',
   },
 })
 
@@ -233,6 +261,8 @@ export const CollapseToggleButton = styled('button', {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
+    width: '11',
+    height: '11',
     borderRadius: 'control',
     p: '1.5',
     color: 'text.muted',

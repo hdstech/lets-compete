@@ -3,11 +3,14 @@ import { styled } from '../../../styled-system/jsx'
 
 export const PageShell = styled('main', {
   base: {
-    minHeight: '100vh',
+    minHeight: '100dvh',
     bg: 'bg.canvas',
     color: 'text.primary',
-    px: '4',
-    py: '10',
+    px: { base: '3', sm: '4' },
+    py: { base: '6', sm: '10' },
+    overflowX: 'hidden',
+    paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
+    paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
   },
 })
 
@@ -27,6 +30,7 @@ export const PageHeader = styled('div', {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '4',
+    flexWrap: 'wrap',
   },
 })
 
@@ -81,6 +85,7 @@ export const EventListItemTitleRow = styled('div', {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '3',
+    flexWrap: 'wrap',
   },
 })
 
@@ -162,8 +167,10 @@ export const CheckboxField = styled('label', {
     display: 'flex',
     alignItems: 'center',
     gap: '2',
+    minHeight: '11',
     fontSize: 'sm',
     color: 'text.primary',
+    cursor: 'pointer',
   },
 })
 
@@ -184,9 +191,10 @@ export const CopyableCode = styled('code', {
 export const DefinitionGrid = styled('dl', {
   base: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' },
     gap: '3',
     fontSize: 'sm',
+    minWidth: '0',
   },
 })
 
@@ -200,5 +208,9 @@ export const DefinitionTerm = styled('dt', {
 })
 
 export const DefinitionValue = styled('dd', {
-  base: { color: 'text.primary' },
+  base: {
+    color: 'text.primary',
+    minWidth: '0',
+    overflowWrap: 'anywhere',
+  },
 })
