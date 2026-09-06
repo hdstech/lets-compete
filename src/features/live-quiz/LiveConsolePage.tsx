@@ -255,7 +255,10 @@ export function LiveConsolePage() {
   }, [openQuestion, remainingMs, refreshQuestions])
 
   const nextPendingQuestion = useMemo(
-    () => (openQuestion ? null : (questions?.find((q) => q.status === 'pending') ?? null)),
+    () =>
+      openQuestion
+        ? null
+        : (questions?.find((q) => q.status === 'pending' && !q.is_tiebreak) ?? null),
     [questions, openQuestion],
   )
 
@@ -263,7 +266,9 @@ export function LiveConsolePage() {
     () =>
       questions !== null &&
       questions.length > 0 &&
-      questions.every((q) => q.status === 'window_closed' || q.status === 'voided'),
+      questions
+        .filter((q) => !q.is_tiebreak)
+        .every((q) => q.status === 'window_closed' || q.status === 'voided'),
     [questions],
   )
 
