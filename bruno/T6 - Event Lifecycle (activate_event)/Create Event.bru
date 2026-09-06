@@ -24,7 +24,7 @@ body:json {
     "organizer_id": "{{admin_user_id}}",
     "format": "quiz",
     "has_rounds": true,
-    "grader_id": "{{grader_user_id}}"
+    "grader_id": "{{judge_user_id}}"
   }
 }
 
@@ -43,5 +43,5 @@ script:post-response {
 }
 
 docs {
-  Prerequisite for activate_event: creates a draft quiz event owned by the admin/organizer, with grader_id set to the seeded grader test user (QA2's single-grader identity column — required for QA10's adjudicate_round_answers to authorize later). join_code is left out of the body so T10's events_generate_join_code trigger fills it; format='quiz' is set once and is immutable thereafter (QA0). Captures {{event_id}} and {{join_code}}.
+  Prerequisite for activate_event: creates a draft quiz event owned by the admin/organizer, with grader_id set to the seeded judge test user (QA2's single-judge identity column — required for QA10's adjudicate_round_answers to authorize later). join_code is left out of the body so T10's events_generate_join_code trigger fills it; format='quiz' is set once and is immutable thereafter (QA0). Captures {{event_id}} and {{join_code}}.
 }

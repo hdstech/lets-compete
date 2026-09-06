@@ -1,5 +1,5 @@
 meta {
-  name: Adjudicate Round 1 Answers (Grader)
+  name: Adjudicate Round 1 Answers (Judge)
   type: http
   seq: 1
 }
@@ -12,7 +12,7 @@ post {
 
 headers {
   apikey: {{anon_key}}
-  Authorization: Bearer {{grader_jwt}}
+  Authorization: Bearer {{judge_jwt}}
   Content-Type: application/json
 }
 
@@ -35,5 +35,5 @@ script:post-response {
 }
 
 docs {
-  QA10's adjudicate_round_answers(p_round_id, p_grades): grader-only (events.grader_id), requires the round scoring_closed. p_grades is a JSON array of {answer_id, final_correct}; confirms Question 1's answer as correct, writing final_correct/graded_by/graded_at.
+  QA10's adjudicate_round_answers(p_round_id, p_grades): judge-only (events.grader_id), requires the round scoring_closed. p_grades is a JSON array of {answer_id, final_correct}; confirms Question 1's answer as correct, writing final_correct/graded_by/graded_at.
 }

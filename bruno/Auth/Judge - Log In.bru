@@ -1,5 +1,5 @@
 meta {
-  name: Grader - Log In
+  name: Judge - Log In
   type: http
   seq: 6
 }
@@ -17,8 +17,8 @@ headers {
 
 body:json {
   {
-    "email": "{{grader_email}}",
-    "password": "{{grader_password}}"
+    "email": "{{judge_email}}",
+    "password": "{{judge_password}}"
   }
 }
 
@@ -26,10 +26,10 @@ script:post-response {
   if (res.status < 300) {
       const json = res.body;
       if (json.access_token) {
-          bru.setEnvVar("grader_jwt", json.access_token);
+          bru.setEnvVar("judge_jwt", json.access_token);
       }
       if (json.user && json.user.id) {
-          bru.setEnvVar("grader_user_id", json.user.id);
+          bru.setEnvVar("judge_user_id", json.user.id);
       }
   }
   test("received an access_token (or user already exists)", function () {
@@ -38,5 +38,5 @@ script:post-response {
 }
 
 docs {
-  GoTrue password grant for the seeded Grader test user. Use this instead of Sign Up once the user already exists (re-running the suite). Captures {{grader_jwt}} and {{grader_user_id}}.
+  GoTrue password grant for the seeded Judge test user. Use this instead of Sign Up once the user already exists (re-running the suite). Captures {{judge_jwt}} and {{judge_user_id}}.
 }

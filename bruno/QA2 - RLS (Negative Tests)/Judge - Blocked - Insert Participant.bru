@@ -1,5 +1,5 @@
 meta {
-  name: Grader - Blocked: Insert Participant
+  name: Judge - Blocked: Insert Participant
   type: http
   seq: 2
 }
@@ -12,7 +12,7 @@ post {
 
 headers {
   apikey: {{anon_key}}
-  Authorization: Bearer {{grader_jwt}}
+  Authorization: Bearer {{judge_jwt}}
   Content-Type: application/json
 }
 
@@ -25,11 +25,11 @@ body:json {
 }
 
 script:post-response {
-  test("grader insert is rejected by RLS (403)", function () {
+  test("judge insert is rejected by RLS (403)", function () {
       expect([403]).to.include(res.status);
   });
 }
 
 docs {
-  QA2 RLS: participants_insert_organizer only allows the event organizer to insert a participant row. A grader attempting the same insert (against a nil event id) must be rejected. Proves the grader role cannot write the roster.
+  QA2 RLS: participants_insert_organizer only allows the event organizer to insert a participant row. A judge attempting the same insert (against a nil event id) must be rejected. Proves the judge role cannot write the roster.
 }

@@ -7,7 +7,7 @@
   "item": [
     {
       "name": "Auth",
-      "description": "GoTrue signup/login for the three seeded V1 roles (organizer/admin, participant, grader — T4's profiles-mirror trigger backfills public.profiles for each on signup). Run the three \"Sign Up\" requests first on a fresh database; on a re-run against an already-seeded database, use \"Log In\" instead (Sign Up returns 422/400 for an existing email). Every request downstream authenticates with the JWTs captured here.",
+      "description": "GoTrue signup/login for the three seeded V1 roles (organizer/admin, participant, judge — T4's profiles-mirror trigger backfills public.profiles for each on signup). Run the three \"Sign Up\" requests first on a fresh database; on a re-run against an already-seeded database, use \"Log In\" instead (Sign Up returns 422/400 for an existing email). Every request downstream authenticates with the JWTs captured here.",
       "item": [
         {
           "id": "req-1",
@@ -231,7 +231,7 @@
         },
         {
           "id": "req-5",
-          "name": "Grader - Sign Up",
+          "name": "Judge - Sign Up",
           "request": {
             "method": "POST",
             "header": [
@@ -249,10 +249,10 @@
             "url": {
               "raw": "{{base_url}}/auth/v1/signup"
             },
-            "description": "GoTrue signup for the seeded Grader test user. Requires Email auth enabled and \"confirm email\" disabled in the Supabase dashboard (T4's own migration comment flags this as a manual step) so the response includes a session directly. On success, captures {{grader_jwt}} and {{grader_user_id}} for every downstream request. Safe to re-run: a 422/400 \"already registered\" is expected on repeat runs — use the matching Log In request instead in that case.",
+            "description": "GoTrue signup for the seeded Judge test user. Requires Email auth enabled and \"confirm email\" disabled in the Supabase dashboard (T4's own migration comment flags this as a manual step) so the response includes a session directly. On success, captures {{judge_jwt}} and {{judge_user_id}} for every downstream request. Safe to re-run: a 422/400 \"already registered\" is expected on repeat runs — use the matching Log In request instead in that case.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{grader_email}}\",\n  \"password\": \"{{grader_password}}\",\n  \"data\": {\n    \"name\": \"Grader\"\n  }\n}",
+              "raw": "{\n  \"email\": \"{{judge_email}}\",\n  \"password\": \"{{judge_password}}\",\n  \"data\": {\n    \"name\": \"Judge\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -270,10 +270,10 @@
                   "if (pm.response.code < 300) {",
                   "    const json = pm.response.json();",
                   "    if (json.access_token) {",
-                  "        pm.environment.set(\"grader_jwt\", json.access_token);",
+                  "        pm.environment.set(\"judge_jwt\", json.access_token);",
                   "    }",
                   "    if (json.user && json.user.id) {",
-                  "        pm.environment.set(\"grader_user_id\", json.user.id);",
+                  "        pm.environment.set(\"judge_user_id\", json.user.id);",
                   "    }",
                   "}",
                   "pm.test(\"received an access_token (or user already exists)\", function () {",
@@ -286,7 +286,7 @@
         },
         {
           "id": "req-6",
-          "name": "Grader - Log In",
+          "name": "Judge - Log In",
           "request": {
             "method": "POST",
             "header": [
@@ -304,10 +304,10 @@
             "url": {
               "raw": "{{base_url}}/auth/v1/token?grant_type=password"
             },
-            "description": "GoTrue password grant for the seeded Grader test user. Use this instead of Sign Up once the user already exists (re-running the suite). Captures {{grader_jwt}} and {{grader_user_id}}.",
+            "description": "GoTrue password grant for the seeded Judge test user. Use this instead of Sign Up once the user already exists (re-running the suite). Captures {{judge_jwt}} and {{judge_user_id}}.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{grader_email}}\",\n  \"password\": \"{{grader_password}}\"\n}",
+              "raw": "{\n  \"email\": \"{{judge_email}}\",\n  \"password\": \"{{judge_password}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -325,10 +325,10 @@
                   "if (pm.response.code < 300) {",
                   "    const json = pm.response.json();",
                   "    if (json.access_token) {",
-                  "        pm.environment.set(\"grader_jwt\", json.access_token);",
+                  "        pm.environment.set(\"judge_jwt\", json.access_token);",
                   "    }",
                   "    if (json.user && json.user.id) {",
-                  "        pm.environment.set(\"grader_user_id\", json.user.id);",
+                  "        pm.environment.set(\"judge_user_id\", json.user.id);",
                   "    }",
                   "}",
                   "pm.test(\"received an access_token (or user already exists)\", function () {",
@@ -348,7 +348,7 @@
     },
     {
       "name": "QA2 - RLS (Negative Tests)",
-      "description": "QA1 (skipped, schema-only) enables RLS with no policies on every table; QA2 (this ticket, also skipped as a folder for its own DDL) is the migration that actually writes the participant/grader/admin access model described in event-scoring-app-plan.md. These three requests are deliberately-403 negative tests, one per role, proving RLS denies writes outside each role's slice — order-independent (a nil UUID is used so these can run immediately after Auth, before any fixture data exists).",
+      "description": "QA1 (skipped, schema-only) enables RLS with no policies on every table; QA2 (this ticket, also skipped as a folder for its own DDL) is the migration that actually writes the participant/judge/admin access model described in event-scoring-app-plan.md. These three requests are deliberately-403 negative tests, one per role, proving RLS denies writes outside each role's slice — order-independent (a nil UUID is used so these can run immediately after Auth, before any fixture data exists).",
       "item": [
         {
           "id": "req-7",
@@ -403,7 +403,7 @@
         },
         {
           "id": "req-8",
-          "name": "Grader - Blocked: Insert Participant",
+          "name": "Judge - Blocked: Insert Participant",
           "request": {
             "method": "POST",
             "header": [
@@ -414,7 +414,7 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{grader_jwt}}",
+                "value": "Bearer {{judge_jwt}}",
                 "type": "text"
               },
               {
@@ -426,7 +426,7 @@
             "url": {
               "raw": "{{base_url}}/rest/v1/participants"
             },
-            "description": "QA2 RLS: participants_insert_organizer only allows the event organizer to insert a participant row. A grader attempting the same insert (against a nil event id) must be rejected. Proves the grader role cannot write the roster.",
+            "description": "QA2 RLS: participants_insert_organizer only allows the event organizer to insert a participant row. A judge attempting the same insert (against a nil event id) must be rejected. Proves the judge role cannot write the roster.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"event_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"name\": \"Should Be Rejected\",\n  \"type\": \"individual\"\n}",
@@ -444,7 +444,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"grader insert is rejected by RLS (403)\", function () {",
+                  "pm.test(\"judge insert is rejected by RLS (403)\", function () {",
                   "    pm.expect([403]).to.include(pm.response.code);",
                   "});"
                 ]
@@ -539,10 +539,10 @@
             "url": {
               "raw": "{{base_url}}/rest/v1/events"
             },
-            "description": "Prerequisite for activate_event: creates a draft quiz event owned by the admin/organizer, with grader_id set to the seeded grader test user (QA2's single-grader identity column — required for QA10's adjudicate_round_answers to authorize later). join_code is left out of the body so T10's events_generate_join_code trigger fills it; format='quiz' is set once and is immutable thereafter (QA0). Captures {{event_id}} and {{join_code}}.",
+            "description": "Prerequisite for activate_event: creates a draft quiz event owned by the admin/organizer, with grader_id set to the seeded judge test user (QA2's single-judge identity column — required for QA10's adjudicate_round_answers to authorize later). join_code is left out of the body so T10's events_generate_join_code trigger fills it; format='quiz' is set once and is immutable thereafter (QA0). Captures {{event_id}} and {{join_code}}.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"T18 Regression Quiz\",\n  \"event_date\": \"2026-09-01\",\n  \"organizer_id\": \"{{admin_user_id}}\",\n  \"format\": \"quiz\",\n  \"has_rounds\": true,\n  \"grader_id\": \"{{grader_user_id}}\"\n}",
+              "raw": "{\n  \"name\": \"T18 Regression Quiz\",\n  \"event_date\": \"2026-09-01\",\n  \"organizer_id\": \"{{admin_user_id}}\",\n  \"format\": \"quiz\",\n  \"has_rounds\": true,\n  \"grader_id\": \"{{judge_user_id}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2185,7 +2185,7 @@
     },
     {
       "name": "QA7 - Auto Pre-Mark Matcher",
-      "description": "Ships auto_mark_question_answers plus the underlying normalize/numeric-parse/match helpers. Writes a provisional auto_correct that QA10's grader later confirms or overrides into final_correct.",
+      "description": "Ships auto_mark_question_answers plus the underlying normalize/numeric-parse/match helpers. Writes a provisional auto_correct that QA10's judge later confirms or overrides into final_correct.",
       "item": [
         {
           "id": "req-39",
@@ -2410,12 +2410,12 @@
       ]
     },
     {
-      "name": "QA10 - Batched Single-Grader Adjudication",
-      "description": "Ships adjudicate_round_answers. Authorizes against events.grader_id, which the T6 folder's \"Create Event\" request sets to {{grader_user_id}} up front.",
+      "name": "QA10 - Batched Single-Judge Adjudication",
+      "description": "Ships adjudicate_round_answers. Authorizes against events.grader_id, which the T6 folder's \"Create Event\" request sets to {{judge_user_id}} up front.",
       "item": [
         {
           "id": "req-43",
-          "name": "Adjudicate Round 1 Answers (Grader)",
+          "name": "Adjudicate Round 1 Answers (Judge)",
           "request": {
             "method": "POST",
             "header": [
@@ -2426,7 +2426,7 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{grader_jwt}}",
+                "value": "Bearer {{judge_jwt}}",
                 "type": "text"
               },
               {
@@ -2438,7 +2438,7 @@
             "url": {
               "raw": "{{base_url}}/rest/v1/rpc/adjudicate_round_answers"
             },
-            "description": "QA10's adjudicate_round_answers(p_round_id, p_grades): grader-only (events.grader_id), requires the round scoring_closed. p_grades is a JSON array of {answer_id, final_correct}; confirms Question 1's answer as correct, writing final_correct/graded_by/graded_at.",
+            "description": "QA10's adjudicate_round_answers(p_round_id, p_grades): judge-only (events.grader_id), requires the round scoring_closed. p_grades is a JSON array of {answer_id, final_correct}; confirms Question 1's answer as correct, writing final_correct/graded_by/graded_at.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_round_id\": \"{{round1_id}}\",\n  \"p_grades\": [\n    {\n      \"answer_id\": \"{{answer1_id}}\",\n      \"final_correct\": true\n    }\n  ]\n}",
@@ -2495,7 +2495,7 @@
             "url": {
               "raw": "{{base_url}}/rest/v1/rpc/calculate_results"
             },
-            "description": "T16's calculate_results(p_event_id, p_round_id, p_segment_id, p_reason): organizer-only, requires the target round scoring_closed/advanced with no ungraded answers. Scope: p_round_id set, p_segment_id null = per-round leaderboard. Sums final_correct per participant, RANK()s, writes a new result_calculations header + frozen result_calculation_entries + an exclusion snapshot, flipping any prior is_final for the scope. Captures {{round1_calculation_id}}.",
+            "description": "T16's calculate_results(p_event_id, p_round_id, p_segment_id, p_reason): organizer-only, requires the target round scoring_closed/advanced with no unscored answers. Scope: p_round_id set, p_segment_id null = per-round leaderboard. Sums final_correct per participant, RANK()s, writes a new result_calculations header + frozen result_calculation_entries + an exclusion snapshot, flipping any prior is_final for the scope. Captures {{round1_calculation_id}}.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_event_id\": \"{{event_id}}\",\n  \"p_round_id\": \"{{round1_id}}\",\n  \"p_segment_id\": null,\n  \"p_reason\": \"T18 regression: round 1 results\"\n}",
@@ -2802,7 +2802,7 @@
         },
         {
           "id": "req-50",
-          "name": "[Final Round Setup] Adjudicate Round 2 Answers (Grader)",
+          "name": "[Final Round Setup] Adjudicate Round 2 Answers (Judge)",
           "request": {
             "method": "POST",
             "header": [
@@ -2813,7 +2813,7 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{grader_jwt}}",
+                "value": "Bearer {{judge_jwt}}",
                 "type": "text"
               },
               {
@@ -3193,7 +3193,7 @@
             "url": {
               "raw": "{{base_url}}/rest/v1/rpc/void_tiebreak_question"
             },
-            "description": "QA12's void_tiebreak_question(p_tiebreak_id): QA8's escape valve adapted for a tiebreak's already-scoring_closed round. Voids the currently-drawn, not-yet-graded question and frees the tiebreak to draw its next one.",
+            "description": "QA12's void_tiebreak_question(p_tiebreak_id): QA8's escape valve adapted for a tiebreak's already-scoring_closed round. Voids the currently-drawn, not-yet-scored question and frees the tiebreak to draw its next one.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_tiebreak_id\": \"{{tiebreak_id}}\"\n}",
@@ -3231,7 +3231,7 @@
             "url": {
               "raw": "{{base_url}}/rest/v1/rpc/resolve_tiebreak_question"
             },
-            "description": "QA12's resolve_tiebreak_question(p_tiebreak_id): requires the currently-drawn question window_closed/voided and fully graded. Computes cumulative sudden-death scores and checks for a clean cut at slots_to_fill; flips entrant outcomes and the tiebreak to resolved on a clean cut, otherwise leaves it open for another draw.",
+            "description": "QA12's resolve_tiebreak_question(p_tiebreak_id): requires the currently-drawn question window_closed/voided and fully scored. Computes cumulative sudden-death scores and checks for a clean cut at slots_to_fill; flips entrant outcomes and the tiebreak to resolved on a clean cut, otherwise leaves it open for another draw.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_tiebreak_id\": \"{{tiebreak_id}}\"\n}",
