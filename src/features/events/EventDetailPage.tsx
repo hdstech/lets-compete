@@ -24,6 +24,7 @@ import {
 import {
   AdmissionBadge,
   EligibilityBadge,
+  ParticipantActions,
   ParticipantIdentity,
   ParticipantListEl,
   ParticipantListItem,
@@ -499,18 +500,21 @@ export function EventDetailPage() {
                     {participant.members ? ` · ${participant.members}` : ''}
                   </ParticipantMeta>
                 </ParticipantIdentity>
-                <Row>
-                  <AdmissionBadge admissionStatus={participant.admission_status}>
-                    {participant.admission_status}
-                  </AdmissionBadge>
-                  <EligibilityBadge eligibilityStatus={participant.status}>
-                    {participant.status}
-                  </EligibilityBadge>
+                <ParticipantActions>
+                  <Row>
+                    <AdmissionBadge admissionStatus={participant.admission_status}>
+                      {participant.admission_status}
+                    </AdmissionBadge>
+                    <EligibilityBadge eligibilityStatus={participant.status}>
+                      {participant.status}
+                    </EligibilityBadge>
+                  </Row>
                   <Row equal>
                     {participant.admission_status !== 'approved' && (
                       <Button
                         type="button"
                         tone="success"
+                        size="sm"
                         onClick={() => handleApprove(participant.id)}
                         disabled={approvingId === participant.id}
                       >
@@ -521,6 +525,7 @@ export function EventDetailPage() {
                       <Button
                         type="button"
                         tone="danger"
+                        size="sm"
                         onClick={() => setRevokeTarget(participant)}
                         disabled={revoking}
                       >
@@ -531,6 +536,7 @@ export function EventDetailPage() {
                       <Button
                         type="button"
                         tone="danger"
+                        size="sm"
                         onClick={() => setDqTarget(participant)}
                         disabled={disqualifying}
                       >
@@ -541,6 +547,7 @@ export function EventDetailPage() {
                       <Button
                         type="button"
                         tone="success"
+                        size="sm"
                         onClick={() => handleReinstate(participant.id)}
                         disabled={reinstatingId === participant.id}
                       >
@@ -548,7 +555,7 @@ export function EventDetailPage() {
                       </Button>
                     )}
                   </Row>
-                </Row>
+                </ParticipantActions>
               </ParticipantListItem>
             ))}
           </ParticipantListEl>
