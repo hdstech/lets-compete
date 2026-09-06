@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
@@ -10,10 +10,9 @@ import {
   LinkButton,
 } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
-import {
-  Title as PageTitle,
-  Subtitle as PageSubtitle,
-} from '../../components/ui/Typography'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
+import { Title as PageTitle } from '../../components/ui/Typography'
 import {
   approveParticipant,
   disqualifyParticipant,
@@ -122,8 +121,8 @@ export function EventDetailPage() {
   const [recalcResult, setRecalcResult] = useState<string | null>(null)
   const [recalcError, setRecalcError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!eventId) return
+  const loadEvent = useCallback(() => {
+    if (!eventId) return () => {}
 
     let cancelled = false
     getEvent(eventId)
@@ -134,14 +133,16 @@ export function EventDetailPage() {
         setEventDate(row.event_date ?? '')
         setHasRounds(row.has_rounds)
       })
-      .catch((err: Error) => {
-        if (!cancelled) setLoadError(err.message)
+      .catch((err) => {
+        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load this event'))
       })
 
     return () => {
       cancelled = true
     }
   }, [eventId])
+
+  useEffect(() => loadEvent(), [loadEvent])
 
   function refreshParticipants(id: string) {
     return listEventParticipants(id)
@@ -368,7 +369,13 @@ export function EventDetailPage() {
     return (
       <PageContent>
         <BackLink to="/events">Back to events</BackLink>
-        <ErrorText role="alert">{loadError}</ErrorText>
+        <ErrorState
+          message={loadError}
+          onRetry={() => {
+            setLoadError(null)
+            loadEvent()
+          }}
+        />
       </PageContent>
     )
   }
@@ -376,7 +383,7 @@ export function EventDetailPage() {
   if (!event) {
     return (
       <PageContent>
-        <PageSubtitle>Loading…</PageSubtitle>
+        <LoadingBlock label="Loading event…" />
       </PageContent>
     )
   }
@@ -458,13 +465,25 @@ export function EventDetailPage() {
 
       <Card>
         <SectionTitle>Participants</SectionTitle>
-        {participantsError && <ErrorText role="alert">{participantsError}</ErrorText>}
+        {participantsError && (
+          <ErrorState
+            message={participantsError}
+            onRetry={
+              eventId
+                ? () => {
+                    setParticipantsError(null)
+                    void refreshParticipants(eventId)
+                  }
+                : undefined
+            }
+          />
+        )}
         {participantActionError && (
           <ErrorText role="alert">{participantActionError}</ErrorText>
         )}
-        {participants === null ? (
-          <HelpText>Loading…</HelpText>
-        ) : participants.length === 0 ? (
+        {participants === null && !participantsError ? (
+          <LoadingBlock label="Loading participants…" />
+        ) : participants === null ? null : participants.length === 0 ? (
           <HelpText>
             No one has registered yet. Share the join code above to let
             participants self-register.

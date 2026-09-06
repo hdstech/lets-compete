@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
 import { Button, Button as SubmitButton } from '../../components/ui/Button'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
@@ -149,8 +151,8 @@ export function QuestionsPage() {
   const [addingAnswerFor, setAddingAnswerFor] = useState<string | null>(null)
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!eventId || !segmentId) return
+  const loadData = useCallback(() => {
+    if (!eventId || !segmentId) return () => {}
 
     let cancelled = false
     Promise.all([
@@ -168,14 +170,16 @@ export function QuestionsPage() {
         setAnswersByQuestion(answersMap)
         setNewQuestion(emptyForm(nextSequence(questionRows)))
       })
-      .catch((err: Error) => {
-        if (!cancelled) setLoadError(err.message)
+      .catch((err) => {
+        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load questions'))
       })
 
     return () => {
       cancelled = true
     }
   }, [eventId, segmentId])
+
+  useEffect(() => loadData(), [loadData])
 
   async function loadAnswersMap(
     rows: QuestionRow[],
@@ -343,7 +347,13 @@ export function QuestionsPage() {
           <BackLink to={`/events/${eventId}/rounds/${roundId}/segments`}>
             Back to segments
           </BackLink>
-          <ErrorText role="alert">{loadError}</ErrorText>
+          <ErrorState
+            message={loadError}
+            onRetry={() => {
+              setLoadError(null)
+              loadData()
+            }}
+          />
         </PageInner>
       </PageShell>
     )
@@ -353,7 +363,7 @@ export function QuestionsPage() {
     return (
       <PageShell>
         <PageInner>
-          <PageSubtitle>Loading…</PageSubtitle>
+          <LoadingBlock label="Loading questions…" />
         </PageInner>
       </PageShell>
     )

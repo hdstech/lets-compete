@@ -1,15 +1,8 @@
+import { getErrorMessage } from '../../lib/errors'
 import { supabase } from '../../lib/supabase'
 import type { AnswerRow } from '../live-quiz/types'
 
-// Supabase/PostgREST errors (PostgrestError) are plain objects, not Error
-// instances, so callers can't rely on `err instanceof Error` to read a
-// meaningful message (e.g. a raised RPC exception) out of a catch block.
-export function getErrorMessage(err: unknown, fallback: string): string {
-  if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
-    return err.message
-  }
-  return fallback
-}
+export { getErrorMessage }
 
 // Re-fetches the caller's own answer for a question (e.g. after a reload,
 // to show what was already submitted). RLS's answers_select policy covers

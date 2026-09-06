@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
@@ -7,6 +7,8 @@ import {
   Button as SubmitButton,
   LinkButton,
 } from '../../components/ui/Button'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
@@ -97,8 +99,8 @@ export function SegmentsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!eventId || !roundId) return
+  const loadData = useCallback(() => {
+    if (!eventId || !roundId) return () => {}
 
     let cancelled = false
     Promise.all([getEvent(eventId), getRound(roundId), listSegments(roundId)])
@@ -109,14 +111,16 @@ export function SegmentsPage() {
         setSegments(segmentRows)
         setNewSegment(emptyForm(nextSequence(segmentRows)))
       })
-      .catch((err: Error) => {
-        if (!cancelled) setLoadError(err.message)
+      .catch((err) => {
+        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load segments'))
       })
 
     return () => {
       cancelled = true
     }
   }, [eventId, roundId])
+
+  useEffect(() => loadData(), [loadData])
 
   async function refreshSegments() {
     if (!roundId) return
@@ -206,7 +210,13 @@ export function SegmentsPage() {
       <PageShell>
         <PageInner>
           <BackLink to={`/events/${eventId}/rounds`}>Back to rounds</BackLink>
-          <ErrorText role="alert">{loadError}</ErrorText>
+          <ErrorState
+            message={loadError}
+            onRetry={() => {
+              setLoadError(null)
+              loadData()
+            }}
+          />
         </PageInner>
       </PageShell>
     )
@@ -216,7 +226,7 @@ export function SegmentsPage() {
     return (
       <PageShell>
         <PageInner>
-          <PageSubtitle>Loading…</PageSubtitle>
+          <LoadingBlock label="Loading segments…" />
         </PageInner>
       </PageShell>
     )

@@ -1,15 +1,8 @@
+import { getErrorMessage } from '../../lib/errors'
 import { supabase } from '../../lib/supabase'
 import type { EventFormat, EventRow } from './types'
 
-// Supabase/PostgREST errors (PostgrestError) are plain objects, not Error
-// instances, so callers can't rely on `err instanceof Error` to read a
-// meaningful message (e.g. a raised RPC exception) out of a catch block.
-export function getErrorMessage(err: unknown, fallback: string): string {
-  if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
-    return err.message
-  }
-  return fallback
-}
+export { getErrorMessage }
 
 export async function listOrganizerEvents(organizerId: string): Promise<EventRow[]> {
   const { data, error } = await supabase

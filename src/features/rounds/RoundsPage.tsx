@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
@@ -12,6 +12,8 @@ import {
   Subtitle as PageSubtitle,
 } from '../../components/ui/Typography'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
@@ -138,8 +140,8 @@ export function RoundsPage() {
     null,
   )
 
-  useEffect(() => {
-    if (!eventId) return
+  const loadData = useCallback(() => {
+    if (!eventId) return () => {}
 
     let cancelled = false
     Promise.all([getEvent(eventId), listRounds(eventId)])
@@ -149,14 +151,16 @@ export function RoundsPage() {
         setRounds(roundRows)
         setNewRound(emptyForm(nextSequence(roundRows)))
       })
-      .catch((err: Error) => {
-        if (!cancelled) setLoadError(err.message)
+      .catch((err) => {
+        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load rounds'))
       })
 
     return () => {
       cancelled = true
     }
   }, [eventId])
+
+  useEffect(() => loadData(), [loadData])
 
   async function refreshRounds() {
     if (!eventId) return
@@ -252,7 +256,13 @@ export function RoundsPage() {
       <PageShell>
         <PageInner>
           <BackLink to="/events">Back to events</BackLink>
-          <ErrorText role="alert">{loadError}</ErrorText>
+          <ErrorState
+            message={loadError}
+            onRetry={() => {
+              setLoadError(null)
+              loadData()
+            }}
+          />
         </PageInner>
       </PageShell>
     )
@@ -262,7 +272,7 @@ export function RoundsPage() {
     return (
       <PageShell>
         <PageInner>
-          <PageSubtitle>Loading…</PageSubtitle>
+          <LoadingBlock label="Loading rounds…" />
         </PageInner>
       </PageShell>
     )

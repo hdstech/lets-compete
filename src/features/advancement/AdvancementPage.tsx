@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { getErrorMessage } from '../../lib/errors'
 import { getDeadlineMs, formatClock } from '../../lib/quiz-timing'
 import { ErrorText } from '../auth/auth-ui'
 import { Button, LinkButton } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import { Title as PageTitle, Subtitle as PageSubtitle } from '../../components/ui/Typography'
 import { declareWinner, getEvent, getErrorMessage as getEventErrorMessage } from '../events/events-api'
 import {
@@ -116,8 +119,8 @@ export function AdvancementPage() {
   const [now, setNow] = useState(() => Date.now())
   const autoClosedRef = useRef<Set<string>>(new Set())
 
-  useEffect(() => {
-    if (!eventId || !roundId) return
+  const loadInitialState = useCallback(() => {
+    if (!eventId || !roundId) return () => {}
 
     let cancelled = false
     loadAdvancementState(eventId, roundId)
@@ -126,14 +129,16 @@ export function AdvancementPage() {
         applyState(state)
         setLoaded(true)
       })
-      .catch((err: Error) => {
-        if (!cancelled) setLoadError(err.message)
+      .catch((err) => {
+        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load advancement review'))
       })
 
     return () => {
       cancelled = true
     }
   }, [eventId, roundId])
+
+  useEffect(() => loadInitialState(), [loadInitialState])
 
   function applyState(state: LoadedState) {
     setEvent(state.eventRow)
@@ -326,7 +331,13 @@ export function AdvancementPage() {
       <PageShell>
         <PageInner>
           <BackLink to={`/events/${eventId}/rounds`}>Back to rounds</BackLink>
-          <ErrorText role="alert">{loadError}</ErrorText>
+          <ErrorState
+            message={loadError}
+            onRetry={() => {
+              setLoadError(null)
+              loadInitialState()
+            }}
+          />
         </PageInner>
       </PageShell>
     )
@@ -336,7 +347,7 @@ export function AdvancementPage() {
     return (
       <PageShell>
         <PageInner>
-          <PageSubtitle>Loading…</PageSubtitle>
+          <LoadingBlock label="Loading advancement review…" />
         </PageInner>
       </PageShell>
     )

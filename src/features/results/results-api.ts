@@ -1,21 +1,14 @@
+import { getErrorMessage } from '../../lib/errors'
 import { supabase } from '../../lib/supabase'
 import type { ResultCalculationEntryRow, ResultCalculationRow } from './types'
+
+export { getErrorMessage }
 
 // Keys a scope the same way result_calculations' one-final-per-scope index
 // does: round_id/segment_id null-ness distinguishes segment / round / event
 // scopes (see the T16 migration's comment).
 export function scopeKey(roundId: string | null, segmentId: string | null): string {
   return `${roundId ?? 'none'}:${segmentId ?? 'none'}`
-}
-
-// Supabase/PostgREST errors (PostgrestError) are plain objects, not Error
-// instances, so callers can't rely on `err instanceof Error` to read a
-// meaningful message (e.g. a raised RPC exception) out of a catch block.
-export function getErrorMessage(err: unknown, fallback: string): string {
-  if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
-    return err.message
-  }
-  return fallback
 }
 
 // Only the current (is_final) calculation per scope.

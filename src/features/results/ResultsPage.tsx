@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ErrorText } from '../auth/auth-ui'
 import { Button, LinkButton } from '../../components/ui/Button'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
@@ -52,8 +54,8 @@ export function ResultsPage() {
   const [calculatingOverall, setCalculatingOverall] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!eventId) return
+  const loadData = useCallback(() => {
+    if (!eventId) return () => {}
 
     let cancelled = false
     Promise.all([getEvent(eventId), listRounds(eventId), listEventParticipants(eventId)])
@@ -75,14 +77,16 @@ export function ResultsPage() {
         setCalculations(calcRows)
         setEntries(entryRows)
       })
-      .catch((err: Error) => {
-        if (!cancelled) setLoadError(err.message)
+      .catch((err) => {
+        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load results'))
       })
 
     return () => {
       cancelled = true
     }
   }, [eventId])
+
+  useEffect(() => loadData(), [loadData])
 
   async function reloadResults() {
     if (!eventId) return
@@ -157,7 +161,13 @@ export function ResultsPage() {
       <PageShell>
         <PageInner>
           <BackLink to={`/events/${eventId}/rounds`}>Back to rounds</BackLink>
-          <ErrorText role="alert">{loadError}</ErrorText>
+          <ErrorState
+            message={loadError}
+            onRetry={() => {
+              setLoadError(null)
+              loadData()
+            }}
+          />
         </PageInner>
       </PageShell>
     )
@@ -167,7 +177,7 @@ export function ResultsPage() {
     return (
       <PageShell>
         <PageInner>
-          <PageSubtitle>Loading…</PageSubtitle>
+          <LoadingBlock label="Loading results…" />
         </PageInner>
       </PageShell>
     )

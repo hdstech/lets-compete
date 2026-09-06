@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
-import { ErrorText } from '../auth/auth-ui'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
@@ -24,7 +25,7 @@ import { listRounds } from '../rounds/rounds-api'
 import type { RoundRow } from '../rounds/types'
 import { listSegments } from '../segments/segments-api'
 import type { SegmentRow } from '../segments/types'
-import { listAllCalculations, listCalculationEntries, scopeKey } from './results-api'
+import { getErrorMessage, listAllCalculations, listCalculationEntries, scopeKey } from './results-api'
 import { BoardCell, BoardHeadCell, BoardHeader, BoardTable, RankCell } from './results-ui'
 import type { ResultCalculationEntryRow, ResultCalculationRow } from './types'
 
@@ -161,8 +162,8 @@ export function ResultsHistoryPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [expandedCalcId, setExpandedCalcId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!eventId) return
+  const loadData = useCallback(() => {
+    if (!eventId) return () => {}
 
     let cancelled = false
     Promise.all([getEvent(eventId), listRounds(eventId), listEventParticipants(eventId)])
@@ -189,14 +190,16 @@ export function ResultsHistoryPage() {
         setCalculations(calcRows)
         setEntriesByCalculation(entryMap)
       })
-      .catch((err: Error) => {
-        if (!cancelled) setLoadError(err.message)
+      .catch((err) => {
+        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load calculation history'))
       })
 
     return () => {
       cancelled = true
     }
   }, [eventId])
+
+  useEffect(() => loadData(), [loadData])
 
   const participantsById = useMemo(() => {
     const map = new Map<string, ParticipantRow>()
@@ -246,7 +249,13 @@ export function ResultsHistoryPage() {
       <PageShell>
         <PageInner>
           <BackLink to={`/events/${eventId}/results`}>Back to results</BackLink>
-          <ErrorText role="alert">{loadError}</ErrorText>
+          <ErrorState
+            message={loadError}
+            onRetry={() => {
+              setLoadError(null)
+              loadData()
+            }}
+          />
         </PageInner>
       </PageShell>
     )
@@ -256,7 +265,7 @@ export function ResultsHistoryPage() {
     return (
       <PageShell>
         <PageInner>
-          <PageSubtitle>Loading…</PageSubtitle>
+          <LoadingBlock label="Loading calculation history…" />
         </PageInner>
       </PageShell>
     )

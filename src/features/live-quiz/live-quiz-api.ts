@@ -1,3 +1,4 @@
+import { getErrorMessage } from '../../lib/errors'
 import { supabase } from '../../lib/supabase'
 import { listQuestions } from '../questions/questions-api'
 import type { QuestionRow } from '../questions/types'
@@ -5,15 +6,7 @@ import { listSegments } from '../segments/segments-api'
 import type { SegmentRow } from '../segments/types'
 import type { AnswerRow, IntegrityEventRow, RoundParticipantRow } from './types'
 
-// Supabase/PostgREST errors (PostgrestError) are plain objects, not Error
-// instances, so callers can't rely on `err instanceof Error` to read a
-// meaningful message (e.g. a raised RPC exception) out of a catch block.
-export function getErrorMessage(err: unknown, fallback: string): string {
-  if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
-    return err.message
-  }
-  return fallback
-}
+export { getErrorMessage }
 
 export type RoundQuestion = QuestionRow & { segment_name: string }
 

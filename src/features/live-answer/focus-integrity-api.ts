@@ -1,12 +1,8 @@
+import { getErrorMessage } from '../../lib/errors'
 import { supabase } from '../../lib/supabase'
 import type { AnswerRow, IntegrityEventKind } from '../live-quiz/types'
 
-export function getErrorMessage(err: unknown, fallback: string): string {
-  if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
-    return err.message
-  }
-  return fallback
-}
+export { getErrorMessage }
 
 // Best-effort audit write to the grader's integrity log (QA1's
 // integrity_events, RLS-writable by the owning participant with no
