@@ -60,6 +60,14 @@ export const ParticipantIdentity = styled('div', {
   base: { display: 'flex', flexDirection: 'column', gap: '0.5' },
 })
 
+// Stacks the status badges above the action buttons instead of running them
+// together in one row — the buttons previously sat directly beside the
+// badges at a similar pill shape/size, reading as more badges rather than
+// actionable controls.
+export const ParticipantActions = styled('div', {
+  base: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1.5' },
+})
+
 export const ParticipantName = styled('span', {
   base: { fontSize: 'sm', fontWeight: 'medium' },
 })

@@ -24,6 +24,7 @@ import {
 import {
   AdmissionBadge,
   EligibilityBadge,
+  ParticipantActions,
   ParticipantIdentity,
   ParticipantListEl,
   ParticipantListItem,
@@ -38,7 +39,7 @@ import {
 } from '../results/results-api'
 import {
   activateEvent,
-  assignGrader,
+  assignJudge,
   concludeEvent,
   deleteEvent,
   getErrorMessage,
@@ -95,10 +96,10 @@ export function EventDetailPage() {
 
   const [copied, setCopied] = useState(false)
 
-  const [graderEmail, setGraderEmail] = useState('')
-  const [assigningGrader, setAssigningGrader] = useState(false)
-  const [graderError, setGraderError] = useState<string | null>(null)
-  const [lastAssignedGraderEmail, setLastAssignedGraderEmail] = useState<string | null>(null)
+  const [judgeEmail, setJudgeEmail] = useState('')
+  const [assigningJudge, setAssigningJudge] = useState(false)
+  const [judgeError, setJudgeError] = useState<string | null>(null)
+  const [lastAssignedJudgeEmail, setLastAssignedJudgeEmail] = useState<string | null>(null)
 
   const [participants, setParticipants] = useState<ParticipantRecord[] | null>(null)
   const [participantsError, setParticipantsError] = useState<string | null>(null)
@@ -340,21 +341,21 @@ export function EventDetailPage() {
     }
   }
 
-  async function handleAssignGrader(formEvent: SubmitEvent<HTMLFormElement>) {
+  async function handleAssignJudge(formEvent: SubmitEvent<HTMLFormElement>) {
     formEvent.preventDefault()
     if (!eventId) return
 
-    setGraderError(null)
-    setAssigningGrader(true)
+    setJudgeError(null)
+    setAssigningJudge(true)
     try {
-      const updated = await assignGrader(eventId, graderEmail)
+      const updated = await assignJudge(eventId, judgeEmail)
       setEvent(updated)
-      setLastAssignedGraderEmail(graderEmail)
-      setGraderEmail('')
+      setLastAssignedJudgeEmail(judgeEmail)
+      setJudgeEmail('')
     } catch (err) {
-      setGraderError(getErrorMessage(err, 'Failed to assign grader'))
+      setJudgeError(getErrorMessage(err, 'Failed to assign judge'))
     } finally {
-      setAssigningGrader(false)
+      setAssigningJudge(false)
     }
   }
 
@@ -441,7 +442,7 @@ export function EventDetailPage() {
             exclude them, and records why in the calculation history.
           </HelpText>
           {recalcError && <ErrorText role="alert">{recalcError}</ErrorText>}
-          <Row>
+          <Row equal>
             <Button
               type="button"
               tone="primary"
@@ -499,54 +500,62 @@ export function EventDetailPage() {
                     {participant.members ? ` · ${participant.members}` : ''}
                   </ParticipantMeta>
                 </ParticipantIdentity>
-                <Row>
-                  <AdmissionBadge admissionStatus={participant.admission_status}>
-                    {participant.admission_status}
-                  </AdmissionBadge>
-                  <EligibilityBadge eligibilityStatus={participant.status}>
-                    {participant.status}
-                  </EligibilityBadge>
-                  {participant.admission_status !== 'approved' && (
-                    <Button
-                      type="button"
-                      tone="success"
-                      onClick={() => handleApprove(participant.id)}
-                      disabled={approvingId === participant.id}
-                    >
-                      {approvingId === participant.id ? 'Approving…' : 'Approve'}
-                    </Button>
-                  )}
-                  {participant.admission_status !== 'revoked' && (
-                    <Button
-                      type="button"
-                      tone="danger"
-                      onClick={() => setRevokeTarget(participant)}
-                      disabled={revoking}
-                    >
-                      Revoke
-                    </Button>
-                  )}
-                  {participant.status === 'eligible' && (
-                    <Button
-                      type="button"
-                      tone="danger"
-                      onClick={() => setDqTarget(participant)}
-                      disabled={disqualifying}
-                    >
-                      Disqualify
-                    </Button>
-                  )}
-                  {participant.status === 'disqualified' && (
-                    <Button
-                      type="button"
-                      tone="success"
-                      onClick={() => handleReinstate(participant.id)}
-                      disabled={reinstatingId === participant.id}
-                    >
-                      {reinstatingId === participant.id ? 'Reinstating…' : 'Reinstate'}
-                    </Button>
-                  )}
-                </Row>
+                <ParticipantActions>
+                  <Row>
+                    <AdmissionBadge admissionStatus={participant.admission_status}>
+                      {participant.admission_status}
+                    </AdmissionBadge>
+                    <EligibilityBadge eligibilityStatus={participant.status}>
+                      {participant.status}
+                    </EligibilityBadge>
+                  </Row>
+                  <Row equal>
+                    {participant.admission_status !== 'approved' && (
+                      <Button
+                        type="button"
+                        tone="success"
+                        size="sm"
+                        onClick={() => handleApprove(participant.id)}
+                        disabled={approvingId === participant.id}
+                      >
+                        {approvingId === participant.id ? 'Approving…' : 'Approve'}
+                      </Button>
+                    )}
+                    {participant.admission_status !== 'revoked' && (
+                      <Button
+                        type="button"
+                        tone="danger"
+                        size="sm"
+                        onClick={() => setRevokeTarget(participant)}
+                        disabled={revoking}
+                      >
+                        Revoke
+                      </Button>
+                    )}
+                    {participant.status === 'eligible' && (
+                      <Button
+                        type="button"
+                        tone="danger"
+                        size="sm"
+                        onClick={() => setDqTarget(participant)}
+                        disabled={disqualifying}
+                      >
+                        Disqualify
+                      </Button>
+                    )}
+                    {participant.status === 'disqualified' && (
+                      <Button
+                        type="button"
+                        tone="success"
+                        size="sm"
+                        onClick={() => handleReinstate(participant.id)}
+                        disabled={reinstatingId === participant.id}
+                      >
+                        {reinstatingId === participant.id ? 'Reinstating…' : 'Reinstate'}
+                      </Button>
+                    )}
+                  </Row>
+                </ParticipantActions>
               </ParticipantListItem>
             ))}
           </ParticipantListEl>
@@ -554,9 +563,9 @@ export function EventDetailPage() {
       </Card>
 
       <Card>
-        <SectionTitle>Grader</SectionTitle>
+        <SectionTitle>Judge</SectionTitle>
         <HelpText>
-          The grader reviews and confirms auto pre-marked answers once a
+          The judge reviews and confirms auto pre-marked answers once a
           round closes. They sign in with the same emailed link as
           participants — no password needed.
         </HelpText>
@@ -564,37 +573,37 @@ export function EventDetailPage() {
           <DefinitionTerm>Status</DefinitionTerm>
           <DefinitionValue>
             {event.grader_id
-              ? lastAssignedGraderEmail
-                ? `Assigned (${lastAssignedGraderEmail})`
+              ? lastAssignedJudgeEmail
+                ? `Assigned (${lastAssignedJudgeEmail})`
                 : 'Assigned'
               : 'Not assigned'}
           </DefinitionValue>
         </DefinitionGrid>
-        <AuthForm onSubmit={handleAssignGrader}>
+        <AuthForm onSubmit={handleAssignJudge}>
           <Field>
-            <Label htmlFor="grader_email">Grader's email</Label>
+            <Label htmlFor="judge_email">Judge's email</Label>
             <Input
-              id="grader_email"
-              name="grader_email"
+              id="judge_email"
+              name="judge_email"
               type="email"
               required
-              placeholder="grader@example.com"
-              value={graderEmail}
-              onChange={(changeEvent) => setGraderEmail(changeEvent.target.value)}
+              placeholder="judge@example.com"
+              value={judgeEmail}
+              onChange={(changeEvent) => setJudgeEmail(changeEvent.target.value)}
             />
             <HelpText>
               They must have already signed in at least once (via the join
               page) before they can be assigned.
             </HelpText>
           </Field>
-          {graderError && <ErrorText role="alert">{graderError}</ErrorText>}
+          {judgeError && <ErrorText role="alert">{judgeError}</ErrorText>}
           <Row>
-            <SubmitButton type="submit" disabled={assigningGrader}>
-              {assigningGrader
+            <SubmitButton type="submit" disabled={assigningJudge}>
+              {assigningJudge
                 ? 'Assigning…'
                 : event.grader_id
-                  ? 'Reassign grader'
-                  : 'Assign grader'}
+                  ? 'Reassign judge'
+                  : 'Assign judge'}
             </SubmitButton>
           </Row>
         </AuthForm>

@@ -9,10 +9,6 @@ const buttonRecipe = defineRecipe({
   className: 'button',
   base: {
     borderRadius: 'pill',
-    px: '4',
-    py: '2',
-    minHeight: '11',
-    fontSize: 'sm',
     fontWeight: 'semibold',
     cursor: 'pointer',
     borderWidth: '1px',
@@ -42,11 +38,18 @@ const buttonRecipe = defineRecipe({
         borderColor: 'border.default',
         _hover: { bg: 'bg.sunken' },
       },
-      danger: { bg: 'red.600', color: 'white', _hover: { bg: 'red.700' } },
+      danger: { bg: 'salmon.600', color: 'white', _hover: { bg: 'salmon.700' } },
       success: { bg: 'green.600', color: 'white', _hover: { bg: 'green.700' } },
     },
+    // 'sm' is for a button sitting inline with small badges/pills (e.g. the
+    // participant admission-status row) where the default size reads as
+    // oversized next to them.
+    size: {
+      md: { px: '4', py: '2', minHeight: '11', fontSize: 'sm' },
+      sm: { px: '2.5', py: '1', minHeight: '7', fontSize: 'xs' },
+    },
   },
-  defaultVariants: { tone: 'primary' },
+  defaultVariants: { tone: 'primary', size: 'md' },
 })
 
 export default defineConfig({
@@ -104,6 +107,16 @@ export default defineConfig({
             800: { value: '#2e2e2c' },
             900: { value: '#242422' },
             950: { value: '#1f1f1d' },
+          },
+          // Warm coral-pink used for destructive/danger buttons in place of a
+          // stock red. 600 is the requested brand hex; 700 is a matching
+          // darker shade for the hover state.
+          salmon: {
+            50: { value: '#fff1ee' },
+            400: { value: '#fd9494' },
+            500: { value: '#fc8181' },
+            600: { value: '#fc6f6f' },
+            700: { value: '#e35a5a' },
           },
         },
         radii: {

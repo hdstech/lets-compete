@@ -19,7 +19,7 @@ import {
 // Covers QB5 (focus-integrity layer) against the real Supabase backend: the
 // grace-then-submit countdown that visibilitychange/pagehide/blur arm on
 // the live-answer screen (QB4), and the integrity log (QA1's
-// integrity_events) it writes to for the grader. beforeunload's native
+// integrity_events) it writes to for the judge. beforeunload's native
 // "leave site?" warning is browser-owned and not exercised here — it's a
 // one-line preventDefault()/returnValue call, verified by inspection rather
 // than by fighting Chromium's dialog automation in CI.

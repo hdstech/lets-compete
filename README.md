@@ -1,6 +1,6 @@
 # Let's Compete — Event Scoring App
 
-A mobile-first PWA for scoring live competitions. The MVP (**V1**) is a **quiz / Bible Bowl** format: participants answer live, timed questions on their phones; answers are auto pre-marked against an acceptable-answer set and confirmed by a single grader; top-N advance with sudden-death tiebreaks until a champion is declared. A **judged panel** format is planned for V2.
+A mobile-first PWA for scoring live competitions. The MVP (**V1**) is a **quiz / Bible Bowl** format: participants answer live, timed questions on their phones; answers are auto pre-marked against an acceptable-answer set and confirmed by a single judge; top-N advance with sudden-death tiebreaks until a champion is declared. A **judged panel** format is planned for V2.
 
 Stack: **Vite + React + TypeScript + Tailwind** (installable PWA) on **Supabase** (Postgres + Auth + Realtime + Storage), hosted on **Vercel**. Domain logic lives in Postgres (RPC / RLS / triggers), so the frontend is a thin, static client and no custom server is required.
 

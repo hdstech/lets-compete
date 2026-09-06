@@ -475,7 +475,7 @@ export function AdvancementPage() {
                           <li key={q.id}>
                             Question {i + 1}:{' '}
                             {q.resolved_at === null
-                              ? 'awaiting grading/resolution'
+                              ? 'awaiting scoring/resolution'
                               : q.broke_tie === null
                                 ? 'voided'
                                 : q.broke_tie
@@ -495,7 +495,7 @@ export function AdvancementPage() {
                       </>
                     )}
 
-                    <Row>
+                    <Row equal={canVoid}>
                       {canDraw && (
                         <Button type="button" tone="primary" onClick={handleDraw} disabled={drawing}>
                           {drawing ? 'Drawing…' : 'Draw next question'}
@@ -504,10 +504,10 @@ export function AdvancementPage() {
                       {canVoid && (
                         <>
                           <LinkButton
-                            to={`/events/${eventId}/rounds/${roundId}/grade`}
+                            to={`/events/${eventId}/rounds/${roundId}/score`}
                             tone="secondary"
                           >
-                            Grade this question
+                            Score this question
                           </LinkButton>
                           <Button
                             type="button"

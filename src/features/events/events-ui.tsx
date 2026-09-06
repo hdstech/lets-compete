@@ -160,6 +160,15 @@ export const FormatBadge = styled('span', {
 
 export const Row = styled('div', {
   base: { display: 'flex', alignItems: 'center', gap: '3', flexWrap: 'wrap' },
+  variants: {
+    // For a row of buttons that form one action set (e.g. Cancel/Confirm,
+    // Edit/Delete) — makes them equal width instead of sizing to their own
+    // label. Only apply where every child is a button-like action; a badge
+    // or help text sibling would stretch to match too.
+    equal: {
+      true: { '& > *': { flex: '1', minWidth: '0' } },
+    },
+  },
 })
 
 export const CheckboxField = styled('label', {

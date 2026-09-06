@@ -293,7 +293,7 @@ export function SegmentsPage() {
                   />
                 </Field>
                 {editError && <ErrorText role="alert">{editError}</ErrorText>}
-                <Row>
+                <Row equal>
                   <SubmitButton type="submit" disabled={saving}>
                     {saving ? 'Saving…' : 'Save segment'}
                   </SubmitButton>
@@ -312,7 +312,7 @@ export function SegmentsPage() {
                 <DefinitionTerm>Sequence</DefinitionTerm>
                 <DefinitionValue>{segment.sequence}</DefinitionValue>
               </DefinitionGrid>
-              <Row>
+              <Row equal={isDraft}>
                 <LinkButton
                   to={`/events/${event.id}/rounds/${round.id}/segments/${segment.id}/questions`}
                   tone="secondary"

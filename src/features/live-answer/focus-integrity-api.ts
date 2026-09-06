@@ -4,7 +4,7 @@ import type { AnswerRow, IntegrityEventKind } from '../live-quiz/types'
 
 export { getErrorMessage }
 
-// Best-effort audit write to the grader's integrity log (QA1's
+// Best-effort audit write to the judge's integrity log (QA1's
 // integrity_events, RLS-writable by the owning participant with no
 // time-window gate). Never throws to the caller — a failed log write is a
 // missed audit trail entry, not a reason to interrupt the participant.

@@ -333,9 +333,9 @@ export function LiveConsolePage() {
     setClosingRound(true)
     try {
       // Auto pre-mark every closed question before locking the round for
-      // grading (QA7) — best-effort: a question whose 10s post-close grace
+      // scoring (QA7) — best-effort: a question whose 10s post-close grace
       // hasn't elapsed yet (an edge case only reachable by closing the round
-      // the instant the last window closes) is simply left for the grader to
+      // the instant the last window closes) is simply left for the judge to
       // decide manually rather than blocking the round close on it.
       for (const question of questions) {
         if (question.status !== 'window_closed') continue
@@ -406,10 +406,10 @@ export function LiveConsolePage() {
         {(round.status === 'scoring_closed' || round.status === 'advanced') && (
           <Row>
             <LinkButton
-              to={`/events/${eventId}/rounds/${roundId}/grade`}
+              to={`/events/${eventId}/rounds/${roundId}/score`}
               tone="primary"
             >
-              Grade round
+              Score round
             </LinkButton>
           </Row>
         )}

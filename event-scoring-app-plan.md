@@ -6,7 +6,7 @@ Greenfield project. The app scores live competitions and produces a ranked leade
 
 The app supports **two event formats**, chosen once at creation and **immutable thereafter** (`events.format`; switching requires a new event):
 
-- **Quiz / Bible Bowl (`quiz`) — V1, the MVP.** Participants are asked live, timed questions, type an answer, and submit. Answers are auto pre-marked against a predefined acceptable-answer set and confirmed by a **single authoritative grader** after the round. 1 point per correct answer; top-N advance; sudden-death tiebreaks; final round declares the champion.
+- **Quiz / Bible Bowl (`quiz`) — V1, the MVP.** Participants are asked live, timed questions, type an answer, and submit. Answers are auto pre-marked against a predefined acceptable-answer set and confirmed by a **single authoritative judge** after the round. 1 point per correct answer; top-N advance; sudden-death tiebreaks; final round declares the champion.
 - **Judged panel (`judged`) — V2, a future version.** A panel of judges scores each participant on numeric criteria per segment; scores sum across judges. This is the original design, preserved in full under "V2 — Judged panel (future)" below and layered onto the same core later.
 
 The two formats differ at the infrastructure level — quiz is **online-required** (Supabase Realtime, live server-authoritative timers, a *participant* data-entry actor); judged is **offline-first** panel scoring — but they **share one results engine**: events, rounds, a participant roster, `RANK()`, top-N advancement, and permanent versioned immutable result sets. `events.format` only switches the **input surface and lifecycle rules**, not the ranking math.
@@ -29,12 +29,12 @@ An event can optionally run as **rounds**: progressive elimination stages where 
 - The admin reveals questions **one at a time**; each reveal opens a countdown answer window. Every active participant answers the same question within the window, then the next is revealed. Delivery is pushed over **Supabase Realtime**.
 - **Server-authoritative timing.** The window is enforced in Postgres. On reveal the server stamps the open time and issues a **reveal token**; the client reports *elapsed time against that token*, never its own wall clock — so rolling a device clock back cannot forge an in-window submission.
 - **Disconnection tolerance.** A client keeps a local draft and, on reconnect, replays it; the server accepts it only if it arrives within a short **grace window** *and* the token-elapsed ≤ the question window. A no-show or unrecoverably-late answer scores 0.
-- **Void.** Before the round is graded, the admin can **void** a bad question (wrong reveal, typo, no valid answer); its answers are discarded and don't count. Voiding is one-way per question but leaves an audit trail.
+- **Void.** Before the round is scored, the admin can **void** a bad question (wrong reveal, typo, no valid answer); its answers are discarded and don't count. Voiding is one-way per question but leaves an audit trail.
 
-**Answers & grading (hybrid, single grader, batched)**
+**Answers & scoring (hybrid, single judge, batched)**
 - Answers are **typed** (not multiple choice), `text` or `numeric`.
 - **Auto pre-mark**: the submitted answer is normalized (trim, case-insensitive, collapsed punctuation) and matched against the question's **acceptable-answer list** (synonyms like "Paul" / "the Apostle Paul"; numeric answers compared by value where listed). This sets a provisional `auto_correct`.
-- **Adjudication**: a **single authoritative grader** reviews the whole round's answers at once **after the round closes** (grading is not live and can be done offline), confirming or overriding each `auto_correct` into the final `final_correct`. There is **no summing across judges** — one grade per answer. Correctness is objective enough that a panel/average is unnecessary in V1.
+- **Adjudication**: a **single authoritative judge** reviews the whole round's answers at once **after the round closes** (scoring is not live and can be done offline), confirming or overriding each `auto_correct` into the final `final_correct`. There is **no summing across judges** — one score per answer. Correctness is objective enough that a panel/average is unnecessary in V1.
 - **Score** = count of `final_correct` = 1 point each. A voided question contributes nothing.
 
 **Participants (self-register, one login each)**
@@ -45,14 +45,14 @@ An event can optionally run as **rounds**: progressive elimination stages where 
 
 **Rounds & advancement (shared engine)**
 - Top-N per round (`round_participants`), an explicit admin `advance_round`; a tie straddling the cutoff **expands the field** (all tied advance). Final round's rank-1 = champion (co-champions on a rank-1 tie, flagged).
-- **Ties are broken by sudden-death tiebreak questions.** Only the tied participants (at an advancement cutoff or rank-1) enter a tiebreak sub-flow: one tiebreak question at a time, same live-timed hybrid-graded mechanics, repeated until the tie breaks. Tiebreak questions come from a **pre-authored reserve pool** defined in `draft`. If the pool is exhausted, fall back to the standard co-advance / co-champion rule.
+- **Ties are broken by sudden-death tiebreak questions.** Only the tied participants (at an advancement cutoff or rank-1) enter a tiebreak sub-flow: one tiebreak question at a time, same live-timed hybrid-scored mechanics, repeated until the tie breaks. Tiebreak questions come from a **pre-authored reserve pool** defined in `draft`. If the pool is exhausted, fall back to the standard co-advance / co-champion rule.
 
 **Anti-navigation / focus integrity**
 - A web app can **detect and deter** leaving the screen, but cannot **prevent** it (the browser is sandboxed — no device lock, no blocking a second device). This layer raises the cost of casual cheating and produces evidence; physical proctoring is the real backstop.
 - **Explicit navigation** (close/reload/URL change) → a `beforeunload` warning (native, uncustomizable, weak on mobile).
 - **Leaving the screen** (`visibilitychange` → hidden, `pagehide`, `window.blur`) → a **grace-then-submit** countdown with an on-screen warning; return in time resumes editing, timeout **auto-submits the current draft via `navigator.sendBeacon`** (a normal `fetch` is killed on unload) and locks the question. The grace is bounded by `min(grace, time left in the window)`, so it can never buy time past the server-side close, and the server window stays absolute.
 - **No fullscreen requirement** — detection rides on visibility/blur only, so behavior is consistent across devices including iOS Safari.
-- Every away-event (hidden/blur/return, with timestamps and durations) is written to an **`integrity_events` log** surfaced to the grader at adjudication — the human catches what auto-submit didn't.
+- Every away-event (hidden/blur/return, with timestamps and durations) is written to an **`integrity_events` log** surfaced to the judge at adjudication — the human catches what auto-submit didn't.
 - "Leaving the screen submits your answer" is stated in the event rules accepted at self-register (consent, not surprise).
 
 ## Stack recommendation
@@ -64,7 +64,7 @@ An event can optionally run as **rounds**: progressive elimination stages where 
 - **Supabase** (free tier): Postgres + Auth + **Realtime** + Storage.
   - Domain logic pushed **down into Postgres** (RPC functions, RLS, triggers) and exposed over Supabase's HTTP surfaces, so ~90% of core functionality is testable headless (Bruno/HTTP) before any UI exists.
   - **Realtime** is the new V1 dependency: it broadcasts question reveals/countdowns to participant devices.
-  - **Auth (GoTrue)** issues admin / participant / grader JWTs; **PostgREST** exposes tables with **RLS per-JWT**; **RPC** holds guarded logic (lifecycle transitions, reveal/void, submit, close-round, adjudicate, `calculate_results`, `advance_round`, `declare_winner`, conclude).
+  - **Auth (GoTrue)** issues admin / participant / judge JWTs; **PostgREST** exposes tables with **RLS per-JWT**; **RPC** holds guarded logic (lifecycle transitions, reveal/void, submit, close-round, adjudicate, `calculate_results`, `advance_round`, `declare_winner`, conclude).
 - Client keeps an IndexedDB draft for the current answer (survives a brief disconnect) plus a `sendBeacon` submit-on-exit path.
 
 ## MVP hosting & deployment
@@ -73,7 +73,7 @@ Because all domain logic lives in Postgres and the Supabase anon key is public +
 
 - **Backend — Supabase (managed).** Free tier (500 MB DB, 1 GB storage, Realtime included) is enough for a small test group. Two caveats matter for a live quiz: free projects **auto-pause after ~7 days of inactivity**, and free-tier Realtime has a **concurrent-connection cap** (every participant in a live round is connected at once). Pick a **region near the testers** — live timers are latency-sensitive. Move to **Pro (~$25/mo)** once pausing or limits get in the way.
 - **Frontend — static host (Vercel).** The Vite SPA deploys as a static bundle to **Vercel** (chosen; Cloudflare Pages / Netlify are equivalent). All give **free HTTPS on a subdomain**, which is required for PWA install, Realtime WebSockets, and `sendBeacon`. Testers just open the URL on their phones (installable PWA, no app store); Vercel preview URLs per push make sharing test builds easy.
-- **Keep-alive (avoid auto-pause).** A **Vercel Cron Job** pings Supabase on a schedule so the free project isn't paused between test sessions (implementation in the Track 0 deploy ticket). A **daily** ping suffices — the Vercel Hobby tier caps crons at once/day, which is fine since pausing is a 7-day timer. This is a pragmatic workaround, not an official Supabase guarantee; if it ever stops resetting the timer, fall back to a manual unpause before sessions or upgrade to Pro.
+- **Keep-alive (avoid auto-pause).** A **Vercel Cron Job** pings Supabase on a schedule so the free project isn't paused between test sessions (implementation in the Track 0 deploy ticket). A **daily** ping suffices — the Vercel Hobby tier caps crons at once/day, which is fine since pausing is a 7-day timer. This is a pragmatic workaround, not an official Supabase guarantee; if it ever stops resetting the timer, fall back to a manual unpause before sessions or upscore to Pro.
 - **Config.** Only public config is needed client-side (`SUPABASE_URL`, `SUPABASE_ANON_KEY`); RLS is the security boundary. The keep-alive function additionally verifies a `CRON_SECRET` so the endpoint can't be abused.
 
 ## Manual prerequisites (human-only, before implementation)
@@ -96,7 +96,7 @@ The agent handles all code, migrations, RLS, `vercel.json`, and the keep-alive f
 - **Auth method** — magic-link (email) recommended for phones at a venue; email+password or Google OAuth are alternatives. Drives Supabase Auth config.
 - **Disable email confirmation** for testers (reduce friction).
 - **Allowed redirect URLs** in Supabase Auth — add `http://localhost:5173` and the `*.vercel.app` URL.
-- Assign the test roles: **admin**, **grader**, **participants**.
+- Assign the test roles: **admin**, **judge**, **participants**.
 
 **Local tooling:** Node.js LTS + npm, Git, and the **Supabase CLI** (`supabase login`, for migrations). Vercel CLI optional.
 
@@ -203,12 +203,12 @@ answers                                   -- core fact table: participant × que
   is_saved_draft (boolean)                -- true = arrived via sendBeacon / reconnect replay
   client_elapsed_ms (int, nullable)       -- reported elapsed against reveal_token
   auto_correct (boolean, nullable)        -- provisional, from the matcher
-  final_correct (boolean, nullable)       -- grader-adjudicated; sums to points
+  final_correct (boolean, nullable)       -- judge-adjudicated; sums to points
   graded_by (fk -> profiles, nullable), graded_at (nullable)
   created_at, updated_at
   unique(participant_id, question_id)
 
-integrity_events                          -- focus/away audit for the grader
+integrity_events                          -- focus/away audit for the judge
   id (pk)
   participant_id (fk -> participants)
   question_id (fk -> questions, nullable)
@@ -224,18 +224,18 @@ Tiebreak reserve pool = `questions` rows with `is_tiebreak = true`, authored in 
 
 - **Draft**: admin creates the event (`format = quiz`), builds rounds/segments, authors questions + acceptable answers + `window_seconds`, and the tiebreak reserve pool. Participants self-register against `join_code`; admin approves them.
 - **Activate** (`draft → active`): freezes rounds/segments/questions; opens round 1. Participant roster stays open until first reveal.
-- **Per question** (round `scoring_open`): admin **reveals** → server issues `reveal_token`, broadcasts via Realtime, opens the window → participants submit (or draft) → **window closes server-side** (no-shows = 0). Admin may **void** before grading. Repeat for all questions.
+- **Per question** (round `scoring_open`): admin **reveals** → server issues `reveal_token`, broadcasts via Realtime, opens the window → participants submit (or draft) → **window closes server-side** (no-shows = 0). Admin may **void** before scoring. Repeat for all questions.
 - **Round close**: gated on **all of the round's questions being `window_closed` or `voided`** (the quiz analogue of the judged completeness gate). One-way.
-- **Adjudicate**: the single grader reviews the round's answers (auto pre-marked), sets `final_correct`, aided by the `integrity_events` log.
+- **Adjudicate**: the single judge reviews the round's answers (auto pre-marked), sets `final_correct`, aided by the `integrity_events` log.
 - **Calculate** (`calculate_results`, quiz branch): sum `final_correct` per participant across the round's segments; `RANK()`; write a versioned immutable result set.
 - **Advance** (`advance_round`): top-N advance; ties at the cutoff trigger the **sudden-death tiebreak** sub-flow; the rest are eliminated; the next round opens. On the final round → `declare_winner` → `concluded`.
 
 ## Immutability enforcement (quiz)
 
-An `answers` row locks when **either** its question's window has closed **or** the round has been graded/calculated. Enforced in three layers:
+An `answers` row locks when **either** its question's window has closed **or** the round has been scored/calculated. Enforced in three layers:
 1. **App** — the client only allows editing while the question is `window_open` and within grace.
-2. **DB trigger** — `BEFORE INSERT OR UPDATE` on `answers` rejects a write whose question is past `window_open` (except the grader's `final_correct` write, and except a within-grace replay that satisfies token-elapsed ≤ window). Unbypassable even by a direct API call.
-3. **RLS** — a participant may only write their own `answers` row while its window is open; the grader may only write `final_correct`; the admin is read-only on answers. Result tables are insert-only except the atomic `is_final` flip on a new calculation.
+2. **DB trigger** — `BEFORE INSERT OR UPDATE` on `answers` rejects a write whose question is past `window_open` (except the judge's `final_correct` write, and except a within-grace replay that satisfies token-elapsed ≤ window). Unbypassable even by a direct API call.
+3. **RLS** — a participant may only write their own `answers` row while its window is open; the judge may only write `final_correct`; the admin is read-only on answers. Result tables are insert-only except the atomic `is_final` flip on a new calculation.
 
 ## Ranking & advancement computation (shared)
 
@@ -253,7 +253,7 @@ Requested after the V1 MVP shipped; not yet built. Full ticket detail lives on t
 
 **Question bank.** `question_bank` + `question_bank_acceptable_answers`, scoped by `org_id`, reusable across every event that org runs. Picking a bank question for a segment is **copy-on-add**: it duplicates the content into a normal `questions` row (`source_bank_question_id` traces it back for a usage count) rather than linking live — editing the bank template later never retroactively changes a question already used in a scored event, consistent with this app's existing immutability posture (`QA14`–`QA15`).
 
-**Bilingual storage (not yet a display feature).** Real organizer question sets are bilingual (en/es). `question_bank`/`question_bank_acceptable_answers` gain nullable `prompt_translations`/`answer_translations` `jsonb` columns to hold the secondary locale. **The app only ever displays/grades the primary locale for now** — participant-facing language switching is an explicit non-goal here, revisit as a real `question_translations` table if that ever changes.
+**Bilingual storage (not yet a display feature).** Real organizer question sets are bilingual (en/es). `question_bank`/`question_bank_acceptable_answers` gain nullable `prompt_translations`/`answer_translations` `jsonb` columns to hold the secondary locale. **The app only ever displays/scores the primary locale for now** — participant-facing language switching is an explicit non-goal here, revisit as a real `question_translations` table if that ever changes.
 
 **Bulk import.** Both JSON (matching the organizer's real export format: `{ questNo, question: {en, es}, answer: {en, es}, points, duration }`) and an equivalent CSV/XLSX are accepted. Import is a hard **two-step, two-RPC** flow — `preview_bulk_import` (pure validation, zero writes) and `commit_bulk_import` (the only path that persists anything) — so uploading a file can never itself save data; saving is always a separate, explicit organizer action (`QA16`).
 
@@ -302,8 +302,8 @@ Sequenced **API-first**: the backend is built and verified via HTTP/Bruno before
 **Backend / API (Track A, verified headless)**
 - **QA0** `events.format` enum + immutability trigger.
 - **QA1** Schema migration — shared + quiz tables (`events`+format, `rounds`, `segments`, `questions`, `question_acceptable_answers`, `participants`+identity, `answers`, `integrity_events`, `round_participants`, `result_*`).
-- **T4** Auth + `profiles` mirror; capture admin / participant / grader JWTs.
-- **QA2** RLS — participant writes own unlocked `answers`; grader writes `final_correct`; admin read-only.
+- **T4** Auth + `profiles` mirror; capture admin / participant / judge JWTs.
+- **QA2** RLS — participant writes own unlocked `answers`; judge writes `final_correct`; admin read-only.
 - **T6** Event lifecycle RPC + guards (format-aware; quiz activation opens round 1, roster freezes at first reveal).
 - **T8a** Round CRUD + advancement config.
 - **QA3** Participant self-register + admin-approve + identity RPC (`join_code`).
@@ -313,7 +313,7 @@ Sequenced **API-first**: the backend is built and verified via HTTP/Bruno before
 - **QA7** Auto pre-mark matcher (normalize + acceptable list + numeric equivalence).
 - **QA8** Void-question RPC.
 - **QA9** Round-close (all-windows-closed) gate.
-- **QA10** Batched single-grader adjudication RPC (`final_correct`, override auto).
+- **QA10** Batched single-judge adjudication RPC (`final_correct`, override auto).
 - **QA11** Answer immutability trigger.
 - **T16** `calculate_results()` — quiz branch (sum `final_correct`), scope filtering, `RANK()`, exclusion snapshot, frozen entries, `is_final` flip, no-op on unchanged.
 - **QA12 / T16a** `advance_round` + **tiebreak sudden-death** (reserve pool, one at a time) + `declare_winner`.
@@ -328,7 +328,7 @@ Sequenced **API-first**: the backend is built and verified via HTTP/Bruno before
 - **QB3** Participant — join/self-register + waiting-room dashboard.
 - **QB4** Participant — **live answering screen** (mobile: receive question, timer, submit, draft).
 - **QB5** **Focus-integrity layer** (`beforeunload` warning + grace-then-submit + `sendBeacon` + integrity log).
-- **QB6** Grader — **batched adjudication screen** (auto pre-marked, override, integrity view).
+- **QB6** Judge — **batched adjudication screen** (auto pre-marked, override, integrity view).
 - **T28** Results — segment / per-round / overall leaderboards.
 - **T29** Results — recalculation + calculation history.
 - **QB7** Admin — advancement review/commit + **tiebreak trigger** + winner declaration.
@@ -344,7 +344,7 @@ Sequenced **API-first**: the backend is built and verified via HTTP/Bruno before
 
 **Design system — admin UI redesign (Track D, detour)**
 
-Cross-cutting visual/UX redesign of the admin (organizer) side, sequenced independently of the V1 build order above. Responsive strategy is split by audience: admin is **desktop-first** (this track); participant/grader is **mobile-first** and gets its own design pass once those screens exist (out of scope here). Reference: Lovable.dev sample app (light theme default with a dark-mode toggle, Geist font, pill-shaped buttons/tabs, warm-neutral palette, collapsible sidebar shell with an in-place-expanding workspace switcher). Full spec incl. Panda token translation lives in the PR that introduces DS1.
+Cross-cutting visual/UX redesign of the admin (organizer) side, sequenced independently of the V1 build order above. Responsive strategy is split by audience: admin is **desktop-first** (this track); participant/judge is **mobile-first** and gets its own design pass once those screens exist (out of scope here). Reference: Lovable.dev sample app (light theme default with a dark-mode toggle, Geist font, pill-shaped buttons/tabs, warm-neutral palette, collapsible sidebar shell with an in-place-expanding workspace switcher). Full spec incl. Panda token translation lives in the PR that introduces DS1.
 
 - **DS1** Panda token foundation — light/dark semantic color tokens (`bg.*`/`text.*`/`border.*`/`accent.default`), radii scale (`control`/`card`/`pill`), Geist font tokens, `dark` condition via `[data-theme="dark"]`.
 - **DS2** Theme provider — `data-theme` toggle on `<html>`, `localStorage` persistence, light default, no flash-of-wrong-theme.

@@ -35,7 +35,7 @@ export type FocusIntegrityState = {
 //     countdown and resumes editing; timing out submits the current draft
 //     and locks the question locally.
 // A web app can detect and deter this, not prevent it — this layer raises
-// the cost of casual cheating and produces evidence for the grader; it is
+// the cost of casual cheating and produces evidence for the judge; it is
 // not a proctoring system.
 //
 // `question` should be the *focused* question (whatever its status), not
@@ -197,7 +197,7 @@ export function useFocusIntegrity(params: {
     // unreliable), so it gets the same grace treatment rather than an
     // immediate hard submit. Logged as 'hidden' since the integrity_events
     // kind enum has no separate value for it and the two mean the same
-    // thing to the grader: the participant stopped looking at the screen.
+    // thing to the judge: the participant stopped looking at the screen.
     function handlePageHide() {
       handleAway('hidden')
     }
