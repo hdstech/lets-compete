@@ -48,6 +48,9 @@ const buttonRecipe = defineRecipe({
     size: {
       md: { px: '4', py: '2', minHeight: '11', fontSize: 'sm' },
       sm: { px: '2.5', py: '1', minHeight: '7', fontSize: 'xs' },
+      // 'lg' is the landing-page call-to-action: it has to hold its own as
+      // the single focal control on an otherwise empty half of the screen.
+      lg: { px: '6', py: '3', minHeight: '13', fontSize: 'md' },
     },
   },
   defaultVariants: { tone: 'primary', size: 'md' },
@@ -108,6 +111,16 @@ export default defineConfig({
             800: { value: '#2e2e2c' },
             900: { value: '#242422' },
             950: { value: '#1f1f1d' },
+          },
+          // Cool blues used only by the marketing landing page's gradient
+          // panel. Deliberately outside the app-chrome palette (ink/salmon):
+          // the landing page is the one surface with a brand identity of its
+          // own, and these stay fixed across light and dark themes.
+          brand: {
+            300: { value: '#b9cbe6' },
+            400: { value: '#90a9d1' },
+            500: { value: '#5c91e6' },
+            600: { value: '#3f6fbd' },
           },
           // Warm coral-pink used for destructive/danger buttons in place of a
           // stock red. 600 is the requested brand hex; 700 is a matching
@@ -185,6 +198,20 @@ export default defineConfig({
     '@keyframes spin': {
       from: { transform: 'rotate(0deg)' },
       to: { transform: 'rotate(360deg)' },
+    },
+    // Landing-page motion. Every consumer pairs these with `_motionReduce`
+    // so the page is fully static for visitors who ask for reduced motion.
+    '@keyframes drift': {
+      '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)' },
+      '50%': { transform: 'translate3d(4%, -6%, 0) scale(1.12)' },
+    },
+    '@keyframes riseIn': {
+      from: { opacity: '0', transform: 'translate3d(0, 14px, 0)' },
+      to: { opacity: '1', transform: 'translate3d(0, 0, 0)' },
+    },
+    '@keyframes pulseDot': {
+      '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+      '50%': { opacity: '0.35', transform: 'scale(0.75)' },
     },
     'html, body': {
       fontFamily: 'body',
