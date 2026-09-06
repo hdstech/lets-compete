@@ -8,7 +8,7 @@ import { defineConfig, defineRecipe } from '@pandacss/dev';
 const buttonRecipe = defineRecipe({
   className: 'button',
   base: {
-    borderRadius: 'pill',
+    borderRadius: 'control',
     fontWeight: 'semibold',
     cursor: 'pointer',
     borderWidth: '1px',
@@ -19,6 +19,7 @@ const buttonRecipe = defineRecipe({
     gap: '1.5',
     textDecoration: 'none',
     textAlign: 'center',
+    transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease',
     _disabled: {
       opacity: 0.5,
       cursor: 'not-allowed',
@@ -122,7 +123,7 @@ export default defineConfig({
         radii: {
           control: { value: '10px' }, // inputs, dropdowns, sidebar active-item, skeletons
           card: { value: '12px' }, // empty-state / onboarding cards
-          pill: { value: '9999px' }, // buttons, tab tracks, switcher badge
+          pill: { value: '9999px' }, // tab tracks, switcher badge
         },
         fonts: {
           heading: { value: 'Geist, ui-sans-serif, system-ui, sans-serif' },

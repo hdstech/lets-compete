@@ -30,6 +30,20 @@ export const SidebarShellRoot = styled('aside', {
     left: { base: '0', md: 'auto' },
     zIndex: { base: '20', md: 'auto' },
     boxShadow: { base: '0 0 24px rgba(0, 0, 0, 0.18)', md: 'none' },
+    overflow: 'hidden',
+    transform: 'translateX(0)',
+    transition: 'transform 0.22s ease, width 0.22s ease, padding 0.22s ease, opacity 0.2s ease',
+  },
+  variants: {
+    collapsed: {
+      true: {
+        transform: { base: 'translateX(-100%)', md: 'none' },
+        width: { md: '0' },
+        px: { md: '0' },
+        opacity: { base: '1', md: '0' },
+        pointerEvents: 'none',
+      },
+    },
   },
 })
 
@@ -45,6 +59,14 @@ export const SidebarBackdrop = styled('button', {
     cursor: 'pointer',
     zIndex: '10',
     display: { base: 'block', md: 'none' },
+    opacity: '0',
+    pointerEvents: 'none',
+    transition: 'opacity 0.22s ease',
+  },
+  variants: {
+    visible: {
+      true: { opacity: '1', pointerEvents: 'auto' },
+    },
   },
 })
 
@@ -69,6 +91,7 @@ export const SidebarNavItemLink = styled(NavLink, {
     textDecoration: 'none',
     borderWidth: '1px',
     borderColor: 'transparent',
+    transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease',
     _hover: { bg: 'bg.sunken' },
   },
   variants: {
@@ -110,6 +133,7 @@ export const SidebarFooterButton = styled('button', {
     borderColor: 'transparent',
     cursor: 'pointer',
     textAlign: 'left',
+    transition: 'background-color 0.15s ease, color 0.15s ease',
     _hover: { bg: 'bg.sunken', color: 'text.primary' },
   },
 })
@@ -137,6 +161,7 @@ export const SwitcherToggleButton = styled('button', {
     py: '2',
     cursor: 'pointer',
     color: 'text.muted',
+    transition: 'background-color 0.15s ease',
     _hover: { bg: 'bg.sunken' },
   },
 })
@@ -197,6 +222,7 @@ export const SwitcherEventLink = styled(Link, {
     fontSize: 'sm',
     color: 'text.primary',
     textDecoration: 'none',
+    transition: 'background-color 0.15s ease',
     _hover: { bg: 'bg.sunken' },
   },
 })
@@ -217,6 +243,7 @@ export const SwitcherCreateLink = styled(Link, {
     borderColor: 'border.default',
     mt: '1',
     pt: '2',
+    transition: 'background-color 0.15s ease',
     _hover: { bg: 'bg.sunken' },
   },
 })
@@ -270,6 +297,7 @@ export const CollapseToggleButton = styled('button', {
     borderWidth: '1px',
     borderColor: 'transparent',
     cursor: 'pointer',
+    transition: 'background-color 0.15s ease, color 0.15s ease',
     _hover: { bg: 'bg.sunken', color: 'text.primary' },
   },
 })

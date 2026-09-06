@@ -75,6 +75,7 @@ export const EventListItem = styled(Link, {
     p: '4',
     textDecoration: 'none',
     color: 'inherit',
+    transition: 'border-color 0.15s ease',
     _hover: { borderColor: 'accent.default' },
   },
 })
