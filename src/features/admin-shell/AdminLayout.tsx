@@ -40,20 +40,18 @@ export function AdminLayout() {
 
   return (
     <AdminShellRoot>
-      {!collapsed && (
-        <>
-          <SidebarBackdrop
-            type="button"
-            aria-label="Dismiss sidebar"
-            onClick={() => setCollapsed(true)}
-          />
-          <SidebarShell>
-            <SidebarSwitcher />
-            <SidebarNav items={NAV_ITEMS} />
-            <SidebarFooter />
-          </SidebarShell>
-        </>
-      )}
+      <SidebarBackdrop
+        type="button"
+        aria-label="Dismiss sidebar"
+        visible={!collapsed}
+        inert={collapsed}
+        onClick={() => setCollapsed(true)}
+      />
+      <SidebarShell collapsed={collapsed}>
+        <SidebarSwitcher />
+        <SidebarNav items={NAV_ITEMS} />
+        <SidebarFooter />
+      </SidebarShell>
       <ContentArea>
         <ContentHeader
           breadcrumb={breadcrumb}

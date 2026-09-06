@@ -23,6 +23,7 @@ import {
 } from '../participants/participants-api'
 import {
   AdmissionBadge,
+  ApprovedIcon,
   EligibilityBadge,
   ParticipantActions,
   ParticipantIdentity,
@@ -501,60 +502,59 @@ export function EventDetailPage() {
                   </ParticipantMeta>
                 </ParticipantIdentity>
                 <ParticipantActions>
-                  <Row>
-                    <AdmissionBadge admissionStatus={participant.admission_status}>
-                      {participant.admission_status}
-                    </AdmissionBadge>
-                    <EligibilityBadge eligibilityStatus={participant.status}>
-                      {participant.status}
-                    </EligibilityBadge>
-                  </Row>
-                  <Row equal>
-                    {participant.admission_status !== 'approved' && (
-                      <Button
-                        type="button"
-                        tone="success"
-                        size="sm"
-                        onClick={() => handleApprove(participant.id)}
-                        disabled={approvingId === participant.id}
-                      >
-                        {approvingId === participant.id ? 'Approving…' : 'Approve'}
-                      </Button>
+                  <AdmissionBadge admissionStatus={participant.admission_status}>
+                    {participant.admission_status === 'approved' && (
+                      <ApprovedIcon size={12} />
                     )}
-                    {participant.admission_status !== 'revoked' && (
-                      <Button
-                        type="button"
-                        tone="danger"
-                        size="sm"
-                        onClick={() => setRevokeTarget(participant)}
-                        disabled={revoking}
-                      >
-                        Revoke
-                      </Button>
-                    )}
-                    {participant.status === 'eligible' && (
-                      <Button
-                        type="button"
-                        tone="danger"
-                        size="sm"
-                        onClick={() => setDqTarget(participant)}
-                        disabled={disqualifying}
-                      >
-                        Disqualify
-                      </Button>
-                    )}
-                    {participant.status === 'disqualified' && (
-                      <Button
-                        type="button"
-                        tone="success"
-                        size="sm"
-                        onClick={() => handleReinstate(participant.id)}
-                        disabled={reinstatingId === participant.id}
-                      >
-                        {reinstatingId === participant.id ? 'Reinstating…' : 'Reinstate'}
-                      </Button>
-                    )}
-                  </Row>
+                    {participant.admission_status}
+                  </AdmissionBadge>
+                  <EligibilityBadge eligibilityStatus={participant.status}>
+                    {participant.status}
+                  </EligibilityBadge>
+                  {participant.admission_status !== 'approved' && (
+                    <Button
+                      type="button"
+                      tone="success"
+                      size="sm"
+                      onClick={() => handleApprove(participant.id)}
+                      disabled={approvingId === participant.id}
+                    >
+                      {approvingId === participant.id ? 'Approving…' : 'Approve'}
+                    </Button>
+                  )}
+                  {participant.admission_status !== 'revoked' && (
+                    <Button
+                      type="button"
+                      tone="danger"
+                      size="sm"
+                      onClick={() => setRevokeTarget(participant)}
+                      disabled={revoking}
+                    >
+                      Revoke
+                    </Button>
+                  )}
+                  {participant.status === 'eligible' && (
+                    <Button
+                      type="button"
+                      tone="danger"
+                      size="sm"
+                      onClick={() => setDqTarget(participant)}
+                      disabled={disqualifying}
+                    >
+                      Disqualify
+                    </Button>
+                  )}
+                  {participant.status === 'disqualified' && (
+                    <Button
+                      type="button"
+                      tone="success"
+                      size="sm"
+                      onClick={() => handleReinstate(participant.id)}
+                      disabled={reinstatingId === participant.id}
+                    >
+                      {reinstatingId === participant.id ? 'Reinstating…' : 'Reinstate'}
+                    </Button>
+                  )}
                 </ParticipantActions>
               </ParticipantListItem>
             ))}
