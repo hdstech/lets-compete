@@ -137,7 +137,6 @@ test('quiz lifecycle: author, activate, every live-answer edge case, adjudicate,
   await goToNthRoundSegments(organizerPage, 0)
   await addSegment(organizerPage, { name: 'Segment A' })
   await goToQuestions(organizerPage)
-  const segment1Id = organizerPage.url().match(/\/segments\/([0-9a-f-]{36})\/questions$/)![1]
   await addQuestion(organizerPage, { prompt: 'Capital of France (Q1)', windowSeconds: 6 })
   await addAcceptableAnswerToQuestion(organizerPage, 1, 'Paris')
   await addQuestion(organizerPage, {
@@ -274,29 +273,14 @@ test('quiz lifecycle: author, activate, every live-answer edge case, adjudicate,
   // grader-adjudication.spec.ts for the same wait on a single question).
   await organizerPage.waitForTimeout(10_500)
 
-  // Q6 (the tiebreak reserve) is deliberately never revealed here — QA12
-  // excludes it from close_round's backend gate, and it only enters play
-  // later via the sudden-death draw below. The live console's own
-  // nextPendingQuestion, however, does NOT exclude is_tiebreak questions
-  // (LiveConsolePage.tsx), so with Q6 still pending it keeps offering to
-  // reveal Q6 forever instead of ever showing "Close round" — a real UI gap
-  // this walkthrough surfaced (flagged separately), worked around here via
-  // the same API call advancement-tiebreak.spec.ts already uses for this
-  // exact reason. Bypassing the UI's "Close round" button also skips the
-  // client-side loop it runs beforehand (LiveConsolePage's confirmCloseRound)
-  // that calls auto_mark_question_answers for each window_closed question —
-  // replicated here directly so Q1/Q3/Q4 still get their QA7 provisional
-  // pre-mark before grading.
-  const round1Questions = await restSelect<{ id: string; sequence: number }>(organizerPage, 'questions', {
-    select: 'id,sequence',
-    segment_id: `eq.${segment1Id}`,
-    status: 'eq.window_closed',
-  })
-  for (const q of round1Questions) {
-    await callRpcViaApi(organizerPage, 'auto_mark_question_answers', { p_question_id: q.id })
-  }
-  await callRpcViaApi(organizerPage, 'close_round', { p_round_id: round1Id })
-  await organizerPage.reload()
+  // Q6 (the tiebreak reserve) is deliberately never revealed here — it only
+  // enters play later via the sudden-death draw below. Both close_round's
+  // backend gate (QA12) and the live console's own completeness checks
+  // exclude is_tiebreak questions from what counts as "done", so the
+  // console correctly offers "Close round" once Q1–Q5 are window_closed or
+  // voided, with Q6 still pending.
+  await organizerPage.getByRole('button', { name: 'Close round' }).click()
+  await organizerPage.getByRole('dialog').getByRole('button', { name: 'Close round' }).click()
   await expect(organizerPage.getByText(/scoring closed/)).toBeVisible()
 
   // Adjudicate: Q1 and Q4 stay auto pre-marked correct; Q3's auto-mark is
@@ -471,7 +455,15 @@ test('a rank-1 tie that exhausts the reserve pool in the final round blocks decl
   const tiedA = await createWalkInParticipant(page, eventId, 'Final Tied A')
   const tiedB = await createWalkInParticipant(page, eventId, 'Final Tied B')
 
-  await callRpcViaApi(page, 'close_round', { p_round_id: roundId })
+  // The round's only question is the tiebreak reserve, so the live console's
+  // completeness gate is vacuously satisfied — "Close round" is available
+  // immediately, with nothing to reveal first.
+  await goToRounds(page)
+  await goToLiveConsole(page)
+  await page.getByRole('button', { name: 'Close round' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Close round' }).click()
+  await expect(page.getByText(/scoring closed/)).toBeVisible()
+
   await seedFinalCalculation(page, { eventId, roundId }, [
     { participantId: tiedA.id, totalScore: 0, rank: 1 },
     { participantId: tiedB.id, totalScore: 0, rank: 1 },
