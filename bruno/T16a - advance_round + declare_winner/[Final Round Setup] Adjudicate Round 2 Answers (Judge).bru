@@ -1,5 +1,5 @@
 meta {
-  name: [Final Round Setup] Adjudicate Round 2 Answers (Grader)
+  name: [Final Round Setup] Adjudicate Round 2 Answers (Judge)
   type: http
   seq: 6
 }
@@ -12,7 +12,7 @@ post {
 
 headers {
   apikey: {{anon_key}}
-  Authorization: Bearer {{grader_jwt}}
+  Authorization: Bearer {{judge_jwt}}
   Content-Type: application/json
 }
 

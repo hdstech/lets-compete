@@ -39,5 +39,5 @@ script:post-response {
 }
 
 docs {
-  T16's calculate_results(p_event_id, p_round_id, p_segment_id, p_reason): organizer-only, requires the target round scoring_closed/advanced with no ungraded answers. Scope: p_round_id set, p_segment_id null = per-round leaderboard. Sums final_correct per participant, RANK()s, writes a new result_calculations header + frozen result_calculation_entries + an exclusion snapshot, flipping any prior is_final for the scope. Captures {{round1_calculation_id}}.
+  T16's calculate_results(p_event_id, p_round_id, p_segment_id, p_reason): organizer-only, requires the target round scoring_closed/advanced with no unscored answers. Scope: p_round_id set, p_segment_id null = per-round leaderboard. Sums final_correct per participant, RANK()s, writes a new result_calculations header + frozen result_calculation_entries + an exclusion snapshot, flipping any prior is_final for the scope. Captures {{round1_calculation_id}}.
 }

@@ -41,10 +41,10 @@ imported environment in Yaak and fill in:
   publishable/anon key — safe to use here since RLS is the real security
   boundary; still don't commit it into this collection).
 - `admin_email` / `admin_password`, `participant_email` / `participant_password`,
-  `grader_email` / `grader_password` — pick any test credentials for three
+  `judge_email` / `judge_password` — pick any test credentials for three
   throwaway Supabase Auth users. These aren't org secrets, just fixture
   data for the suite's three seeded roles (organizer/admin, participant,
-  grader — see T4's profiles-mirror trigger and QA2's per-event
+  judge — see T4's profiles-mirror trigger and QA2's per-event
   `organizer_id` / `grader_id` / participant model).
 - Everything else (`*_jwt`, `*_user_id`, `event_id`, `join_code`, every
   `*_id`, `*_reveal_token`, `*_calculation_id`, `tiebreak_id`, ...) is
@@ -64,7 +64,7 @@ Folders are ordered to match the plan's Track A ticket sequence (`QA0` →
 (or Postman's) collection runner, or by hand:
 
 1. **Auth** — sign up (or log in, on a re-run) the three seeded users;
-   captures `admin_jwt` / `participant_jwt` / `grader_jwt` and their user
+   captures `admin_jwt` / `participant_jwt` / `judge_jwt` and their user
    ids. Everything downstream depends on this running first.
 2. **QA0** — empty folder, notes only (pure schema/trigger ticket, no
    endpoint of its own).
@@ -91,7 +91,7 @@ Folders are ordered to match the plan's Track A ticket sequence (`QA0` →
     since window close; wait a few seconds if it 400s on the first try.
 11. **QA8** — reveals and voids a dedicated throwaway question.
 12. **QA9** — closes round 1.
-13. **QA10** — grader adjudicates round 1's answers.
+13. **QA10** — judge adjudicates round 1's answers.
 14. **T16** — calculates round 1's results.
 15. **T16a** — advances round 1, then **replays** the reveal → submit →
     close → auto-mark → adjudicate → close-round → calculate-results
@@ -138,7 +138,7 @@ request" treatment taken one step further.
   strip it.
 - Every request carries `apikey: {{anon_key}}` and, except the two Auth
   "anon" calls, `Authorization: Bearer {{<role>_jwt}}` for whichever role
-  (admin/participant/grader) the RLS policy or RPC's own authorization
+  (admin/participant/judge) the RLS policy or RPC's own authorization
   check requires.
 - Table writes via PostgREST (`/rest/v1/<table>`) that need the generated
   id back use `Prefer: return=representation`.
