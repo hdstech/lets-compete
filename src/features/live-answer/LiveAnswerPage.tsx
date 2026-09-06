@@ -6,6 +6,8 @@ import { formatClock, getDeadlineMs } from '../../lib/quiz-timing'
 import { useAuth } from '../auth/useAuth'
 import { AuthShell, ErrorText, Input, LoadingScreen } from '../auth/auth-ui'
 import { Button } from '../../components/ui/Button'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import { Title as PageTitle, Subtitle as PageSubtitle } from '../../components/ui/Typography'
 import { getEvent } from '../events/events-api'
 import { DefinitionGrid, DefinitionTerm, DefinitionValue, HelpText } from '../events/events-ui'
@@ -137,6 +139,15 @@ export function LiveAnswerPage() {
 
   const [now, setNow] = useState(() => Date.now())
 
+  // Bumped by the "Try again" button on a load failure — included in every
+  // fetch effect below so retrying re-runs whichever stage actually failed,
+  // without needing to track which of the three independent loads it was.
+  const [retryToken, setRetryToken] = useState(0)
+  const retryLoad = useCallback(() => {
+    setLoadError(null)
+    setRetryToken((t) => t + 1)
+  }, [])
+
   useEffect(() => {
     if (!eventId || !user) return
 
@@ -154,7 +165,7 @@ export function LiveAnswerPage() {
     return () => {
       cancelled = true
     }
-  }, [eventId, user])
+  }, [eventId, user, retryToken])
 
   const approved = participant?.admission_status === 'approved'
 
@@ -173,7 +184,7 @@ export function LiveAnswerPage() {
     return () => {
       cancelled = true
     }
-  }, [eventId, approved])
+  }, [eventId, approved, retryToken])
 
   // Live round-status transitions (round 1 closes, round 2 opens via
   // advance_round) — rounds.event_id is a real indexed column, so this can
@@ -229,7 +240,7 @@ export function LiveAnswerPage() {
     return () => {
       cancelled = true
     }
-  }, [roundId])
+  }, [roundId, retryToken])
 
   // Realtime: question reveal/close/void. A participant's very first sight
   // of a question is the reveal itself (RLS hides it while pending), so
@@ -348,14 +359,18 @@ export function LiveAnswerPage() {
       <AuthShell>
         <CenteredCard>
           <PageTitle>Something went wrong</PageTitle>
-          <ErrorText role="alert">{loadError}</ErrorText>
+          <ErrorState message={loadError} onRetry={retryLoad} />
         </CenteredCard>
       </AuthShell>
     )
   }
 
   if (!event || !participant) {
-    return <LoadingScreen>Loading…</LoadingScreen>
+    return (
+      <LoadingScreen>
+        <LoadingBlock label="Loading the quiz…" />
+      </LoadingScreen>
+    )
   }
 
   if (participant.admission_status !== 'approved') {
@@ -363,7 +378,11 @@ export function LiveAnswerPage() {
   }
 
   if (!rounds) {
-    return <LoadingScreen>Loading…</LoadingScreen>
+    return (
+      <LoadingScreen>
+        <LoadingBlock label="Loading the round…" />
+      </LoadingScreen>
+    )
   }
 
   if (!scoringOpenRound) {
@@ -381,7 +400,11 @@ export function LiveAnswerPage() {
   }
 
   if (questions === null) {
-    return <LoadingScreen>Loading…</LoadingScreen>
+    return (
+      <LoadingScreen>
+        <LoadingBlock label="Loading the current question…" />
+      </LoadingScreen>
+    )
   }
 
   if (!focusedQuestion) {

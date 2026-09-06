@@ -168,6 +168,10 @@ export default defineConfig({
       fontStyle: 'normal',
       fontDisplay: 'swap',
     },
+    '@keyframes spin': {
+      from: { transform: 'rotate(0deg)' },
+      to: { transform: 'rotate(360deg)' },
+    },
     'html, body': {
       fontFamily: 'body',
     },

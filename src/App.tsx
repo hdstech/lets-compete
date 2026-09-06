@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { styled } from '../styled-system/jsx'
+import { OfflineBanner } from './components/ui/OfflineBanner'
 import { AdvancementPage } from './features/advancement/AdvancementPage'
 import { AdminLayout } from './features/admin-shell/AdminLayout'
 import { AuthProvider } from './features/auth/AuthProvider'
@@ -10,6 +11,7 @@ import { RequireAuth } from './features/auth/RequireAuth'
 import { SignUpPage } from './features/auth/SignUpPage'
 import { ErrorText, LoadingScreen } from './features/auth/auth-ui'
 import { useAuth } from './features/auth/useAuth'
+import { LoadingBlock } from './components/ui/LoadingBlock'
 import { EventDetailPage } from './features/events/EventDetailPage'
 import { EventsListPage } from './features/events/EventsListPage'
 import { NewEventPage } from './features/events/NewEventPage'
@@ -97,7 +99,7 @@ function Home() {
   if (loading || joinState === 'joining') {
     return (
       <LoadingScreen>
-        {joinState === 'joining' ? 'Joining event…' : 'Loading…'}
+        <LoadingBlock label={joinState === 'joining' ? 'Joining event…' : 'Loading…'} />
       </LoadingScreen>
     )
   }
@@ -134,6 +136,7 @@ function Home() {
 function App() {
   return (
     <BrowserRouter>
+      <OfflineBanner />
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Home />} />

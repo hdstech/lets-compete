@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
-import { AuthLink, AuthShell, ErrorText, LoadingScreen } from '../auth/auth-ui'
+import { AuthLink, AuthShell, LoadingScreen } from '../auth/auth-ui'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
@@ -47,8 +49,8 @@ export function WaitingRoomPage() {
   const [participant, setParticipant] = useState<ParticipantRow | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!eventId || !user) return
+  const loadRegistration = useCallback(() => {
+    if (!eventId || !user) return () => {}
 
     let cancelled = false
     Promise.all([getEvent(eventId), getMyParticipant(eventId, user.id)])
@@ -65,6 +67,8 @@ export function WaitingRoomPage() {
       cancelled = true
     }
   }, [eventId, user])
+
+  useEffect(() => loadRegistration(), [loadRegistration])
 
   // Live-updates when the organizer approves/revokes elsewhere, without the
   // participant needing to refresh.
@@ -145,14 +149,24 @@ export function WaitingRoomPage() {
       <AuthShell>
         <StatusCard>
           <PageTitle>Something went wrong</PageTitle>
-          <ErrorText role="alert">{error}</ErrorText>
+          <ErrorState
+            message={error}
+            onRetry={() => {
+              setError(null)
+              loadRegistration()
+            }}
+          />
         </StatusCard>
       </AuthShell>
     )
   }
 
   if (!event || !participant) {
-    return <LoadingScreen>Loading…</LoadingScreen>
+    return (
+      <LoadingScreen>
+        <LoadingBlock label="Loading your registration…" />
+      </LoadingScreen>
+    )
   }
 
   return (

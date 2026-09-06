@@ -1,14 +1,15 @@
 import { Calendar } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { styled } from '../../../styled-system/jsx'
 import { useAuth } from '../auth/useAuth'
-import { ErrorText } from '../auth/auth-ui'
 import { LinkButton } from '../../components/ui/Button'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
 } from '../../components/ui/Typography'
-import { listOrganizerEvents } from './events-api'
+import { getErrorMessage, listOrganizerEvents } from './events-api'
 import {
   EmptyState,
   EmptyStateIcon,
@@ -39,22 +40,24 @@ export function EventsListPage() {
   const [events, setEvents] = useState<EventRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!user) return
+  const loadEvents = useCallback(() => {
+    if (!user) return () => {}
 
     let cancelled = false
     listOrganizerEvents(user.id)
       .then((rows) => {
         if (!cancelled) setEvents(rows)
       })
-      .catch((err: Error) => {
-        if (!cancelled) setError(err.message)
+      .catch((err) => {
+        if (!cancelled) setError(getErrorMessage(err, 'Failed to load your events'))
       })
 
     return () => {
       cancelled = true
     }
   }, [user])
+
+  useEffect(() => loadEvents(), [loadEvents])
 
   return (
     <PageContent>
@@ -68,9 +71,17 @@ export function EventsListPage() {
         <LinkButton to="/events/new">New event</LinkButton>
       </PageHeader>
 
-      {error && <ErrorText role="alert">{error}</ErrorText>}
+      {error && (
+        <ErrorState
+          message={error}
+          onRetry={() => {
+            setError(null)
+            loadEvents()
+          }}
+        />
+      )}
 
-      {events === null && !error && <PageSubtitle>Loading…</PageSubtitle>}
+      {events === null && !error && <LoadingBlock label="Loading your events…" />}
 
       {events !== null && events.length === 0 && (
         <EmptyState>

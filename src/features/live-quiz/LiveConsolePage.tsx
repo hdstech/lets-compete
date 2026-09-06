@@ -6,6 +6,8 @@ import { getDeadlineMs, formatClock } from '../../lib/quiz-timing'
 import { ErrorText } from '../auth/auth-ui'
 import { Button, LinkButton } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
@@ -105,8 +107,8 @@ export function LiveConsolePage() {
 
   const autoClosedRef = useRef<Set<string>>(new Set())
 
-  useEffect(() => {
-    if (!eventId || !roundId) return
+  const loadData = useCallback(() => {
+    if (!eventId || !roundId) return () => {}
 
     let cancelled = false
     Promise.all([
@@ -130,14 +132,16 @@ export function LiveConsolePage() {
         setAnswers(answerRows)
         setIntegrityEvents(integrityRows)
       })
-      .catch((err: Error) => {
-        if (!cancelled) setLoadError(err.message)
+      .catch((err) => {
+        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load the live console'))
       })
 
     return () => {
       cancelled = true
     }
   }, [eventId, roundId])
+
+  useEffect(() => loadData(), [loadData])
 
   const refreshAnswers = useCallback(async () => {
     if (!questions) return
@@ -351,7 +355,13 @@ export function LiveConsolePage() {
       <PageShell>
         <PageInner>
           <BackLink to={`/events/${eventId}/rounds`}>Back to rounds</BackLink>
-          <ErrorText role="alert">{loadError}</ErrorText>
+          <ErrorState
+            message={loadError}
+            onRetry={() => {
+              setLoadError(null)
+              loadData()
+            }}
+          />
         </PageInner>
       </PageShell>
     )
@@ -361,7 +371,7 @@ export function LiveConsolePage() {
     return (
       <PageShell>
         <PageInner>
-          <PageSubtitle>Loading…</PageSubtitle>
+          <LoadingBlock label="Loading live console…" />
         </PageInner>
       </PageShell>
     )

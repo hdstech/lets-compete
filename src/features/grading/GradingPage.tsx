@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
 import { ErrorText } from '../auth/auth-ui'
 import { Button } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { ErrorState } from '../../components/ui/ErrorState'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
@@ -134,8 +136,8 @@ export function GradingPage() {
   const [confirmingSubmit, setConfirmingSubmit] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
 
-  useEffect(() => {
-    if (!eventId || !roundId) return
+  const loadData = useCallback(() => {
+    if (!eventId || !roundId) return () => {}
 
     let cancelled = false
     Promise.all([
@@ -170,14 +172,16 @@ export function GradingPage() {
           ),
         )
       })
-      .catch((err: Error) => {
-        if (!cancelled) setLoadError(err.message)
+      .catch((err) => {
+        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load grading'))
       })
 
     return () => {
       cancelled = true
     }
   }, [eventId, roundId])
+
+  useEffect(() => loadData(), [loadData])
 
   const participantsById = useMemo(() => {
     const map = new Map<string, ParticipantRow>()
@@ -241,7 +245,13 @@ export function GradingPage() {
       <PageShell>
         <PageInner>
           <BackLink to={`/events/${eventId}/rounds`}>Back to rounds</BackLink>
-          <ErrorText role="alert">{loadError}</ErrorText>
+          <ErrorState
+            message={loadError}
+            onRetry={() => {
+              setLoadError(null)
+              loadData()
+            }}
+          />
         </PageInner>
       </PageShell>
     )
@@ -251,7 +261,7 @@ export function GradingPage() {
     return (
       <PageShell>
         <PageInner>
-          <PageSubtitle>Loading…</PageSubtitle>
+          <LoadingBlock label="Loading grading…" />
         </PageInner>
       </PageShell>
     )

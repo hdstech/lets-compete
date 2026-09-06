@@ -1,12 +1,8 @@
+import { getErrorMessage } from '../../lib/errors'
 import { supabase } from '../../lib/supabase'
 import type { AnswerRow, ParticipantRow } from '../live-quiz/types'
 
-export function getErrorMessage(err: unknown, fallback: string): string {
-  if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
-    return err.message
-  }
-  return fallback
-}
+export { getErrorMessage }
 
 export async function listAnswersForRound(roundId: string): Promise<AnswerRow[]> {
   const { data, error } = await supabase.from('answers').select('*').eq('round_id', roundId)
