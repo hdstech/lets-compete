@@ -68,8 +68,8 @@ export async function voidTiebreakQuestion(tiebreakId: string): Promise<Question
   return data as QuestionRow
 }
 
-// Requires the currently drawn question fully graded first (raises
-// otherwise, pointing at the grading screen). No clean cut: stays open,
+// Requires the currently drawn question fully scored first (raises
+// otherwise, pointing at the scoring screen). No clean cut: stays open,
 // ready for another draw. Clean cut: entrant outcomes are written and the
 // tiebreak flips to 'resolved'.
 export async function resolveTiebreakQuestion(tiebreakId: string): Promise<TiebreakRow> {

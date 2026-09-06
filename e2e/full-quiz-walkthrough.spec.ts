@@ -83,12 +83,12 @@ async function addAcceptableAnswerToQuestion(page: Page, sequence: number, value
   await expect(form.getByRole('button', { name: 'Add answer' })).toBeVisible()
 }
 
-// GradingPage renders one Card per question, titled "{segment} · Q{n}",
+// ScoringPage renders one Card per question, titled "{segment} · Q{n}",
 // each with its own single "Correct"/"Incorrect" toggle button immediately
 // after it in document order (before the next question's own heading) —
 // so the first <button> found after a given heading is that question's own
 // toggle, without needing to identify the enclosing Card element at all.
-function gradingToggle(page: Page, headingLabel: string) {
+function scoringToggle(page: Page, headingLabel: string) {
   return page
     .getByRole('heading', { level: 2, name: headingLabel, exact: true })
     .locator('xpath=following::button[1]')
@@ -96,7 +96,7 @@ function gradingToggle(page: Page, headingLabel: string) {
 
 // ResultsPage titles each round's section "Round {sequence}: {name}" with
 // that round's own "Calculate results" button immediately following it in
-// the same BoardHeader row — same following-button trick as gradingToggle,
+// the same BoardHeader row — same following-button trick as scoringToggle,
 // needed once more than one round's section is on the page at once.
 function resultsCalculateButton(page: Page, roundHeadingText: string) {
   return page
@@ -104,7 +104,7 @@ function resultsCalculateButton(page: Page, roundHeadingText: string) {
     .locator('xpath=following::button[1]')
 }
 
-const graderEmail = process.env.E2E_GRADER_EMAIL ?? 'playwright-e2e-grader@example.com'
+const judgeEmail = process.env.E2E_JUDGE_EMAIL ?? 'playwright-e2e-judge@example.com'
 
 test.setTimeout(240_000)
 
@@ -117,10 +117,10 @@ test('quiz lifecycle: author, activate, every live-answer edge case, adjudicate,
     storageState: 'playwright/.auth/participant.json',
   })
   const participantPage = await participantContext.newPage()
-  const graderContext = await browser.newContext({
-    storageState: 'playwright/.auth/grader.json',
+  const judgeContext = await browser.newContext({
+    storageState: 'playwright/.auth/judge.json',
   })
-  const graderPage = await graderContext.newPage()
+  const judgePage = await judgeContext.newPage()
 
   const name = uniqueEventName('Full Walkthrough')
   await createRoundsEvent(organizerPage, name)
@@ -175,8 +175,8 @@ test('quiz lifecycle: author, activate, every live-answer edge case, adjudicate,
   await organizerPage.goto(`/events/${eventId}`)
   await activateEvent(organizerPage)
 
-  await organizerPage.getByLabel("Grader's email").fill(graderEmail)
-  await organizerPage.getByRole('button', { name: 'Assign grader' }).click()
+  await organizerPage.getByLabel("Judge's email").fill(judgeEmail)
+  await organizerPage.getByRole('button', { name: 'Assign judge' }).click()
   await expect(organizerPage.getByText(/Assigned/)).toBeVisible()
 
   // The single real participant self-registers and is approved. A second,
@@ -270,7 +270,7 @@ test('quiz lifecycle: author, activate, every live-answer edge case, adjudicate,
   // The auto pre-mark matcher needs each closed question's own 10s
   // post-close grace period to have elapsed before closing the round will
   // mark it — Q4 closed most recently, so wait that out here (see
-  // grader-adjudication.spec.ts for the same wait on a single question).
+  // judge-adjudication.spec.ts for the same wait on a single question).
   await organizerPage.waitForTimeout(10_500)
 
   // Q6 (the tiebreak reserve) is deliberately never revealed here — it only
@@ -284,21 +284,21 @@ test('quiz lifecycle: author, activate, every live-answer edge case, adjudicate,
   await expect(organizerPage.getByText(/scoring closed/)).toBeVisible()
 
   // Adjudicate: Q1 and Q4 stay auto pre-marked correct; Q3's auto-mark is
-  // explicitly overridden to prove a grader's override — not the matcher —
+  // explicitly overridden to prove a judge's override — not the matcher —
   // is what final_correct reflects downstream.
-  await graderPage.goto(`/events/${eventId}/rounds/${round1Id}/grade`)
-  await expect(gradingToggle(graderPage, 'Segment A · Q1')).toHaveText('Correct', { timeout: 15_000 })
-  await expect(gradingToggle(graderPage, 'Segment A · Q4')).toHaveText('Correct')
-  await gradingToggle(graderPage, 'Segment A · Q3').click()
-  await expect(gradingToggle(graderPage, 'Segment A · Q3')).toHaveText('Incorrect')
+  await judgePage.goto(`/events/${eventId}/rounds/${round1Id}/score`)
+  await expect(scoringToggle(judgePage, 'Segment A · Q1')).toHaveText('Correct', { timeout: 15_000 })
+  await expect(scoringToggle(judgePage, 'Segment A · Q4')).toHaveText('Correct')
+  await scoringToggle(judgePage, 'Segment A · Q3').click()
+  await expect(scoringToggle(judgePage, 'Segment A · Q3')).toHaveText('Incorrect')
 
-  await graderPage.getByRole('button', { name: 'Save grades' }).click()
-  await graderPage.getByRole('dialog').getByRole('button', { name: 'Save grades' }).click()
-  await expect(graderPage.getByText('Grades saved.')).toBeVisible()
+  await judgePage.getByRole('button', { name: 'Save scores' }).click()
+  await judgePage.getByRole('dialog').getByRole('button', { name: 'Save scores' }).click()
+  await expect(judgePage.getByText('Scores saved.')).toBeVisible()
 
   // Reload to confirm the override persisted server-side, not just locally.
-  await graderPage.reload()
-  await expect(gradingToggle(graderPage, 'Segment A · Q3')).toHaveText('Incorrect')
+  await judgePage.reload()
+  await expect(scoringToggle(judgePage, 'Segment A · Q3')).toHaveText('Incorrect')
 
   // Calculate: the participant scores 2 (Q1 + Q4; Q3 was overridden to
   // incorrect, Q2 never answered, Q5 voided) and ranks 1st. The two walk-ins
@@ -390,13 +390,13 @@ test('quiz lifecycle: author, activate, every live-answer edge case, adjudicate,
 
   // calculate_results requires every answer's final_correct to be set —
   // auto_correct alone (QA7's provisional pre-mark) isn't enough — so the
-  // grader still has to visit and save, even though "Tokyo" already matches
+  // judge still has to visit and save, even though "Tokyo" already matches
   // the one acceptable answer and needs no override.
-  await graderPage.goto(`/events/${eventId}/rounds/${round2Id}/grade`)
-  await expect(graderPage.getByRole('button', { name: 'Correct' })).toBeVisible()
-  await graderPage.getByRole('button', { name: 'Save grades' }).click()
-  await graderPage.getByRole('dialog').getByRole('button', { name: 'Save grades' }).click()
-  await expect(graderPage.getByText('Grades saved.')).toBeVisible()
+  await judgePage.goto(`/events/${eventId}/rounds/${round2Id}/score`)
+  await expect(judgePage.getByRole('button', { name: 'Correct' })).toBeVisible()
+  await judgePage.getByRole('button', { name: 'Save scores' }).click()
+  await judgePage.getByRole('dialog').getByRole('button', { name: 'Save scores' }).click()
+  await expect(judgePage.getByText('Scores saved.')).toBeVisible()
 
   await organizerPage.goto(`/events/${eventId}`)
   await goToRounds(organizerPage)
@@ -419,7 +419,7 @@ test('quiz lifecycle: author, activate, every live-answer edge case, adjudicate,
 
   await deleteEventViaApi(organizerPage, eventId)
   await participantContext.close()
-  await graderContext.close()
+  await judgeContext.close()
 })
 
 // A genuine gap AdvancementPage's own logic exposes: a non-final round's
@@ -635,7 +635,7 @@ async function restSelect<T>(page: Page, table: string, params: Record<string, s
 // Covers the plan's "no-rounds regression": createDraftEvent (the shared
 // helper every non-elimination spec in this suite relies on) leaves
 // has_rounds: false, and every one of those specs already exercises the
-// full reveal → answer → close → grade cycle against the single implicit
+// full reveal → answer → close → score cycle against the single implicit
 // round it collapses to — so the collapse itself is already proven
 // pervasively. What's new here is T28's has_rounds-gated rendering: the
 // results screen hides the per-round board and heading for a no-rounds
@@ -649,10 +649,10 @@ test('a has_rounds:false quiz collapses to one implicit round, and results rende
     storageState: 'playwright/.auth/participant.json',
   })
   const participantPage = await participantContext.newPage()
-  const graderContext = await browser.newContext({
-    storageState: 'playwright/.auth/grader.json',
+  const judgeContext = await browser.newContext({
+    storageState: 'playwright/.auth/judge.json',
   })
-  const graderPage = await graderContext.newPage()
+  const judgePage = await judgeContext.newPage()
 
   const name = uniqueEventName('No Rounds Regression')
   await createDraftEvent(organizerPage, name)
@@ -670,8 +670,8 @@ test('a has_rounds:false quiz collapses to one implicit round, and results rende
   await organizerPage.goto(`/events/${eventId}`)
   await activateEvent(organizerPage)
 
-  await organizerPage.getByLabel("Grader's email").fill(graderEmail)
-  await organizerPage.getByRole('button', { name: 'Assign grader' }).click()
+  await organizerPage.getByLabel("Judge's email").fill(judgeEmail)
+  await organizerPage.getByRole('button', { name: 'Assign judge' }).click()
   await expect(organizerPage.getByText(/Assigned/)).toBeVisible()
 
   await participantPage.goto('/')
@@ -696,7 +696,7 @@ test('a has_rounds:false quiz collapses to one implicit round, and results rende
   await expect(organizerPage.getByText('window closed')).toBeVisible({ timeout: 10_000 })
   // The auto pre-mark matcher needs its own post-close grace period before
   // it will mark the answer (closing the round is what invokes it — see
-  // grader-adjudication.spec.ts for the same wait).
+  // judge-adjudication.spec.ts for the same wait).
   await organizerPage.waitForTimeout(10_500)
 
   await organizerPage.getByRole('button', { name: 'Close round' }).click()
@@ -705,15 +705,15 @@ test('a has_rounds:false quiz collapses to one implicit round, and results rende
 
   // The auto pre-mark matcher (QA7) sets auto_correct at round-close time,
   // but calculate_results still requires every answer's final_correct to be
-  // set before it will run — a grader has to visit and save at least once,
+  // set before it will run — a judge has to visit and save at least once,
   // even to just confirm the auto-mark, same as every other spec that goes
   // on to calculate results.
   const roundId = organizerPage.url().match(/\/rounds\/([0-9a-f-]{36})\/live$/)![1]
-  await graderPage.goto(`/events/${eventId}/rounds/${roundId}/grade`)
-  await expect(graderPage.getByRole('button', { name: 'Correct' })).toBeVisible()
-  await graderPage.getByRole('button', { name: 'Save grades' }).click()
-  await graderPage.getByRole('dialog').getByRole('button', { name: 'Save grades' }).click()
-  await expect(graderPage.getByText('Grades saved.')).toBeVisible()
+  await judgePage.goto(`/events/${eventId}/rounds/${roundId}/score`)
+  await expect(judgePage.getByRole('button', { name: 'Correct' })).toBeVisible()
+  await judgePage.getByRole('button', { name: 'Save scores' }).click()
+  await judgePage.getByRole('dialog').getByRole('button', { name: 'Save scores' }).click()
+  await expect(judgePage.getByText('Scores saved.')).toBeVisible()
 
   await organizerPage.goto(`/events/${eventId}`)
   await goToRounds(organizerPage)
@@ -734,5 +734,5 @@ test('a has_rounds:false quiz collapses to one implicit round, and results rende
 
   await deleteEventViaApi(organizerPage, eventId)
   await participantContext.close()
-  await graderContext.close()
+  await judgeContext.close()
 })

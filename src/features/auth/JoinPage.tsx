@@ -96,7 +96,7 @@ export function JoinPage() {
         <div>
           <AuthTitle>Join an event</AuthTitle>
           <AuthSubtitle>
-            Participants and graders sign in with an emailed link — no password
+            Participants and judges sign in with an emailed link — no password
             needed.
           </AuthSubtitle>
         </div>
@@ -108,7 +108,7 @@ export function JoinPage() {
               name="joinCode"
               type="text"
               autoComplete="off"
-              placeholder="Leave blank if you're a grader"
+              placeholder="Leave blank if you're a judge"
               value={joinCode}
               onChange={(event) => setJoinCode(event.target.value)}
             />

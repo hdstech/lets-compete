@@ -505,7 +505,7 @@ export function QuestionsPage() {
                     </CheckboxField>
                   </Field>
                   {editError && <ErrorText role="alert">{editError}</ErrorText>}
-                  <Row>
+                  <Row equal>
                     <SubmitButton type="submit" disabled={saving}>
                       {saving ? 'Saving…' : 'Save question'}
                     </SubmitButton>
@@ -612,7 +612,7 @@ export function QuestionsPage() {
               )}
 
               {isDraft && (
-                <Row>
+                <Row equal>
                   <Button
                     type="button"
                     tone="secondary"

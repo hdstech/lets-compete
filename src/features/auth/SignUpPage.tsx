@@ -130,7 +130,7 @@ export function SignUpPage() {
           Already have an account? <AuthLink to="/login">Log in</AuthLink>
         </AuthFooterText>
         <AuthFooterText>
-          Participant or grader?{' '}
+          Participant or judge?{' '}
           <AuthLink to="/join">Use your email link</AuthLink>
         </AuthFooterText>
       </AuthCard>

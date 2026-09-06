@@ -42,7 +42,7 @@ const buttonRecipe = defineRecipe({
         borderColor: 'border.default',
         _hover: { bg: 'bg.sunken' },
       },
-      danger: { bg: 'red.600', color: 'white', _hover: { bg: 'red.700' } },
+      danger: { bg: 'salmon.600', color: 'white', _hover: { bg: 'salmon.700' } },
       success: { bg: 'green.600', color: 'white', _hover: { bg: 'green.700' } },
     },
   },
@@ -104,6 +104,15 @@ export default defineConfig({
             800: { value: '#2e2e2c' },
             900: { value: '#242422' },
             950: { value: '#1f1f1d' },
+          },
+          // Warm coral-pink used for destructive/danger buttons in place of a
+          // stock red, at a shade dark enough to keep white button text legible.
+          salmon: {
+            50: { value: '#fff1ee' },
+            400: { value: '#f4977e' },
+            500: { value: '#ee8267' },
+            600: { value: '#e2704f' },
+            700: { value: '#c85a3c' },
           },
         },
         radii: {

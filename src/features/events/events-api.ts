@@ -86,7 +86,7 @@ export async function concludeEvent(eventId: string): Promise<EventRow> {
   return data as EventRow
 }
 
-export async function assignGrader(eventId: string, email: string): Promise<EventRow> {
+export async function assignJudge(eventId: string, email: string): Promise<EventRow> {
   const { data, error } = await supabase.rpc('assign_grader', {
     p_event_id: eventId,
     p_email: email,

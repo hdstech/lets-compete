@@ -35,7 +35,7 @@ import {
   getErrorMessage,
   listAnswersForRound,
   listParticipantsByIds,
-} from './grading-api'
+} from './scoring-api'
 
 const QuestionPrompt = styled('p', {
   base: { fontSize: 'md', fontWeight: 'semibold', color: 'text.primary' },
@@ -94,7 +94,7 @@ const DecisionToggle = styled('button', {
   variants: {
     correct: {
       yes: { bg: 'green.700', color: 'green.50' },
-      no: { bg: 'red.700', color: 'red.50' },
+      no: { bg: 'salmon.700', color: 'white' },
     },
   },
 })
@@ -116,7 +116,7 @@ const DecisionStatic = styled('span', {
   },
 })
 
-export function GradingPage() {
+export function ScoringPage() {
   const { eventId, roundId } = useParams<{ eventId: string; roundId: string }>()
 
   const [event, setEvent] = useState<EventRow | null>(null)
@@ -173,7 +173,7 @@ export function GradingPage() {
         )
       })
       .catch((err) => {
-        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load grading'))
+        if (!cancelled) setLoadError(getErrorMessage(err, 'Failed to load scoring'))
       })
 
     return () => {
@@ -211,11 +211,11 @@ export function GradingPage() {
     return counts
   }, [integrityEvents])
 
-  const canEditGrades = round?.status === 'scoring_closed'
+  const canEditScores = round?.status === 'scoring_closed'
   const totalAnswers = answers?.length ?? 0
 
   function toggleDecision(answerId: string) {
-    if (!canEditGrades) return
+    if (!canEditScores) return
     setJustSaved(false)
     setDecisions((prev) => ({ ...prev, [answerId]: !prev[answerId] }))
   }
@@ -226,15 +226,15 @@ export function GradingPage() {
     setSubmitError(null)
     setSubmitting(true)
     try {
-      const grades = answers.map((a) => ({
+      const scores = answers.map((a) => ({
         answer_id: a.id,
         final_correct: decisions[a.id] ?? false,
       }))
-      const updated = await adjudicateRoundAnswers(roundId, grades)
+      const updated = await adjudicateRoundAnswers(roundId, scores)
       setAnswers(updated)
       setJustSaved(true)
     } catch (err) {
-      setSubmitError(getErrorMessage(err, 'Failed to save grades'))
+      setSubmitError(getErrorMessage(err, 'Failed to save scores'))
     } finally {
       setSubmitting(false)
     }
@@ -261,7 +261,7 @@ export function GradingPage() {
     return (
       <PageShell>
         <PageInner>
-          <LoadingBlock label="Loading grading…" />
+          <LoadingBlock label="Loading scoring…" />
         </PageInner>
       </PageShell>
     )
@@ -273,7 +273,7 @@ export function GradingPage() {
         <PageHeader>
           <div>
             <PageTitle>
-              Grade — Round {round.sequence}: {round.name}
+              Score — Round {round.sequence}: {round.name}
             </PageTitle>
             <PageSubtitle>{event.name}</PageSubtitle>
           </div>
@@ -282,7 +282,7 @@ export function GradingPage() {
 
         {round.status === 'pending' || round.status === 'scoring_open' ? (
           <HelpText>
-            This round hasn't closed for scoring yet. Grading opens once every
+            This round hasn't closed for scoring yet. Scoring opens once every
             question is closed or voided and the round is closed from the
             live console.
           </HelpText>
@@ -290,7 +290,7 @@ export function GradingPage() {
           <>
             {round.status === 'advanced' && (
               <HelpText>
-                This round has already advanced — grades are locked and shown
+                This round has already advanced — scores are locked and shown
                 for reference only.
               </HelpText>
             )}
@@ -343,7 +343,7 @@ export function GradingPage() {
                               ) : null}
                             </AnswerIdentity>
 
-                            {canEditGrades ? (
+                            {canEditScores ? (
                               <DecisionToggle
                                 type="button"
                                 correct={isCorrect ? 'yes' : 'no'}
@@ -365,7 +365,7 @@ export function GradingPage() {
               )
             })}
 
-            {canEditGrades && totalAnswers > 0 && (
+            {canEditScores && totalAnswers > 0 && (
               <Card>
                 <Row>
                   <Button
@@ -374,9 +374,9 @@ export function GradingPage() {
                     onClick={() => setConfirmingSubmit(true)}
                     disabled={submitting}
                   >
-                    {submitting ? 'Saving grades…' : 'Save grades'}
+                    {submitting ? 'Saving scores…' : 'Save scores'}
                   </Button>
-                  {justSaved && <HelpText>Grades saved.</HelpText>}
+                  {justSaved && <HelpText>Scores saved.</HelpText>}
                 </Row>
               </Card>
             )}
@@ -386,9 +386,9 @@ export function GradingPage() {
 
       <ConfirmDialog
         open={confirmingSubmit}
-        title="Save these grades?"
-        description="Confirming or overriding an auto pre-marked answer here sets its final grade for scoring."
-        confirmLabel="Save grades"
+        title="Save these scores?"
+        description="Confirming or overriding an auto pre-marked answer here sets its final score."
+        confirmLabel="Save scores"
         tone="primary"
         onConfirm={confirmSubmit}
         onCancel={() => setConfirmingSubmit(false)}

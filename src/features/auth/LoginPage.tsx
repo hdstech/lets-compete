@@ -99,7 +99,7 @@ export function LoginPage() {
           Need an account? <AuthLink to="/signup">Sign up</AuthLink>
         </AuthFooterText>
         <AuthFooterText>
-          Participant or grader?{' '}
+          Participant or judge?{' '}
           <AuthLink to="/join">Use your email link</AuthLink>
         </AuthFooterText>
       </AuthCard>

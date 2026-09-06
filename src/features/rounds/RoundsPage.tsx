@@ -379,7 +379,7 @@ export function RoundsPage() {
                   />
                 </Field>
                 {editError && <ErrorText role="alert">{editError}</ErrorText>}
-                <Row>
+                <Row equal>
                   <SubmitButton type="submit" disabled={saving}>
                     {saving ? 'Saving…' : 'Save round'}
                   </SubmitButton>
@@ -402,7 +402,7 @@ export function RoundsPage() {
                   {round.status.replace('_', ' ')}
                 </DefinitionValue>
               </DefinitionGrid>
-              <Row>
+              <Row equal>
                 <LinkButton
                   to={`/events/${event.id}/rounds/${round.id}/segments`}
                   tone="secondary"
@@ -419,10 +419,10 @@ export function RoundsPage() {
                 )}
                 {(round.status === 'scoring_closed' || round.status === 'advanced') && (
                   <LinkButton
-                    to={`/events/${event.id}/rounds/${round.id}/grade`}
+                    to={`/events/${event.id}/rounds/${round.id}/score`}
                     tone="secondary"
                   >
-                    Grade round
+                    Score round
                   </LinkButton>
                 )}
                 {(round.status === 'scoring_closed' || round.status === 'advanced') && (

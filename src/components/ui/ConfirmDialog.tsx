@@ -87,7 +87,7 @@ export function ConfirmDialog({
       >
         <DialogTitle id="confirm-dialog-title">{title}</DialogTitle>
         <DialogBody id="confirm-dialog-description">{description}</DialogBody>
-        <Row style={{ justifyContent: 'flex-end' }}>
+        <Row equal style={{ justifyContent: 'flex-end' }}>
           <Button
             ref={cancelButtonRef}
             type="button"

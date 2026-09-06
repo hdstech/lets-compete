@@ -40,7 +40,7 @@ async function createRoundsEvent(page: import('@playwright/test').Page, name: st
 // rendering the frozen result_calculation_entries, not recomputing scores
 // client-side.
 
-const graderEmail = process.env.E2E_GRADER_EMAIL ?? 'playwright-e2e-grader@example.com'
+const judgeEmail = process.env.E2E_JUDGE_EMAIL ?? 'playwright-e2e-judge@example.com'
 
 test.setTimeout(90_000)
 
@@ -55,10 +55,10 @@ test('calculating a closed round shows matching segment and round boards, and re
     storageState: 'playwright/.auth/participant.json',
   })
   const participantPage = await participantContext.newPage()
-  const graderContext = await browser.newContext({
-    storageState: 'playwright/.auth/grader.json',
+  const judgeContext = await browser.newContext({
+    storageState: 'playwright/.auth/judge.json',
   })
-  const graderPage = await graderContext.newPage()
+  const judgePage = await judgeContext.newPage()
 
   const name = uniqueEventName('Results Leaderboard')
   await createRoundsEvent(organizerPage, name)
@@ -76,8 +76,8 @@ test('calculating a closed round shows matching segment and round boards, and re
   await organizerPage.goto(`/events/${eventId}`)
   await activateEvent(organizerPage)
 
-  await organizerPage.getByLabel("Grader's email").fill(graderEmail)
-  await organizerPage.getByRole('button', { name: 'Assign grader' }).click()
+  await organizerPage.getByLabel("Judge's email").fill(judgeEmail)
+  await organizerPage.getByRole('button', { name: 'Assign judge' }).click()
   await expect(organizerPage.getByText(/Assigned/)).toBeVisible()
 
   await participantPage.goto('/')
@@ -104,18 +104,18 @@ test('calculating a closed round shows matching segment and round boards, and re
 
   await expect(organizerPage.getByText('window closed')).toBeVisible({ timeout: 10_000 })
   // The auto-mark matcher needs its own post-close grace period before
-  // it marks the answer — see grader-adjudication.spec.ts for the same wait.
+  // it marks the answer — see judge-adjudication.spec.ts for the same wait.
   await organizerPage.waitForTimeout(10_500)
   await organizerPage.getByRole('button', { name: 'Close round' }).click()
   await organizerPage.getByRole('dialog').getByRole('button', { name: 'Close round' }).click()
   await expect(organizerPage.getByText(/scoring closed/)).toBeVisible()
 
-  // Grader adjudicates the one answer as correct.
-  await graderPage.goto(`/events/${eventId}/rounds/${roundId}/grade`)
-  await expect(graderPage.getByRole('button', { name: 'Correct' })).toBeVisible()
-  await graderPage.getByRole('button', { name: 'Save grades' }).click()
-  await graderPage.getByRole('dialog').getByRole('button', { name: 'Save grades' }).click()
-  await expect(graderPage.getByText('Grades saved.')).toBeVisible()
+  // Judge adjudicates the one answer as correct.
+  await judgePage.goto(`/events/${eventId}/rounds/${roundId}/score`)
+  await expect(judgePage.getByRole('button', { name: 'Correct' })).toBeVisible()
+  await judgePage.getByRole('button', { name: 'Save scores' }).click()
+  await judgePage.getByRole('dialog').getByRole('button', { name: 'Save scores' }).click()
+  await expect(judgePage.getByText('Scores saved.')).toBeVisible()
 
   // Organizer opens results from the rounds page and calculates. Still on
   // the live console from closing the round above, so return to the event
@@ -161,7 +161,7 @@ test('calculating a closed round shows matching segment and round boards, and re
   await deleteEventViaApi(organizerPage, eventId)
   await organizerContext.close()
   await participantContext.close()
-  await graderContext.close()
+  await judgeContext.close()
 })
 
 test('a round that has not closed for scoring yet cannot be calculated', async ({ page }) => {

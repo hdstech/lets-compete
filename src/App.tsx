@@ -15,7 +15,6 @@ import { LoadingBlock } from './components/ui/LoadingBlock'
 import { EventDetailPage } from './features/events/EventDetailPage'
 import { EventsListPage } from './features/events/EventsListPage'
 import { NewEventPage } from './features/events/NewEventPage'
-import { GradingPage } from './features/grading/GradingPage'
 import { LiveAnswerPage } from './features/live-answer/LiveAnswerPage'
 import { LiveConsolePage } from './features/live-quiz/LiveConsolePage'
 import { WaitingRoomPage } from './features/participants/WaitingRoomPage'
@@ -25,6 +24,7 @@ import { QuestionsPage } from './features/questions/QuestionsPage'
 import { ResultsHistoryPage } from './features/results/ResultsHistoryPage'
 import { ResultsPage } from './features/results/ResultsPage'
 import { RoundsPage } from './features/rounds/RoundsPage'
+import { ScoringPage } from './features/scoring/ScoringPage'
 import { SegmentsPage } from './features/segments/SegmentsPage'
 import { DashboardPage } from './pages/DashboardPage'
 
@@ -181,10 +181,10 @@ function App() {
             }
           />
           <Route
-            path="/events/:eventId/rounds/:roundId/grade"
+            path="/events/:eventId/rounds/:roundId/score"
             element={
               <RequireAuth>
-                <GradingPage />
+                <ScoringPage />
               </RequireAuth>
             }
           />
