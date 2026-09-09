@@ -8,15 +8,15 @@ const ErrorCard = styled('div', {
     alignItems: 'flex-start',
     gap: '3',
     borderWidth: '1px',
-    borderColor: 'border.default',
+    borderColor: 'danger.border',
     borderRadius: 'card',
-    bg: 'bg.surface',
+    bg: 'danger.subtle',
     p: '5',
   },
 })
 
 const ErrorMessage = styled('p', {
-  base: { fontSize: 'sm', color: 'red.400' },
+  base: { fontSize: 'sm', color: 'danger.fg', fontWeight: 'medium' },
 })
 
 export function ErrorState({

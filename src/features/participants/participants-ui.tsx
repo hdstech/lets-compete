@@ -1,49 +1,26 @@
 import { Check } from 'lucide-react'
 import { styled } from '../../../styled-system/jsx'
+import type { AdmissionStatus, ParticipantEligibilityStatus } from './types'
 
-export const AdmissionBadge = styled('span', {
-  base: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '1',
-    fontSize: 'xs',
-    fontWeight: 'semibold',
-    borderRadius: 'full',
-    px: '2.5',
-    py: '1',
-    textTransform: 'capitalize',
-  },
-  variants: {
-    admissionStatus: {
-      pending: { bg: 'bg.sunken', color: 'text.primary' },
-      // Gray like the eligible badge — the green check icon carries the
-      // "approved" meaning instead of a saturated badge color.
-      approved: { bg: 'bg.sunken', color: 'text.muted' },
-      revoked: { bg: 'red.700', color: 'red.50' },
-    },
-  },
-})
+type BadgeTone = 'neutral' | 'accent' | 'success' | 'danger' | 'warning'
+
+// Admission stays quiet until something is wrong: an approved participant is
+// carried by the green check icon rather than a saturated pill, and only a
+// revoked one needs to shout.
+export const ADMISSION_TONE: Record<AdmissionStatus, BadgeTone> = {
+  pending: 'warning',
+  approved: 'neutral',
+  revoked: 'danger',
+}
+
+export const ELIGIBILITY_TONE: Record<ParticipantEligibilityStatus, BadgeTone> = {
+  eligible: 'neutral',
+  disqualified: 'danger',
+  withdrawn: 'neutral',
+}
 
 export const ApprovedIcon = styled(Check, {
   base: { color: 'green.600', flexShrink: '0' },
-})
-
-export const EligibilityBadge = styled('span', {
-  base: {
-    fontSize: 'xs',
-    fontWeight: 'semibold',
-    borderRadius: 'full',
-    px: '2.5',
-    py: '1',
-    textTransform: 'capitalize',
-  },
-  variants: {
-    eligibilityStatus: {
-      eligible: { bg: 'bg.sunken', color: 'text.muted' },
-      disqualified: { bg: 'red.700', color: 'red.50' },
-      withdrawn: { bg: 'bg.sunken', color: 'text.muted' },
-    },
-  },
 })
 
 export const ParticipantListEl = styled('div', {

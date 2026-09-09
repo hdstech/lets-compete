@@ -14,7 +14,6 @@ import { usePageBreadcrumbs, useUnsavedChanges } from '../admin-shell/use-breadc
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
-  Card,
   CheckboxField,
   DefinitionGrid,
   DefinitionTerm,
@@ -27,6 +26,7 @@ import {
   Row,
   SectionTitle,
 } from '../events/events-ui'
+import { Card } from '../../components/ui/Card'
 import type { EventRow } from '../events/types'
 import { getSegment } from '../segments/segments-api'
 import type { SegmentRow } from '../segments/types'

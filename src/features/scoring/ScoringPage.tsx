@@ -13,7 +13,6 @@ import {
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
-  Card,
   EmptyState,
   HelpText,
   PageHeader,
@@ -22,6 +21,7 @@ import {
   Row,
   SectionTitle,
 } from '../events/events-ui'
+import { Card } from '../../components/ui/Card'
 import type { EventRow } from '../events/types'
 import { listIntegrityEventsForQuestions, listRoundQuestions } from '../live-quiz/live-quiz-api'
 import type { RoundQuestion } from '../live-quiz/live-quiz-api'
@@ -75,7 +75,11 @@ const IntegrityBadge = styled('span', {
   base: {
     fontSize: 'xs',
     fontWeight: 'semibold',
-    color: 'amber.400',
+    color: 'warning.fg',
+    bg: 'warning.subtle',
+    borderRadius: 'pill',
+    px: '2',
+    py: '0.5',
   },
 })
 
@@ -93,8 +97,8 @@ const DecisionToggle = styled('button', {
   },
   variants: {
     correct: {
-      yes: { bg: 'green.700', color: 'green.50' },
-      no: { bg: 'salmon.700', color: 'white' },
+      yes: { bg: 'success.subtle', color: 'success.fg', borderColor: 'success.border' },
+      no: { bg: 'danger.subtle', color: 'danger.fg', borderColor: 'danger.border' },
     },
   },
 })
@@ -110,8 +114,8 @@ const DecisionStatic = styled('span', {
   },
   variants: {
     correct: {
-      yes: { bg: 'green.700', color: 'green.50' },
-      no: { bg: 'red.700', color: 'red.50' },
+      yes: { bg: 'success.subtle', color: 'success.fg' },
+      no: { bg: 'danger.subtle', color: 'danger.fg' },
     },
   },
 })

@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
 
+// Page chrome shared by every organizer screen. The card surface itself now
+// lives in components/ui/Card so the participant screens can use it too.
+
 export const PageShell = styled('main', {
   base: {
     minHeight: '100dvh',
@@ -21,13 +24,15 @@ export const PageInner = styled('div', {
     display: 'flex',
     flexDirection: 'column',
     gap: '6',
+    animation: 'riseIn 0.35s ease-out both',
+    _motionReduce: { animation: 'none' },
   },
 })
 
 export const PageHeader = styled('div', {
   base: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: '4',
     flexWrap: 'wrap',
@@ -35,24 +40,28 @@ export const PageHeader = styled('div', {
 })
 
 export const BackLink = styled(Link, {
-  base: { fontSize: 'sm', color: 'text.muted', textDecoration: 'underline' },
-})
-
-export const Card = styled('div', {
   base: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4',
-    bg: 'bg.surface',
-    borderWidth: '1px',
-    borderColor: 'border.default',
-    borderRadius: 'card',
-    p: '5',
+    fontSize: 'sm',
+    fontWeight: 'medium',
+    color: 'text.muted',
+    textDecoration: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '1.5',
+    transition: 'color 0.18s ease',
+    _hover: { color: 'accent.default' },
   },
 })
 
+// The heading of a card section ("Details", "Participants", "Add round").
+// It reads as a real heading now rather than a muted caption.
 export const SectionTitle = styled('h2', {
-  base: { fontSize: 'sm', fontWeight: 'semibold', color: 'text.muted' },
+  base: {
+    fontSize: 'md',
+    fontWeight: 'bold',
+    color: 'text.primary',
+    overflowWrap: 'anywhere',
+  },
 })
 
 export const HelpText = styled('p', {
@@ -66,17 +75,38 @@ export const EventList = styled('div', {
 export const EventListItem = styled(Link, {
   base: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '1.5',
+    alignItems: 'center',
+    gap: '3.5',
     bg: 'bg.surface',
     borderWidth: '1px',
     borderColor: 'border.default',
     borderRadius: 'card',
+    boxShadow: 'card',
     p: '4',
     textDecoration: 'none',
     color: 'inherit',
-    transition: 'border-color 0.15s ease',
-    _hover: { borderColor: 'accent.default' },
+    transition: 'border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease',
+    _hover: {
+      borderColor: 'accent.default',
+      boxShadow: 'lifted',
+      transform: 'translateY(-2px)',
+    },
+    _motionReduce: { _hover: { transform: 'none' } },
+    _focusVisible: {
+      outline: '2px solid',
+      outlineColor: 'accent.default',
+      outlineOffset: '2px',
+    },
+  },
+})
+
+export const EventListItemBody = styled('div', {
+  base: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.5',
+    minWidth: '0',
+    flex: '1',
   },
 })
 
@@ -91,7 +121,7 @@ export const EventListItemTitleRow = styled('div', {
 })
 
 export const EventName = styled('span', {
-  base: { fontSize: 'md', fontWeight: 'semibold' },
+  base: { fontSize: 'md', fontWeight: 'bold' },
 })
 
 export const EventMeta = styled('span', {
@@ -106,56 +136,13 @@ export const EmptyState = styled('div', {
     gap: '3',
     borderWidth: '1px',
     borderStyle: 'dashed',
-    borderColor: 'border.default',
+    borderColor: 'border.strong',
     borderRadius: 'card',
-    p: '6',
+    bg: 'bg.surface',
+    p: { base: '6', sm: '8' },
     textAlign: 'center',
     color: 'text.muted',
     fontSize: 'sm',
-  },
-})
-
-export const EmptyStateIcon = styled('div', {
-  base: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '10',
-    height: '10',
-    borderRadius: 'control',
-    bg: 'bg.sunken',
-    color: 'text.muted',
-  },
-})
-
-export const StatusBadge = styled('span', {
-  base: {
-    fontSize: 'xs',
-    fontWeight: 'semibold',
-    borderRadius: 'full',
-    px: '2.5',
-    py: '1',
-    textTransform: 'capitalize',
-  },
-  variants: {
-    status: {
-      draft: { bg: 'bg.sunken', color: 'text.primary' },
-      active: { bg: 'green.700', color: 'green.50' },
-      concluded: { bg: 'indigo.700', color: 'indigo.50' },
-    },
-  },
-})
-
-export const FormatBadge = styled('span', {
-  base: {
-    fontSize: 'xs',
-    fontWeight: 'semibold',
-    borderRadius: 'full',
-    px: '2.5',
-    py: '1',
-    textTransform: 'capitalize',
-    bg: 'bg.sunken',
-    color: 'text.muted',
   },
 })
 
@@ -181,6 +168,7 @@ export const CheckboxField = styled('label', {
     fontSize: 'sm',
     color: 'text.primary',
     cursor: 'pointer',
+    accentColor: 'accent.solid',
   },
 })
 
@@ -188,10 +176,12 @@ export const CopyableCode = styled('code', {
   base: {
     fontFamily: 'mono',
     fontSize: 'sm',
-    bg: 'bg.canvas',
+    fontWeight: 'semibold',
+    bg: 'accent.subtle',
+    color: 'accent.fg',
     borderWidth: '1px',
-    borderColor: 'border.default',
-    borderRadius: 'md',
+    borderColor: 'accent.border',
+    borderRadius: 'control',
     px: '2.5',
     py: '1.5',
     letterSpacing: 'wide',
@@ -201,25 +191,34 @@ export const CopyableCode = styled('code', {
 export const DefinitionGrid = styled('dl', {
   base: {
     display: 'grid',
-    gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' },
     gap: '3',
     fontSize: 'sm',
     minWidth: '0',
   },
+  variants: {
+    columns: {
+      two: { gridTemplateColumns: { base: '1fr', sm: '1fr 1fr' } },
+      // Term above value, for a narrow column.
+      stacked: { gridTemplateColumns: '1fr', gap: '1' },
+    },
+  },
+  defaultVariants: { columns: 'two' },
 })
 
 export const DefinitionTerm = styled('dt', {
   base: {
     color: 'text.placeholder',
     fontSize: 'xs',
+    fontWeight: 'semibold',
     textTransform: 'uppercase',
-    letterSpacing: 'wide',
+    letterSpacing: '0.08em',
   },
 })
 
 export const DefinitionValue = styled('dd', {
   base: {
     color: 'text.primary',
+    fontWeight: 'medium',
     minWidth: '0',
     overflowWrap: 'anywhere',
   },

@@ -14,7 +14,7 @@ const Banner = styled('div', {
     fontSize: 'sm',
     fontWeight: 'semibold',
     color: 'white',
-    bg: 'red.600',
+    bg: 'salmon.700',
     px: '4',
     py: '2',
     textAlign: 'center',

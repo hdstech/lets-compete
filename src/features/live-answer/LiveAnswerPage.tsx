@@ -4,13 +4,19 @@ import { styled } from '../../../styled-system/jsx'
 import { supabase } from '../../lib/supabase'
 import { formatClock, getDeadlineMs } from '../../lib/quiz-timing'
 import { useAuth } from '../auth/useAuth'
-import { AuthShell, ErrorText, Input, LoadingScreen } from '../auth/auth-ui'
+import { ErrorText, Input, LoadingScreen } from '../auth/auth-ui'
 import { Button } from '../../components/ui/Button'
+import { Card } from '../../components/ui/Card'
 import { ErrorState } from '../../components/ui/ErrorState'
+import { PlayerHeader } from '../../components/ui/PlayerHeader'
+import {
+  PlayerBody,
+  PlayerHeaderBadge,
+  PlayerShell,
+} from '../../components/ui/PlayerShell'
 import { LoadingBlock } from '../../components/ui/LoadingBlock'
-import { Title as PageTitle, Subtitle as PageSubtitle } from '../../components/ui/Typography'
 import { getEvent } from '../events/events-api'
-import { DefinitionGrid, DefinitionTerm, DefinitionValue, HelpText } from '../events/events-ui'
+import { HelpText } from '../events/events-ui'
 import type { EventRow } from '../events/types'
 import { listRoundQuestions } from '../live-quiz/live-quiz-api'
 import type { RoundQuestion } from '../live-quiz/live-quiz-api'
@@ -22,30 +28,6 @@ import type { RoundRow } from '../rounds/types'
 import { getAnswerDraft, setAnswerDraft } from './answer-draft'
 import { getErrorMessage as getSubmitErrorMessage, getMyAnswer, submitAnswer } from './live-answer-api'
 import { useFocusIntegrity } from './useFocusIntegrity'
-
-const ScreenCard = styled('div', {
-  base: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: 'full',
-    maxWidth: '96',
-    minWidth: '0',
-    minHeight: '100dvh',
-    mx: 'auto',
-  },
-})
-
-const PlayBody = styled('div', {
-  base: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4',
-    flex: '1',
-    px: { base: '4', sm: '6' },
-    pt: { base: '4', sm: '6' },
-    pb: '3',
-  },
-})
 
 const PlayComposer = styled('div', {
   base: {
@@ -63,32 +45,15 @@ const PlayComposer = styled('div', {
   },
 })
 
-const CenteredCard = styled('div', {
-  base: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4',
-    width: 'full',
-    maxWidth: '96',
-    minWidth: '0',
-    bg: 'bg.surface',
-    borderWidth: '1px',
-    borderColor: 'border.default',
-    borderRadius: 'card',
-    p: { base: '4', sm: '6' },
-    textAlign: 'center',
-    alignItems: 'center',
-  },
-})
-
 const StatusMessage = styled('p', {
   base: { fontSize: 'sm', color: 'text.muted' },
 })
 
 const QuestionPrompt = styled('p', {
   base: {
-    fontSize: { base: 'xl', sm: 'lg' },
-    fontWeight: 'semibold',
+    fontSize: { base: '2xl', sm: 'xl' },
+    fontWeight: 'bold',
+    letterSpacing: '-0.01em',
     color: 'text.primary',
     overflowWrap: 'anywhere',
   },
@@ -96,11 +61,45 @@ const QuestionPrompt = styled('p', {
 
 const Countdown = styled('div', {
   base: {
-    fontSize: { base: '3xl', sm: '4xl' },
+    fontSize: { base: '4xl', sm: '4xl' },
     fontWeight: 'bold',
     fontVariantNumeric: 'tabular-nums',
-    color: 'text.primary',
+    letterSpacing: '-0.02em',
+    color: 'accent.default',
     textAlign: 'center',
+    transition: 'color 0.2s ease',
+  },
+  variants: {
+    // The last few seconds, where the number has to pull the eye up from
+    // the keyboard.
+    urgent: {
+      true: { color: 'danger.fg' },
+    },
+  },
+})
+
+const CountdownTrack = styled('div', {
+  base: {
+    height: '1.5',
+    width: 'full',
+    borderRadius: 'pill',
+    bg: 'bg.sunken',
+    overflow: 'hidden',
+  },
+})
+
+const CountdownFill = styled('div', {
+  base: {
+    height: 'full',
+    borderRadius: 'pill',
+    bg: 'accent.solid',
+    transition: 'width 0.95s linear, background-color 0.2s ease',
+    _motionReduce: { transition: 'none' },
+  },
+  variants: {
+    urgent: {
+      true: { bg: 'salmon.600' },
+    },
   },
 })
 
@@ -112,11 +111,12 @@ const WarningBanner = styled('p', {
   base: {
     fontSize: 'sm',
     fontWeight: 'medium',
-    color: 'amber.400',
+    color: 'warning.fg',
+    bg: 'warning.subtle',
     borderWidth: '1px',
-    borderColor: 'amber.400',
-    borderRadius: 'card',
-    p: '2',
+    borderColor: 'warning.border',
+    borderRadius: 'control',
+    p: '2.5',
     textAlign: 'center',
   },
 })
@@ -356,12 +356,14 @@ export function LiveAnswerPage() {
 
   if (loadError) {
     return (
-      <AuthShell>
-        <CenteredCard>
-          <PageTitle>Something went wrong</PageTitle>
-          <ErrorState message={loadError} onRetry={retryLoad} />
-        </CenteredCard>
-      </AuthShell>
+      <PlayerShell>
+        <PlayerHeader title="Something went wrong" />
+        <PlayerBody>
+          <Card>
+            <ErrorState message={loadError} onRetry={retryLoad} />
+          </Card>
+        </PlayerBody>
+      </PlayerShell>
     )
   }
 
@@ -387,15 +389,19 @@ export function LiveAnswerPage() {
 
   if (!scoringOpenRound) {
     return (
-      <AuthShell>
-        <CenteredCard>
-          <PageTitle>{event.name}</PageTitle>
-          <StatusMessage>
-            Waiting for the quiz to start. This page updates automatically — no
-            need to refresh.
-          </StatusMessage>
-        </CenteredCard>
-      </AuthShell>
+      <PlayerShell>
+        <PlayerHeader title={event.name} subtitle={participant.name}>
+          <PlayerHeaderBadge>Waiting to start</PlayerHeaderBadge>
+        </PlayerHeader>
+        <PlayerBody>
+          <Card>
+            <StatusMessage>
+              Waiting for the quiz to start. This page updates automatically —
+              no need to refresh.
+            </StatusMessage>
+          </Card>
+        </PlayerBody>
+      </PlayerShell>
     )
   }
 
@@ -409,37 +415,52 @@ export function LiveAnswerPage() {
 
   if (!focusedQuestion) {
     return (
-      <AuthShell>
-        <CenteredCard>
-          <PageTitle>{event.name}</PageTitle>
-          <StatusMessage>Waiting for the first question…</StatusMessage>
-        </CenteredCard>
-      </AuthShell>
+      <PlayerShell>
+        <PlayerHeader title={event.name} subtitle={participant.name}>
+          <PlayerHeaderBadge>Round open</PlayerHeaderBadge>
+        </PlayerHeader>
+        <PlayerBody>
+          <Card>
+            <StatusMessage>Waiting for the first question…</StatusMessage>
+          </Card>
+        </PlayerBody>
+      </PlayerShell>
     )
   }
 
   const isOpen = focusedQuestion.status === 'window_open'
   const hasUnsavedChanges = answerText !== (myAnswer?.submitted_text ?? '')
+  // Under ten seconds the clock switches to the danger tone; the bar tracks
+  // the same fraction of the server-set window so both agree.
+  const urgent = isOpen && remainingMs !== null && remainingMs <= 10_000
+  const remainingFraction =
+    remainingMs !== null && focusedQuestion.window_seconds > 0
+      ? Math.max(0, Math.min(1, remainingMs / (focusedQuestion.window_seconds * 1000)))
+      : 0
 
   return (
-    <AuthShell layout="fill">
-      <ScreenCard>
-        <PlayBody>
-          <div>
-            <PageTitle>{event.name}</PageTitle>
-            <PageSubtitle>{participant.name}</PageSubtitle>
-          </div>
+    <PlayerShell>
+      <PlayerHeader title={event.name} subtitle={participant.name}>
+        <PlayerHeaderBadge>{focusedQuestion.segment_name}</PlayerHeaderBadge>
+        <PlayerHeaderBadge>{focusedQuestion.answer_type}</PlayerHeaderBadge>
+      </PlayerHeader>
 
+      <PlayerBody>
+        <Card>
           <QuestionPrompt>{focusedQuestion.prompt}</QuestionPrompt>
-          <DefinitionGrid>
-            <DefinitionTerm>Segment</DefinitionTerm>
-            <DefinitionValue>{focusedQuestion.segment_name}</DefinitionValue>
-            <DefinitionTerm>Answer type</DefinitionTerm>
-            <DefinitionValue>{focusedQuestion.answer_type}</DefinitionValue>
-          </DefinitionGrid>
 
           {isOpen && (
-            <Countdown aria-live="polite">{formatClock(remainingMs ?? 0)}</Countdown>
+            <div>
+              <Countdown urgent={urgent} aria-live="polite">
+                {formatClock(remainingMs ?? 0)}
+              </Countdown>
+              <CountdownTrack aria-hidden="true">
+                <CountdownFill
+                  urgent={urgent}
+                  style={{ width: `${remainingFraction * 100}%` }}
+                />
+              </CountdownTrack>
+            </div>
           )}
 
           {focusedQuestion.status === 'voided' && (
@@ -449,58 +470,58 @@ export function LiveAnswerPage() {
           {focusedQuestion.status === 'window_closed' && (
             <HelpText>Time's up. Waiting for the next question…</HelpText>
           )}
+        </Card>
 
-          {warning && (
-            <WarningBanner role="alert" aria-live="assertive">
-              You left the screen — your answer auto-submits in{' '}
-              {Math.ceil(graceRemainingMs / 1000)}s unless you return.
-            </WarningBanner>
-          )}
-        </PlayBody>
+        {warning && (
+          <WarningBanner role="alert" aria-live="assertive">
+            You left the screen — your answer auto-submits in{' '}
+            {Math.ceil(graceRemainingMs / 1000)}s unless you return.
+          </WarningBanner>
+        )}
+      </PlayerBody>
 
-        <PlayComposer>
-          <Input
-            value={answerText}
-            onChange={(e) => handleAnswerChange(e.target.value)}
-            inputMode={focusedQuestion.answer_type === 'numeric' ? 'decimal' : 'text'}
-            placeholder="Your answer"
-            disabled={!isOpen || locked}
-            aria-label="Your answer"
-          />
+      <PlayComposer>
+        <Input
+          value={answerText}
+          onChange={(e) => handleAnswerChange(e.target.value)}
+          inputMode={focusedQuestion.answer_type === 'numeric' ? 'decimal' : 'text'}
+          placeholder="Your answer"
+          disabled={!isOpen || locked}
+          aria-label="Your answer"
+        />
 
-          {submitError && <ErrorText role="alert">{submitError}</ErrorText>}
+        {submitError && <ErrorText role="alert">{submitError}</ErrorText>}
 
-          {isOpen && !locked && (
-            <Button
-              type="button"
-              tone="success"
-              width="full"
-              onClick={handleSubmit}
-              disabled={submitting || answerText.trim() === ''}
-            >
-              {submitting ? 'Submitting…' : 'Submit answer'}
-            </Button>
-          )}
+        {isOpen && !locked && (
+          <Button
+            type="button"
+            tone="success"
+            width="full"
+            onClick={handleSubmit}
+            disabled={submitting || answerText.trim() === ''}
+          >
+            {submitting ? 'Submitting…' : 'Submit answer'}
+          </Button>
+        )}
 
-          {locked && (
-            <SubmitStatus>
-              Auto-submitted because you left the screen — you can't edit this answer anymore.
-            </SubmitStatus>
-          )}
-          {!locked && !isOpen && myAnswer?.submitted_text && (
-            <SubmitStatus>Your answer: {myAnswer.submitted_text}</SubmitStatus>
-          )}
-          {!locked && !isOpen && !myAnswer?.submitted_text && (
-            <SubmitStatus>You didn't submit an answer for this question.</SubmitStatus>
-          )}
-          {!locked && isOpen && myAnswer && !hasUnsavedChanges && (
-            <SubmitStatus>Submitted ✓ — you can still change it until time's up.</SubmitStatus>
-          )}
-          {!locked && isOpen && hasUnsavedChanges && (
-            <SubmitStatus>Not yet submitted.</SubmitStatus>
-          )}
-        </PlayComposer>
-      </ScreenCard>
-    </AuthShell>
+        {locked && (
+          <SubmitStatus>
+            Auto-submitted because you left the screen — you can't edit this answer anymore.
+          </SubmitStatus>
+        )}
+        {!locked && !isOpen && myAnswer?.submitted_text && (
+          <SubmitStatus>Your answer: {myAnswer.submitted_text}</SubmitStatus>
+        )}
+        {!locked && !isOpen && !myAnswer?.submitted_text && (
+          <SubmitStatus>You didn't submit an answer for this question.</SubmitStatus>
+        )}
+        {!locked && isOpen && myAnswer && !hasUnsavedChanges && (
+          <SubmitStatus>Submitted ✓ — you can still change it until time's up.</SubmitStatus>
+        )}
+      {!locked && isOpen && hasUnsavedChanges && (
+        <SubmitStatus>Not yet submitted.</SubmitStatus>
+      )}
+      </PlayComposer>
+    </PlayerShell>
   )
 }

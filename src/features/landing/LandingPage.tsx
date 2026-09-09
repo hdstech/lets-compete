@@ -1,42 +1,38 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Moon, Sun, Trophy, Users, Zap } from 'lucide-react'
+import { ArrowRight, Trophy, Users, Zap } from 'lucide-react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import { LinkButton } from '../../components/ui/Button'
+import { IconTile } from '../../components/ui/Card'
+import { ThemeToggle } from '../../components/ui/ThemeToggle'
 import { Title } from '../../components/ui/Typography'
 import {
-  AuthCard,
-  AuthLink,
-  AuthShell,
-  ErrorText,
-  LoadingScreen,
-} from '../auth/auth-ui'
+  BrandGlow,
+  BrandGrid,
+  BrandHeadline,
+  BrandSurface,
+  BrandText,
+  BrandWordmark,
+  BrandWordmarkBadge,
+} from '../../components/ui/brand-surface'
+import { AuthLink, ErrorText, LoadingScreen } from '../auth/auth-ui'
+import { AuthLayout } from '../auth/AuthLayout'
 import { useAuth } from '../auth/useAuth'
 import { getErrorMessage, joinEvent } from '../participants/participants-api'
 import { hasPendingJoin, takePendingJoin } from '../participants/pending-join'
-import { useTheme } from '../theme/useTheme'
 import { LiveStandings } from './LiveStandings'
 import {
   ActionBody,
   ActionHeading,
   ActionPanel,
   ActionText,
-  BrandGlow,
-  BrandGrid,
-  BrandHeadline,
-  BrandPanel,
-  BrandTagline,
   CtaRow,
   Eyebrow,
   FeatureCard,
   FeatureGrid,
-  FeatureIcon,
   InlineLink,
   LandingRoot,
   SecondaryLinks,
-  ThemeToggle,
-  Wordmark,
-  WordmarkBadge,
 } from './landing-ui'
 
 type JoinState = 'idle' | 'joining' | 'error'
@@ -49,7 +45,6 @@ const FEATURES = [
 
 export function LandingPage() {
   const { session, loading } = useAuth()
-  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   // Read synchronously at mount (not via an effect) so the very first render
   // already knows whether to show the marketing page or a "joining" state —
@@ -89,16 +84,17 @@ export function LandingPage() {
 
   if (joinState === 'error') {
     return (
-      <AuthShell>
-        <AuthCard>
-          <Title>Couldn't join the event</Title>
-          <ErrorText role="alert">{joinError}</ErrorText>
-          <SecondaryLinks>
-            <AuthLink to="/join">Try again</AuthLink>
-            <AuthLink to="/dashboard">Continue to dashboard</AuthLink>
-          </SecondaryLinks>
-        </AuthCard>
-      </AuthShell>
+      <AuthLayout
+        headline="Almost there."
+        blurb="Check the join code with your organizer and try once more — your sign-in is still good."
+      >
+        <Title size="card">Couldn't join the event</Title>
+        <ErrorText role="alert">{joinError}</ErrorText>
+        <SecondaryLinks>
+          <AuthLink to="/join">Try again</AuthLink>
+          <AuthLink to="/dashboard">Continue to dashboard</AuthLink>
+        </SecondaryLinks>
+      </AuthLayout>
     )
   }
 
@@ -108,38 +104,32 @@ export function LandingPage() {
 
   return (
     <LandingRoot>
-      <BrandPanel>
+      <BrandSurface layout="hero">
         <BrandGlow placement="top" />
         <BrandGlow placement="bottom" />
         <BrandGrid />
 
-        <Wordmark>
-          <WordmarkBadge>
+        <BrandWordmark>
+          <BrandWordmarkBadge>
             <Trophy size={18} aria-hidden="true" />
-          </WordmarkBadge>
+          </BrandWordmarkBadge>
           Event Scoring App
-        </Wordmark>
+        </BrandWordmark>
 
         <div>
-          <BrandHeadline>Let's Compete</BrandHeadline>
-          <BrandTagline>
+          <BrandHeadline size="hero">Let's Compete</BrandHeadline>
+          <BrandText marginTop="4">
             Quiz nights, tournaments, class showdowns. Build the rounds, let
             everyone in from their own phone, and watch the leaderboard move as
             the points land.
-          </BrandTagline>
+          </BrandText>
         </div>
 
         <LiveStandings />
-      </BrandPanel>
+      </BrandSurface>
 
       <ActionPanel>
-        <ThemeToggle
-          type="button"
-          onClick={toggleTheme}
-          aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-        >
-          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-        </ThemeToggle>
+        <ThemeToggle floating />
 
         <ActionBody>
           <Eyebrow>Set up in minutes</Eyebrow>
@@ -170,9 +160,9 @@ export function LandingPage() {
           <FeatureGrid>
             {FEATURES.map(({ id, icon: Icon, label }) => (
               <FeatureCard key={id}>
-                <FeatureIcon>
+                <IconTile size="sm">
                   <Icon size={16} aria-hidden="true" />
-                </FeatureIcon>
+                </IconTile>
                 {label}
               </FeatureCard>
             ))}

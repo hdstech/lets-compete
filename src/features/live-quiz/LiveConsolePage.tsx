@@ -1,3 +1,4 @@
+import { ListOrdered, Radio } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
@@ -15,7 +16,6 @@ import {
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
-  Card,
   DefinitionGrid,
   DefinitionTerm,
   DefinitionValue,
@@ -27,7 +27,18 @@ import {
   Row,
   SectionTitle,
 } from '../events/events-ui'
+import { Badge, StatusDot } from '../../components/ui/Badge'
+import {
+  Card,
+  CardHeader,
+  CardHeaderText,
+  IconTile,
+} from '../../components/ui/Card'
 import type { EventRow } from '../events/types'
+import {
+  QUESTION_STATUS_TONE,
+  questionStatusLabel,
+} from '../questions/question-status'
 import type { QuestionRow } from '../questions/types'
 import { getRound } from '../rounds/rounds-api'
 import type { RoundRow } from '../rounds/types'
@@ -79,9 +90,23 @@ const RosterItem = styled('div', {
   },
   variants: {
     answered: {
-      yes: { bg: 'green.700', color: 'green.50' },
+      yes: { bg: 'success.subtle', color: 'success.fg' },
       no: { bg: 'bg.sunken', color: 'text.muted' },
     },
+  },
+})
+
+const QuestionRunRow = styled('div', {
+  base: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '3',
+    flexWrap: 'wrap',
+    py: '2',
+    borderBottomWidth: '1px',
+    borderColor: 'border.default',
+    _last: { borderBottomWidth: '0', pb: '0' },
   },
 })
 
@@ -418,7 +443,18 @@ export function LiveConsolePage() {
 
         {round.status === 'scoring_open' && (
           <Card>
-            <SectionTitle>Current question</SectionTitle>
+            <CardHeader>
+              <IconTile>
+                <Radio size={18} />
+              </IconTile>
+              <CardHeaderText>
+                <SectionTitle>Current question</SectionTitle>
+              </CardHeaderText>
+              <Badge tone="accent">
+                <StatusDot pulse />
+                Live
+              </Badge>
+            </CardHeader>
 
             {openQuestion && (
               <>
@@ -455,7 +491,7 @@ export function LiveConsolePage() {
                 <Row>
                   <Button
                     type="button"
-                    tone="success"
+                    tone="accent"
                     onClick={() => handleReveal(nextPendingQuestion.id)}
                     disabled={revealingId === nextPendingQuestion.id}
                   >
@@ -515,20 +551,31 @@ export function LiveConsolePage() {
         )}
 
         <Card>
-          <SectionTitle>All questions</SectionTitle>
+          <CardHeader>
+            <IconTile tone="subtle">
+              <ListOrdered size={18} />
+            </IconTile>
+            <CardHeaderText>
+              <SectionTitle>All questions</SectionTitle>
+            </CardHeaderText>
+          </CardHeader>
           {questions.length === 0 && <EmptyState>No questions yet.</EmptyState>}
           {questions.map((q) => (
-            <DefinitionGrid key={q.id}>
+            <QuestionRunRow key={q.id}>
               <DefinitionTerm>
                 {q.segment_name} · Q{q.sequence}
               </DefinitionTerm>
-              <DefinitionValue>
-                {q.status.replace('_', ' ')}
-                {integrityCountByQuestion[q.id]
-                  ? ` · ${integrityCountByQuestion[q.id]} integrity event(s)`
-                  : ''}
-              </DefinitionValue>
-            </DefinitionGrid>
+              <Row>
+                <Badge tone={QUESTION_STATUS_TONE[q.status]}>
+                  {questionStatusLabel(q.status)}
+                </Badge>
+                {integrityCountByQuestion[q.id] ? (
+                  <HelpText>
+                    {integrityCountByQuestion[q.id]} integrity event(s)
+                  </HelpText>
+                ) : null}
+              </Row>
+            </QuestionRunRow>
           ))}
         </Card>
       </PageInner>

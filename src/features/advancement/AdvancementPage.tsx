@@ -11,7 +11,6 @@ import { Title as PageTitle, Subtitle as PageSubtitle } from '../../components/u
 import { declareWinner, getEvent, getErrorMessage as getEventErrorMessage } from '../events/events-api'
 import {
   BackLink,
-  Card,
   HelpText,
   PageHeader,
   PageInner,
@@ -19,6 +18,8 @@ import {
   Row,
   SectionTitle,
 } from '../events/events-ui'
+import { Badge } from '../../components/ui/Badge'
+import { Card } from '../../components/ui/Card'
 import type { EventRow } from '../events/types'
 import { closeQuestionWindow, getErrorMessage as getLiveQuizErrorMessage } from '../live-quiz/live-quiz-api'
 import { listEventParticipants } from '../participants/participants-api'
@@ -45,7 +46,7 @@ import {
   voidTiebreakQuestion,
 } from '../tiebreaks/tiebreaks-api'
 import type { TiebreakEntrantRow, TiebreakQuestionRow, TiebreakRow } from '../tiebreaks/types'
-import { Countdown, DrawHistoryList, OutcomeBadge } from './advancement-ui'
+import { Countdown, DrawHistoryList, OUTCOME_TONE } from './advancement-ui'
 
 type Outcome = 'advanced' | 'eliminated' | 'pending'
 
@@ -424,7 +425,7 @@ export function AdvancementPage() {
                           </BoardCell>
                           <BoardCell>{entry.total_score}</BoardCell>
                           <BoardCell>
-                            <OutcomeBadge outcome={outcome}>{outcome}</OutcomeBadge>
+                            <Badge tone={OUTCOME_TONE[outcome]}>{outcome}</Badge>
                           </BoardCell>
                         </tr>
                       )

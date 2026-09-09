@@ -10,12 +10,12 @@ import { Title as PageTitle } from '../../components/ui/Typography'
 import { createEvent, getErrorMessage } from './events-api'
 import {
   BackLink,
-  Card,
   CheckboxField,
   HelpText,
   PageHeader,
   Row,
 } from './events-ui'
+import { Card } from '../../components/ui/Card'
 import type { EventFormat } from './types'
 
 const PageContent = styled('div', {

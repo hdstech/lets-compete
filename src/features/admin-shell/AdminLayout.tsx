@@ -1,4 +1,4 @@
-import { Calendar, Home } from 'lucide-react'
+import { Calendar, Home, Trophy } from 'lucide-react'
 import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import {
@@ -6,6 +6,8 @@ import {
   ContentArea,
   PageOutletWrapper,
   SidebarBackdrop,
+  SidebarBrandLink,
+  SidebarBrandMark,
 } from './admin-shell-ui'
 import { BreadcrumbProvider } from './BreadcrumbProvider'
 import { ContentHeader } from './ContentHeader'
@@ -63,6 +65,12 @@ export function AdminLayout() {
           onClick={() => setCollapsed(true)}
         />
         <SidebarShell collapsed={collapsed}>
+          <SidebarBrandLink to="/dashboard">
+            <SidebarBrandMark>
+              <Trophy size={16} aria-hidden="true" />
+            </SidebarBrandMark>
+            Let's Compete
+          </SidebarBrandLink>
           <SidebarSwitcher />
           <SidebarNav items={NAV_ITEMS} />
           <SidebarFooter />

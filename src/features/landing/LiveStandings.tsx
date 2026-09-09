@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { BrandGlassPanel } from '../../components/ui/brand-surface'
 import {
   LiveDot,
   LiveLabel,
   RankBadge,
   StandingRow,
-  StandingsCard,
   StandingsHeader,
   StandingsList,
   TeamName,
@@ -69,7 +69,7 @@ export function LiveStandings() {
   const listHeight = standings.length * (ROW_HEIGHT + ROW_GAP) - ROW_GAP
 
   return (
-    <StandingsCard aria-hidden="true">
+    <BrandGlassPanel entrance aria-hidden="true">
       <StandingsHeader>
         <LiveLabel>
           <LiveDot />
@@ -96,6 +96,6 @@ export function LiveStandings() {
           )
         })}
       </StandingsList>
-    </StandingsCard>
+    </BrandGlassPanel>
   )
 }
