@@ -689,7 +689,7 @@ export function RoundsPage() {
                       </AuthForm>
                     </SegmentRowItem>
                   ) : (
-                    <SegmentRowItem key={segment.id}>
+                    <SegmentRowItem key={segment.id} interactive>
                       <SegmentRowMain>
                         <SegmentTitle>
                           Segment {segment.sequence}: {segment.name}
@@ -806,10 +806,10 @@ export function RoundsPage() {
                   <Button
                     type="button"
                     tone="secondary"
-                    size="sm"
+                    py="3"
                     onClick={() => openSegmentForm(round)}
                   >
-                    <Plus size={14} />
+                    <Plus size={16} />
                     Add segment
                   </Button>
                 ))}
