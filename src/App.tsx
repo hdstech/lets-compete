@@ -43,6 +43,15 @@ function App() {
             <Route path="/events/new" element={<NewEventPage />} />
             <Route path="/events/:eventId" element={<EventDetailPage />} />
             <Route path="/events/:eventId/rounds" element={<RoundsPage />} />
+            <Route
+              path="/events/:eventId/rounds/:roundId/segments/:segmentId/questions"
+              element={<QuestionsPage />}
+            />
+            <Route path="/events/:eventId/results" element={<ResultsPage />} />
+            <Route
+              path="/events/:eventId/results/history"
+              element={<ResultsHistoryPage />}
+            />
           </Route>
           <Route
             path="/events/:eventId/waiting-room"
@@ -81,30 +90,6 @@ function App() {
             element={
               <RequireAuth>
                 <AdvancementPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/events/:eventId/rounds/:roundId/segments/:segmentId/questions"
-            element={
-              <RequireAuth>
-                <QuestionsPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/events/:eventId/results"
-            element={
-              <RequireAuth>
-                <ResultsPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/events/:eventId/results/history"
-            element={
-              <RequireAuth>
-                <ResultsHistoryPage />
               </RequireAuth>
             }
           />
