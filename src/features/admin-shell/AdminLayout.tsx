@@ -7,7 +7,9 @@ import {
   PageOutletWrapper,
   SidebarBackdrop,
 } from './admin-shell-ui'
+import { BreadcrumbProvider } from './BreadcrumbProvider'
 import { ContentHeader } from './ContentHeader'
+import type { BreadcrumbSection } from './ContentHeader'
 import { SidebarFooter } from './SidebarFooter'
 import type { NavItem } from './SidebarNav'
 import { SidebarNav } from './SidebarNav'
@@ -15,12 +17,21 @@ import { SidebarShell } from './SidebarShell'
 import { SidebarSwitcher } from './SidebarSwitcher'
 
 // Mirrors the app's current top-level authenticated routes (src/App.tsx).
-// DS9 is responsible for wiring this layout into the router; until then it
-// renders standalone, so this list may need to be revisited there.
 const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', label: 'Overview', icon: Home },
   { to: '/events', label: 'Events', icon: Calendar },
 ]
+
+const OVERVIEW_SECTION: BreadcrumbSection = {
+  label: 'Overview',
+  to: '/dashboard',
+  icon: Home,
+}
+const EVENTS_SECTION: BreadcrumbSection = {
+  label: 'Events',
+  to: '/events',
+  icon: Calendar,
+}
 
 function isNarrowViewport() {
   return window.matchMedia('(max-width: 767px)').matches
@@ -35,33 +46,38 @@ export function AdminLayout() {
     if (isNarrowViewport()) setCollapsed(true)
   }
 
-  const breadcrumb =
-    NAV_ITEMS.find((item) => location.pathname.startsWith(item.to))?.label ?? 'Admin'
+  // The breadcrumb root is the section-level icon; pages fill in the trail
+  // after it. Everything outside the dashboard lives under the Events section.
+  const section = location.pathname.startsWith('/dashboard')
+    ? OVERVIEW_SECTION
+    : EVENTS_SECTION
 
   return (
-    <AdminShellRoot>
-      <SidebarBackdrop
-        type="button"
-        aria-label="Dismiss sidebar"
-        visible={!collapsed}
-        inert={collapsed}
-        onClick={() => setCollapsed(true)}
-      />
-      <SidebarShell collapsed={collapsed}>
-        <SidebarSwitcher />
-        <SidebarNav items={NAV_ITEMS} />
-        <SidebarFooter />
-      </SidebarShell>
-      <ContentArea>
-        <ContentHeader
-          breadcrumb={breadcrumb}
-          collapsed={collapsed}
-          onToggleCollapse={() => setCollapsed((prev) => !prev)}
+    <BreadcrumbProvider>
+      <AdminShellRoot>
+        <SidebarBackdrop
+          type="button"
+          aria-label="Dismiss sidebar"
+          visible={!collapsed}
+          inert={collapsed}
+          onClick={() => setCollapsed(true)}
         />
-        <PageOutletWrapper>
-          <Outlet />
-        </PageOutletWrapper>
-      </ContentArea>
-    </AdminShellRoot>
+        <SidebarShell collapsed={collapsed}>
+          <SidebarSwitcher />
+          <SidebarNav items={NAV_ITEMS} />
+          <SidebarFooter />
+        </SidebarShell>
+        <ContentArea>
+          <ContentHeader
+            section={section}
+            collapsed={collapsed}
+            onToggleCollapse={() => setCollapsed((prev) => !prev)}
+          />
+          <PageOutletWrapper>
+            <Outlet />
+          </PageOutletWrapper>
+        </ContentArea>
+      </AdminShellRoot>
+    </BreadcrumbProvider>
   )
 }

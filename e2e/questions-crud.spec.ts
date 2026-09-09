@@ -77,6 +77,31 @@ test('adding an acceptable answer attaches it to the question', async ({ page })
   await deleteCurrentEvent(page)
 })
 
+test('a question and its acceptable answers save together in one action', async ({ page }) => {
+  const name = uniqueEventName('Question With Answers')
+  await setUpToQuestions(page, name)
+
+  // Stage two acceptable answers on the create form, then save once — no
+  // separate "add answer" step after the question is created.
+  await addQuestion(page, {
+    prompt: 'Name a primary color',
+    windowSeconds: 20,
+    acceptableAnswers: ['Red', 'Blue'],
+  })
+
+  await expect(page.getByRole('heading', { level: 2, name: 'Question 1' })).toBeVisible()
+  await expect(page.getByText('Red', { exact: true })).toBeVisible()
+  await expect(page.getByText('Blue', { exact: true })).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByText('Red', { exact: true })).toBeVisible()
+  await expect(page.getByText('Blue', { exact: true })).toBeVisible()
+
+  await page.goto('/events')
+  await page.getByRole('link', { name: new RegExp(name) }).click()
+  await deleteCurrentEvent(page)
+})
+
 test('editing a question persists across a reload', async ({ page }) => {
   const name = uniqueEventName('Question Edit')
   await setUpToQuestions(page, name)

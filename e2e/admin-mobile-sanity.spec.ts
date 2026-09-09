@@ -13,7 +13,10 @@ test('admin events list is usable on a phone without a persistent sidebar', asyn
 
   await toggle.click()
   await expect(page.getByRole('link', { name: 'Overview' })).toBeVisible()
+  await expect(page.locator('aside')).not.toHaveAttribute('inert')
   await page.getByRole('button', { name: 'Hide sidebar' }).click()
-  await expect(page.getByRole('link', { name: 'Overview' })).toHaveCount(0)
+  // Collapsing makes the sidebar inert (removed from the tab/interaction
+  // order and the a11y tree) rather than unmounting it.
+  await expect(page.locator('aside')).toHaveAttribute('inert')
   await expectNoHorizontalOverflow(page)
 })

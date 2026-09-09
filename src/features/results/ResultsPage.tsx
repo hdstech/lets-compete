@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { usePageBreadcrumbs } from '../admin-shell/use-breadcrumbs'
 import { ErrorText } from '../auth/auth-ui'
 import { Button, LinkButton } from '../../components/ui/Button'
 import { ErrorState } from '../../components/ui/ErrorState'
@@ -53,6 +54,12 @@ export function ResultsPage() {
   const [calculatingRoundId, setCalculatingRoundId] = useState<string | null>(null)
   const [calculatingOverall, setCalculatingOverall] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+
+  usePageBreadcrumbs(
+    event
+      ? [{ label: event.name, to: `/events/${event.id}` }, { label: 'Results' }]
+      : [{ label: 'Results' }],
+  )
 
   const loadData = useCallback(() => {
     if (!eventId) return () => {}

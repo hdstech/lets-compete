@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { usePageBreadcrumbs, useUnsavedChanges } from '../admin-shell/use-breadcrumbs'
 import { styled } from '../../../styled-system/jsx'
 import { useAuth } from '../auth/useAuth'
 import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
@@ -36,6 +37,9 @@ export function NewEventPage() {
   const [hasRounds, setHasRounds] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  usePageBreadcrumbs([{ label: 'New event' }])
+  useUnsavedChanges(!submitting && name.trim() !== '')
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()

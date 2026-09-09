@@ -302,11 +302,68 @@ export const CollapseToggleButton = styled('button', {
   },
 })
 
-export const Breadcrumb = styled('span', {
+export const BreadcrumbNav = styled('nav', {
   base: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1.5',
+    minWidth: '0',
     fontSize: 'sm',
+    overflow: 'hidden',
+  },
+})
+
+// The section-root of the trail: an icon-only link (no text label) standing in
+// for the top-level section (Overview / Events).
+export const BreadcrumbIconLink = styled(Link, {
+  base: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    width: '8',
+    height: '8',
+    borderRadius: 'control',
+    color: 'text.muted',
+    textDecoration: 'none',
+    transition: 'background-color 0.15s ease, color 0.15s ease',
+    _hover: { bg: 'bg.sunken', color: 'text.primary' },
+  },
+})
+
+export const BreadcrumbSeparator = styled('span', {
+  base: {
+    flexShrink: 0,
+    color: 'text.placeholder',
+    fontSize: 'sm',
+  },
+})
+
+export const BreadcrumbLink = styled(Link, {
+  base: {
+    flexShrink: 0,
+    color: 'text.muted',
+    textDecoration: 'none',
+    fontWeight: 'medium',
+    borderRadius: 'control',
+    px: '1.5',
+    py: '0.5',
+    transition: 'background-color 0.15s ease, color 0.15s ease',
+    _hover: { bg: 'bg.sunken', color: 'text.primary' },
+  },
+})
+
+// The trailing crumb (the current screen): plain text, allowed to truncate
+// when the trail is long rather than pushing the row into a horizontal scroll.
+export const BreadcrumbCurrent = styled('span', {
+  base: {
+    minWidth: '0',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
     fontWeight: 'medium',
     color: 'text.primary',
+    px: '1.5',
   },
 })
 
