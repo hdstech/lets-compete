@@ -1,3 +1,4 @@
+import { Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useParams } from 'react-router-dom'
@@ -40,6 +41,20 @@ import {
   updateQuestion,
 } from './questions-api'
 import type { QuestionInput } from './questions-api'
+import {
+  filterNumericAnswerInput,
+  validateAcceptableAnswer,
+} from './acceptable-answer'
+import {
+  AcceptableAnswerField,
+  AcceptableAnswerInput,
+  AcceptableAnswerItem,
+  AcceptableAnswerList,
+  AcceptableAnswerMeta,
+  AcceptableAnswerText,
+  InlineCheckboxField,
+  RemoveAnswerButton,
+} from './questions-ui'
 import type { AcceptableAnswerRow, AnswerType, QuestionRow } from './types'
 
 function nextSequence(questions: QuestionRow[]): number {
@@ -358,18 +373,20 @@ export function QuestionsPage() {
   ) {
     formEvent.preventDefault()
     const form = answerFormFor(question)
-    if (!form.value.trim()) {
+    const validationError = validateAcceptableAnswer(form.value, form.isNumeric)
+    if (validationError) {
       setAnswerError((prev) => ({
         ...prev,
-        [question.id]: 'Enter an acceptable answer value.',
+        [question.id]: validationError,
       }))
       return
     }
 
+    const value = form.value.trim()
     setAnswerError((prev) => ({ ...prev, [question.id]: null }))
     setAddingAnswerFor(question.id)
     try {
-      await addAcceptableAnswer(question.id, form.value, form.isNumeric)
+      await addAcceptableAnswer(question.id, value, form.isNumeric)
       await refreshAnswers(question.id)
       setNewAnswer((prev) => ({
         ...prev,
@@ -600,59 +617,91 @@ export function QuestionsPage() {
               {answers.length === 0 && (
                 <HelpText>No acceptable answers yet.</HelpText>
               )}
-              {answers.map((answer) => (
-                <Row key={answer.id}>
-                  <HelpText>
-                    {answer.value}
-                    {answer.is_numeric ? ' (numeric)' : ''}
-                  </HelpText>
-                  {isDraft && (
-                    <Button
-                      type="button"
-                      tone="danger"
-                      onClick={() => handleDeleteAnswer(answer)}
-                      disabled={deletingAnswerId === answer.id}
-                    >
-                      {deletingAnswerId === answer.id ? 'Removing…' : 'Remove'}
-                    </Button>
-                  )}
-                </Row>
-              ))}
+              {answers.length > 0 && (
+                <AcceptableAnswerList>
+                  {answers.map((answer) => (
+                    <AcceptableAnswerItem key={answer.id}>
+                      <AcceptableAnswerText>
+                        {answer.value}
+                        {answer.is_numeric && (
+                          <AcceptableAnswerMeta> (numeric)</AcceptableAnswerMeta>
+                        )}
+                      </AcceptableAnswerText>
+                      {isDraft && (
+                        <RemoveAnswerButton
+                          type="button"
+                          onClick={() => handleDeleteAnswer(answer)}
+                          disabled={deletingAnswerId === answer.id}
+                          aria-label={
+                            deletingAnswerId === answer.id
+                              ? 'Removing answer'
+                              : 'Remove answer'
+                          }
+                        >
+                          <Trash2 size={14} aria-hidden="true" />
+                        </RemoveAnswerButton>
+                      )}
+                    </AcceptableAnswerItem>
+                  ))}
+                </AcceptableAnswerList>
+              )}
 
               {isDraft && (
                 <AuthForm onSubmit={(e) => handleAddAnswer(e, question)}>
                   <Row>
-                    <Input
-                      type="text"
-                      placeholder="Acceptable answer value"
-                      aria-label={`Acceptable answer for question ${question.sequence}`}
-                      value={answerForm.value}
-                      onChange={(e) =>
-                        setNewAnswer((prev) => ({
-                          ...prev,
-                          [question.id]: {
-                            ...answerForm,
-                            value: e.target.value,
-                          },
-                        }))
-                      }
-                    />
-                    <CheckboxField>
-                      <input
-                        type="checkbox"
-                        checked={answerForm.isNumeric}
-                        onChange={(e) =>
+                    <AcceptableAnswerField>
+                      <AcceptableAnswerInput
+                        type="text"
+                        placeholder="Acceptable answer value"
+                        aria-label={`Acceptable answer for question ${question.sequence}`}
+                        inputMode={answerForm.isNumeric ? 'decimal' : 'text'}
+                        value={answerForm.value}
+                        onChange={(e) => {
+                          const raw = e.target.value
+                          const value = answerForm.isNumeric
+                            ? filterNumericAnswerInput(raw)
+                            : raw
                           setNewAnswer((prev) => ({
                             ...prev,
                             [question.id]: {
                               ...answerForm,
-                              isNumeric: e.target.checked,
+                              value,
                             },
                           }))
-                        }
+                          if (answerError[question.id]) {
+                            setAnswerError((prev) => ({
+                              ...prev,
+                              [question.id]: null,
+                            }))
+                          }
+                        }}
                       />
-                      Numeric
-                    </CheckboxField>
+                      <InlineCheckboxField>
+                        <input
+                          id={`answer_numeric_${question.id}`}
+                          type="checkbox"
+                          checked={answerForm.isNumeric}
+                          onChange={(e) => {
+                            const isNumeric = e.target.checked
+                            setNewAnswer((prev) => ({
+                              ...prev,
+                              [question.id]: {
+                                ...answerForm,
+                                isNumeric,
+                                value: isNumeric
+                                  ? filterNumericAnswerInput(answerForm.value)
+                                  : answerForm.value,
+                              },
+                            }))
+                            setAnswerError((prev) => ({
+                              ...prev,
+                              [question.id]: null,
+                            }))
+                          }}
+                        />
+                        Numeric
+                      </InlineCheckboxField>
+                    </AcceptableAnswerField>
                     <SubmitButton
                       type="submit"
                       disabled={addingAnswerFor === question.id}
@@ -795,18 +844,22 @@ export function QuestionsPage() {
                     question.
                   </HelpText>
                 )}
-                {newQuestionAnswers.map((value, index) => (
-                  <Row key={`${value}-${index}`}>
-                    <HelpText>{value}</HelpText>
-                    <Button
-                      type="button"
-                      tone="danger"
-                      onClick={() => unstageNewAnswer(index)}
-                    >
-                      Remove
-                    </Button>
-                  </Row>
-                ))}
+                {newQuestionAnswers.length > 0 && (
+                  <AcceptableAnswerList>
+                    {newQuestionAnswers.map((value, index) => (
+                      <AcceptableAnswerItem key={`${value}-${index}`}>
+                        <AcceptableAnswerText>{value}</AcceptableAnswerText>
+                        <RemoveAnswerButton
+                          type="button"
+                          onClick={() => unstageNewAnswer(index)}
+                          aria-label="Remove answer"
+                        >
+                          <Trash2 size={14} aria-hidden="true" />
+                        </RemoveAnswerButton>
+                      </AcceptableAnswerItem>
+                    ))}
+                  </AcceptableAnswerList>
+                )}
                 <Row>
                   <Input
                     id="new_question_answer"
