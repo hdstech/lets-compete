@@ -32,13 +32,44 @@ async function createRoundsEvent(page: Page, name: string) {
   await page.waitForURL(/\/events\/[0-9a-f-]{36}$/)
 }
 
-// Assumes the current page is a round's rounds list. Clicks the nth
-// "Manage segments" link (0-indexed, in round-sequence order) and returns
-// the round id from the resulting URL.
-async function goToNthRoundSegments(page: Page, index: number): Promise<string> {
-  await page.getByRole('link', { name: 'Manage segments' }).nth(index).click()
-  const match = page.url().match(/\/rounds\/([0-9a-f-]{36})\/segments$/)
-  if (!match) throw new Error(`Expected a round segments URL, got ${page.url()}`)
+// Segments are managed inline on each round card now (each rendered as a
+// role="group" region, in round-sequence order). Adds a segment to the nth
+// round card (0-indexed), opens its "Manage questions" screen, and returns
+// that round's id from the resulting URL.
+async function addSegmentAndOpenQuestions(
+  page: Page,
+  index: number,
+  segmentName: string,
+): Promise<string> {
+  const card = page.getByRole('group').nth(index)
+  await card.getByRole('button', { name: 'Add segment' }).click()
+  await card.getByLabel('Segment name').fill(segmentName)
+  await card.getByRole('button', { name: 'Save segment' }).click()
+  const questionsLink = card.getByRole('link', { name: 'Manage questions' })
+  await expect(questionsLink).toBeVisible()
+  await questionsLink.click()
+  await page.waitForURL(
+    /\/rounds\/[0-9a-f-]{36}\/segments\/[0-9a-f-]{36}\/questions$/,
+  )
+  const match = page.url().match(/\/rounds\/([0-9a-f-]{36})\/segments\//)
+  if (!match) throw new Error(`Expected a questions URL, got ${page.url()}`)
+  return match[1]
+}
+
+// Returns the nth round's id (0-indexed, in round-sequence order) without
+// leaving the rounds page. A draft round card exposes no round-id link until
+// it has a segment, so this adds a throwaway segment and reads the id out of
+// the resulting "Manage questions" href.
+async function nthRoundId(page: Page, index: number): Promise<string> {
+  const card = page.getByRole('group').nth(index)
+  await card.getByRole('button', { name: 'Add segment' }).click()
+  await card.getByLabel('Segment name').fill('Segment A')
+  await card.getByRole('button', { name: 'Save segment' }).click()
+  const questionsLink = card.getByRole('link', { name: 'Manage questions' })
+  await expect(questionsLink).toBeVisible()
+  const href = await questionsLink.getAttribute('href')
+  const match = href?.match(/\/rounds\/([0-9a-f-]{36})\/segments\//)
+  if (!match) throw new Error(`Expected a questions href, got ${href}`)
   return match[1]
 }
 
@@ -55,11 +86,7 @@ test('a tie at the advancement cutoff runs through sudden death to pool exhausti
   await addRound(page, { name: 'Round 1', advancementN: 1 })
   await addRound(page, { name: 'Round 2', isFinal: true })
 
-  const round1Id = await goToNthRoundSegments(page, 0)
-  await page.getByLabel('Segment name').fill('Segment A')
-  await page.getByRole('button', { name: 'Add segment' }).click()
-  await expect(page.getByRole('button', { name: 'Add segment' })).toBeVisible()
-  await page.getByRole('link', { name: 'Manage questions' }).click()
+  const round1Id = await addSegmentAndOpenQuestions(page, 0, 'Segment A')
   await page.getByLabel('Prompt').fill('Sudden-death reserve question')
   await page.getByLabel('Answer window (seconds)').fill('3')
   await page.getByLabel('Tiebreak reserve pool question').check()
@@ -125,7 +152,7 @@ test('declaring a winner with no tie at rank 1 succeeds and unlocks concluding t
 
   await goToRounds(page)
   await addRound(page, { name: 'Final', isFinal: true })
-  const roundId = await goToNthRoundSegments(page, 0)
+  const roundId = await nthRoundId(page, 0)
 
   await page.goto(`/events/${eventId}`)
   await activateEvent(page)
@@ -158,7 +185,7 @@ test('advancement review is gated until the round closes for scoring', async ({ 
 
   await goToRounds(page)
   await addRound(page, { name: 'Round 1', isFinal: true })
-  const roundId = await goToNthRoundSegments(page, 0)
+  const roundId = await nthRoundId(page, 0)
 
   await page.goto(`/events/${eventId}/rounds/${roundId}/advance`)
   await expect(page.getByText("This round hasn't closed for scoring yet.")).toBeVisible()

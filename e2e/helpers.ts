@@ -69,26 +69,33 @@ export async function addRound(
   await expect(page.getByRole('button', { name: 'Add round' })).toBeVisible()
 }
 
-// Assumes the current page is a round's rounds list, with exactly one
-// "Manage segments" link (i.e. exactly one round configured).
+// Segments are now managed inline on the Rounds page (each round card lists
+// and adds its own segments) rather than a separate segments screen, so
+// "going to segments" no longer navigates — it just waits for the round
+// card's inline add-segment form to be ready. Assumes exactly one round is
+// configured, so there is exactly one such form on the page.
 export async function goToSegments(page: Page) {
-  await page.getByRole('link', { name: 'Manage segments' }).click()
-  await page.waitForURL(/\/events\/[0-9a-f-]{36}\/rounds\/[0-9a-f-]{36}\/segments$/)
-}
-
-export async function addSegment(page: Page, options: { name: string; sequence?: number }) {
-  await page.getByLabel('Segment name').fill(options.name)
-  if (options.sequence !== undefined) {
-    await page.getByLabel('Sequence').fill(String(options.sequence))
-  }
-  await page.getByRole('button', { name: 'Add segment' }).click()
-  // Same async-settle rationale as addRound: wait for the submit control to
-  // reappear before returning, so callers can safely chain another call.
   await expect(page.getByRole('button', { name: 'Add segment' })).toBeVisible()
 }
 
-// Assumes the current page is a segments list, with exactly one
-// "Manage questions" link (i.e. exactly one segment configured).
+// Adds a segment via the inline add-segment form on the round card. The form
+// is hidden behind an "Add segment" button, so this reveals it, fills it, and
+// saves. Assumes exactly one round is configured (one such button on the
+// page); for a multi-round event, scope the controls to a specific card first.
+export async function addSegment(page: Page, options: { name: string; sequence?: number }) {
+  await page.getByRole('button', { name: 'Add segment' }).click()
+  await page.getByLabel('Segment name').fill(options.name)
+  if (options.sequence !== undefined) {
+    await page.getByLabel('Segment order').fill(String(options.sequence))
+  }
+  await page.getByRole('button', { name: 'Save segment' }).click()
+  // On success the form collapses back to the "Add segment" button; waiting
+  // for it lets callers safely chain another call.
+  await expect(page.getByRole('button', { name: 'Add segment' })).toBeVisible()
+}
+
+// Opens a segment's questions from its "Manage questions" link on the round
+// card. Assumes exactly one segment is configured (one such link on the page).
 export async function goToQuestions(page: Page) {
   await page.getByRole('link', { name: 'Manage questions' }).click()
   await page.waitForURL(

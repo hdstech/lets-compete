@@ -122,15 +122,15 @@ export default defineConfig({
             500: { value: '#5c91e6' },
             600: { value: '#3f6fbd' },
           },
-          // Warm coral-pink used for destructive/danger buttons in place of a
-          // stock red. 600 is the requested brand hex; 700 is a matching
-          // darker shade for the hover state.
+          // Red used for destructive/danger buttons in place of a stock red.
+          // 600 is the requested brand hex (#cc4747); 700 is a matching darker
+          // shade for the hover state.
           salmon: {
-            50: { value: '#fff1ee' },
-            400: { value: '#fd9494' },
-            500: { value: '#fc8181' },
-            600: { value: '#fc6f6f' },
-            700: { value: '#e35a5a' },
+            50: { value: '#fbeaea' },
+            400: { value: '#dd7a7a' },
+            500: { value: '#d46060' },
+            600: { value: '#cc4747' },
+            700: { value: '#b23a3a' },
           },
         },
         radii: {

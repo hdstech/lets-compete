@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useParams } from 'react-router-dom'
@@ -32,6 +33,21 @@ import {
 } from '../events/events-ui'
 import type { EventRow } from '../events/types'
 import {
+  createSegment,
+  deleteSegment,
+  listSegments,
+  updateSegment,
+} from '../segments/segments-api'
+import type { SegmentInput } from '../segments/segments-api'
+import type { SegmentRow } from '../segments/types'
+import {
+  SegmentActions,
+  SegmentList,
+  SegmentRowItem,
+  SegmentRowMain,
+  SegmentTitle,
+} from './rounds-ui'
+import {
   createRound,
   deleteRound,
   getErrorMessage,
@@ -44,6 +60,11 @@ import type { RoundRow } from './types'
 function nextSequence(rounds: RoundRow[]): number {
   if (rounds.length === 0) return 1
   return Math.max(...rounds.map((round) => round.sequence)) + 1
+}
+
+function nextSegmentSequence(segments: SegmentRow[]): number {
+  if (segments.length === 0) return 1
+  return Math.max(...segments.map((segment) => segment.sequence)) + 1
 }
 
 function describeAdvancement(round: RoundRow): string {
@@ -118,11 +139,42 @@ function validate(
   }
 }
 
+type SegmentFormValues = { name: string; sequence: string }
+
+function emptySegmentForm(sequence: number): SegmentFormValues {
+  return { name: '', sequence: String(sequence) }
+}
+
+function validateSegment(
+  values: SegmentFormValues,
+  segments: SegmentRow[],
+  excludeId: string | null,
+): { input: SegmentInput } | { error: string } {
+  const sequence = Number(values.sequence)
+  if (!Number.isInteger(sequence) || sequence < 1) {
+    return { error: 'Segment order must be a positive whole number.' }
+  }
+
+  const sequenceConflict = segments.find(
+    (s) => s.sequence === sequence && s.id !== excludeId,
+  )
+  if (sequenceConflict) {
+    return {
+      error: `Order ${sequence} is already used by "${sequenceConflict.name}".`,
+    }
+  }
+
+  return { input: { name: values.name, sequence } }
+}
+
 export function RoundsPage() {
   const { eventId } = useParams<{ eventId: string }>()
 
   const [event, setEvent] = useState<EventRow | null>(null)
   const [rounds, setRounds] = useState<RoundRow[] | null>(null)
+  const [segmentsByRound, setSegmentsByRound] = useState<
+    Record<string, SegmentRow[]>
+  >({})
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [newRound, setNewRound] = useState<RoundFormValues>(emptyForm(1))
@@ -140,15 +192,59 @@ export function RoundsPage() {
     null,
   )
 
+  // Segment authoring is inline per round card. These maps are keyed by round
+  // id so several rounds can each host their own add form independently.
+  const [newSegment, setNewSegment] = useState<Record<string, SegmentFormValues>>(
+    {},
+  )
+  // Which round cards currently have their add-segment form revealed. The
+  // inputs stay hidden behind an "Add segment" button until the organizer
+  // opts in, keeping each card compact by default.
+  const [segmentFormOpen, setSegmentFormOpen] = useState<
+    Record<string, boolean>
+  >({})
+  const [segmentAddError, setSegmentAddError] = useState<
+    Record<string, string | null>
+  >({})
+  const [addingSegmentFor, setAddingSegmentFor] = useState<string | null>(null)
+
+  const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null)
+  const [editSegment, setEditSegment] = useState<SegmentFormValues>(
+    emptySegmentForm(1),
+  )
+  const [segmentEditError, setSegmentEditError] = useState<string | null>(null)
+  const [savingSegment, setSavingSegment] = useState(false)
+
+  const [segmentDeleteError, setSegmentDeleteError] = useState<string | null>(
+    null,
+  )
+  const [deletingSegmentId, setDeletingSegmentId] = useState<string | null>(null)
+
+  async function loadSegmentsMap(
+    roundRows: RoundRow[],
+  ): Promise<Record<string, SegmentRow[]>> {
+    const lists = await Promise.all(
+      roundRows.map((round) => listSegments(round.id)),
+    )
+    const map: Record<string, SegmentRow[]> = {}
+    roundRows.forEach((round, i) => {
+      map[round.id] = lists[i]
+    })
+    return map
+  }
+
   const loadData = useCallback(() => {
     if (!eventId) return () => {}
 
     let cancelled = false
     Promise.all([getEvent(eventId), listRounds(eventId)])
-      .then(([eventRow, roundRows]) => {
+      .then(async ([eventRow, roundRows]) => {
+        if (cancelled) return
+        const segmentMap = await loadSegmentsMap(roundRows)
         if (cancelled) return
         setEvent(eventRow)
         setRounds(roundRows)
+        setSegmentsByRound(segmentMap)
         setNewRound(emptyForm(nextSequence(roundRows)))
       })
       .catch((err) => {
@@ -165,8 +261,16 @@ export function RoundsPage() {
   async function refreshRounds() {
     if (!eventId) return
     const rows = await listRounds(eventId)
+    const segmentMap = await loadSegmentsMap(rows)
     setRounds(rows)
+    setSegmentsByRound(segmentMap)
     setNewRound(emptyForm(nextSequence(rows)))
+  }
+
+  async function refreshSegments(roundId: string) {
+    const rows = await listSegments(roundId)
+    setSegmentsByRound((prev) => ({ ...prev, [roundId]: rows }))
+    return rows
   }
 
   async function handleAddRound(formEvent: SubmitEvent<HTMLFormElement>) {
@@ -248,6 +352,122 @@ export function RoundsPage() {
       setDeleteError(getErrorMessage(err, 'Failed to delete round'))
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  function segmentFormFor(round: RoundRow): SegmentFormValues {
+    return (
+      newSegment[round.id] ??
+      emptySegmentForm(nextSegmentSequence(segmentsByRound[round.id] ?? []))
+    )
+  }
+
+  function openSegmentForm(round: RoundRow) {
+    setSegmentAddError((prev) => ({ ...prev, [round.id]: null }))
+    setSegmentFormOpen((prev) => ({ ...prev, [round.id]: true }))
+  }
+
+  function closeSegmentForm(round: RoundRow) {
+    setSegmentFormOpen((prev) => ({ ...prev, [round.id]: false }))
+    setSegmentAddError((prev) => ({ ...prev, [round.id]: null }))
+    setNewSegment((prev) => ({
+      ...prev,
+      [round.id]: emptySegmentForm(
+        nextSegmentSequence(segmentsByRound[round.id] ?? []),
+      ),
+    }))
+  }
+
+  async function handleAddSegment(
+    formEvent: SubmitEvent<HTMLFormElement>,
+    round: RoundRow,
+  ) {
+    formEvent.preventDefault()
+    const segments = segmentsByRound[round.id] ?? []
+    const form = segmentFormFor(round)
+
+    setSegmentAddError((prev) => ({ ...prev, [round.id]: null }))
+    const result = validateSegment(form, segments, null)
+    if ('error' in result) {
+      setSegmentAddError((prev) => ({ ...prev, [round.id]: result.error }))
+      return
+    }
+
+    setAddingSegmentFor(round.id)
+    try {
+      await createSegment(round.id, result.input)
+      const rows = await refreshSegments(round.id)
+      setNewSegment((prev) => ({
+        ...prev,
+        [round.id]: emptySegmentForm(nextSegmentSequence(rows)),
+      }))
+      // Collapse back to the "Add segment" button once the segment lands.
+      setSegmentFormOpen((prev) => ({ ...prev, [round.id]: false }))
+    } catch (err) {
+      setSegmentAddError((prev) => ({
+        ...prev,
+        [round.id]: getErrorMessage(err, 'Failed to create segment'),
+      }))
+    } finally {
+      setAddingSegmentFor(null)
+    }
+  }
+
+  function startEditSegment(segment: SegmentRow) {
+    setEditingSegmentId(segment.id)
+    setEditSegment({ name: segment.name, sequence: String(segment.sequence) })
+    setSegmentEditError(null)
+  }
+
+  function cancelEditSegment() {
+    setEditingSegmentId(null)
+    setSegmentEditError(null)
+  }
+
+  async function handleSaveSegment(
+    formEvent: SubmitEvent<HTMLFormElement>,
+    round: RoundRow,
+  ) {
+    formEvent.preventDefault()
+    if (!editingSegmentId) return
+    const segments = segmentsByRound[round.id] ?? []
+
+    setSegmentEditError(null)
+    const result = validateSegment(editSegment, segments, editingSegmentId)
+    if ('error' in result) {
+      setSegmentEditError(result.error)
+      return
+    }
+
+    setSavingSegment(true)
+    try {
+      await updateSegment(editingSegmentId, result.input)
+      setEditingSegmentId(null)
+      await refreshSegments(round.id)
+    } catch (err) {
+      setSegmentEditError(getErrorMessage(err, 'Failed to save segment'))
+    } finally {
+      setSavingSegment(false)
+    }
+  }
+
+  async function handleDeleteSegment(segment: SegmentRow) {
+    if (
+      !window.confirm(
+        `Delete segment "${segment.name}"? This cannot be undone.`,
+      )
+    )
+      return
+
+    setSegmentDeleteError(null)
+    setDeletingSegmentId(segment.id)
+    try {
+      await deleteSegment(segment.id)
+      await refreshSegments(segment.round_id)
+    } catch (err) {
+      setSegmentDeleteError(getErrorMessage(err, 'Failed to delete segment'))
+    } finally {
+      setDeletingSegmentId(null)
     }
   }
 
@@ -390,7 +610,11 @@ export function RoundsPage() {
               </AuthForm>
             </Card>
           ) : (
-            <Card key={round.id}>
+            <Card
+              key={round.id}
+              role="group"
+              aria-label={`Round ${round.sequence}: ${round.name}`}
+            >
               <SectionTitle>
                 Round {round.sequence}: {round.name}
               </SectionTitle>
@@ -402,13 +626,195 @@ export function RoundsPage() {
                   {round.status.replace('_', ' ')}
                 </DefinitionValue>
               </DefinitionGrid>
+
+              <SectionTitle>Segments</SectionTitle>
+              {(segmentsByRound[round.id] ?? []).length === 0 && (
+                <HelpText>No segments yet.</HelpText>
+              )}
+              <SegmentList>
+                {(segmentsByRound[round.id] ?? []).map((segment) =>
+                  editingSegmentId === segment.id ? (
+                    <SegmentRowItem key={segment.id}>
+                      <AuthForm onSubmit={(e) => handleSaveSegment(e, round)}>
+                        <Field>
+                          <Label htmlFor={`segment_name_${segment.id}`}>
+                            Segment name
+                          </Label>
+                          <Input
+                            id={`segment_name_${segment.id}`}
+                            type="text"
+                            required
+                            value={editSegment.name}
+                            onChange={(e) =>
+                              setEditSegment({
+                                ...editSegment,
+                                name: e.target.value,
+                              })
+                            }
+                          />
+                        </Field>
+                        <Field>
+                          <Label htmlFor={`segment_order_${segment.id}`}>
+                            Segment order
+                          </Label>
+                          <Input
+                            id={`segment_order_${segment.id}`}
+                            type="number"
+                            min={1}
+                            required
+                            value={editSegment.sequence}
+                            onChange={(e) =>
+                              setEditSegment({
+                                ...editSegment,
+                                sequence: e.target.value,
+                              })
+                            }
+                          />
+                        </Field>
+                        {segmentEditError && (
+                          <ErrorText role="alert">{segmentEditError}</ErrorText>
+                        )}
+                        <Row equal>
+                          <SubmitButton type="submit" disabled={savingSegment}>
+                            {savingSegment ? 'Saving…' : 'Save segment'}
+                          </SubmitButton>
+                          <Button
+                            type="button"
+                            tone="secondary"
+                            onClick={cancelEditSegment}
+                          >
+                            Cancel
+                          </Button>
+                        </Row>
+                      </AuthForm>
+                    </SegmentRowItem>
+                  ) : (
+                    <SegmentRowItem key={segment.id} interactive>
+                      <SegmentRowMain>
+                        <SegmentTitle>
+                          Segment {segment.sequence}: {segment.name}
+                        </SegmentTitle>
+                        <SegmentActions>
+                          <LinkButton
+                            to={`/events/${event.id}/rounds/${round.id}/segments/${segment.id}/questions`}
+                            tone="secondary"
+                            size="sm"
+                          >
+                            Manage questions
+                          </LinkButton>
+                          {isDraft && (
+                            <>
+                              <Button
+                                type="button"
+                                tone="secondary"
+                                size="sm"
+                                onClick={() => startEditSegment(segment)}
+                              >
+                                Edit segment
+                              </Button>
+                              <Button
+                                type="button"
+                                tone="danger"
+                                size="sm"
+                                onClick={() => handleDeleteSegment(segment)}
+                                disabled={deletingSegmentId === segment.id}
+                              >
+                                {deletingSegmentId === segment.id
+                                  ? 'Deleting…'
+                                  : 'Delete segment'}
+                              </Button>
+                            </>
+                          )}
+                        </SegmentActions>
+                      </SegmentRowMain>
+                    </SegmentRowItem>
+                  ),
+                )}
+              </SegmentList>
+
+              {isDraft &&
+                editingSegmentId === null &&
+                (segmentFormOpen[round.id] ? (
+                  <SegmentRowItem>
+                    <AuthForm onSubmit={(e) => handleAddSegment(e, round)}>
+                      <Field>
+                        <Label htmlFor={`new_segment_name_${round.id}`}>
+                          Segment name
+                        </Label>
+                        <Input
+                          id={`new_segment_name_${round.id}`}
+                          type="text"
+                          required
+                          value={segmentFormFor(round).name}
+                          onChange={(e) =>
+                            setNewSegment((prev) => ({
+                              ...prev,
+                              [round.id]: {
+                                ...segmentFormFor(round),
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </Field>
+                      <Field>
+                        <Label htmlFor={`new_segment_order_${round.id}`}>
+                          Segment order
+                        </Label>
+                        <Input
+                          id={`new_segment_order_${round.id}`}
+                          type="number"
+                          min={1}
+                          required
+                          value={segmentFormFor(round).sequence}
+                          onChange={(e) =>
+                            setNewSegment((prev) => ({
+                              ...prev,
+                              [round.id]: {
+                                ...segmentFormFor(round),
+                                sequence: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </Field>
+                      {segmentAddError[round.id] && (
+                        <ErrorText role="alert">
+                          {segmentAddError[round.id]}
+                        </ErrorText>
+                      )}
+                      <Row equal>
+                        <SubmitButton
+                          type="submit"
+                          disabled={addingSegmentFor === round.id}
+                        >
+                          {addingSegmentFor === round.id
+                            ? 'Adding…'
+                            : 'Save segment'}
+                        </SubmitButton>
+                        <Button
+                          type="button"
+                          tone="secondary"
+                          onClick={() => closeSegmentForm(round)}
+                        >
+                          Cancel
+                        </Button>
+                      </Row>
+                    </AuthForm>
+                  </SegmentRowItem>
+                ) : (
+                  <Button
+                    type="button"
+                    tone="secondary"
+                    py="3"
+                    onClick={() => openSegmentForm(round)}
+                  >
+                    <Plus size={16} />
+                    Add segment
+                  </Button>
+                ))}
+
               <Row equal>
-                <LinkButton
-                  to={`/events/${event.id}/rounds/${round.id}/segments`}
-                  tone="secondary"
-                >
-                  Manage segments
-                </LinkButton>
                 {!isDraft && (
                   <LinkButton
                     to={`/events/${event.id}/rounds/${round.id}/live`}
@@ -453,6 +859,9 @@ export function RoundsPage() {
                   </>
                 )}
               </Row>
+              {segmentDeleteError && (
+                <ErrorText role="alert">{segmentDeleteError}</ErrorText>
+              )}
             </Card>
           ),
         )}
