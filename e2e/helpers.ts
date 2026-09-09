@@ -111,6 +111,9 @@ export async function addQuestion(
     windowSeconds?: number
     sequence?: number
     isTiebreak?: boolean
+    // Acceptable answers to stage on the create form and save together with
+    // the question (they inherit the question's answer type).
+    acceptableAnswers?: string[]
   },
 ) {
   await page.getByLabel('Prompt').fill(options.prompt)
@@ -125,6 +128,10 @@ export async function addQuestion(
   }
   if (options.isTiebreak) {
     await page.getByLabel('Tiebreak reserve pool question').check()
+  }
+  for (const value of options.acceptableAnswers ?? []) {
+    await page.getByLabel('Acceptable answer for the new question').fill(value)
+    await page.getByRole('button', { name: 'Add acceptable answer' }).click()
   }
   await page.getByRole('button', { name: 'Add question' }).click()
   await expect(page.getByRole('button', { name: 'Add question' })).toBeVisible()

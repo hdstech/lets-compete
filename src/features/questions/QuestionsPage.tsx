@@ -128,6 +128,12 @@ export function QuestionsPage() {
   const [newQuestion, setNewQuestion] = useState<QuestionFormValues>(
     emptyForm(1),
   )
+  // Acceptable answers staged on the create form, saved together with the
+  // question in one action. `newAnswerDraft` is the value currently typed but
+  // not yet added to the list; it's also included on submit so a single
+  // answer needn't be explicitly "added" first.
+  const [newQuestionAnswers, setNewQuestionAnswers] = useState<string[]>([])
+  const [newAnswerDraft, setNewAnswerDraft] = useState('')
   const [addError, setAddError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
@@ -207,6 +213,17 @@ export function QuestionsPage() {
     setAnswersByQuestion((prev) => ({ ...prev, [questionId]: rows }))
   }
 
+  function stageNewAnswer() {
+    const value = newAnswerDraft.trim()
+    if (!value) return
+    setNewQuestionAnswers((prev) => [...prev, value])
+    setNewAnswerDraft('')
+  }
+
+  function unstageNewAnswer(index: number) {
+    setNewQuestionAnswers((prev) => prev.filter((_, i) => i !== index))
+  }
+
   async function handleAddQuestion(formEvent: SubmitEvent<HTMLFormElement>) {
     formEvent.preventDefault()
     if (!segmentId || !questions) return
@@ -218,15 +235,42 @@ export function QuestionsPage() {
       return
     }
 
+    // Save the question together with its acceptable answers: the staged
+    // list plus any value typed but not yet added. Acceptable answers inherit
+    // the question's answer type here; per-answer numeric overrides remain
+    // available afterward through the per-question editor below.
+    const answers = [...newQuestionAnswers]
+    const draft = newAnswerDraft.trim()
+    if (draft) answers.push(draft)
+    const isNumeric = newQuestion.answerType === 'numeric'
+
     setAdding(true)
+    let created: QuestionRow
     try {
-      await createQuestion(segmentId, result.input)
-      await refreshQuestions()
+      created = await createQuestion(segmentId, result.input)
     } catch (err) {
       setAddError(getErrorMessage(err, 'Failed to create question'))
-    } finally {
       setAdding(false)
+      return
     }
+
+    try {
+      for (const value of answers) {
+        await addAcceptableAnswer(created.id, value, isNumeric)
+      }
+    } catch (err) {
+      setAddError(
+        getErrorMessage(
+          err,
+          'Question saved, but an acceptable answer failed to save',
+        ),
+      )
+    }
+
+    setNewQuestionAnswers([])
+    setNewAnswerDraft('')
+    await refreshQuestions()
+    setAdding(false)
   }
 
   function startEdit(question: QuestionRow) {
@@ -722,6 +766,50 @@ export function QuestionsPage() {
                   />
                   Tiebreak reserve pool question
                 </CheckboxField>
+              </Field>
+              <Field>
+                <Label htmlFor="new_question_answer">Acceptable answers</Label>
+                {newQuestionAnswers.length === 0 && (
+                  <HelpText>
+                    Add one or more acceptable answers — they save with the
+                    question.
+                  </HelpText>
+                )}
+                {newQuestionAnswers.map((value, index) => (
+                  <Row key={`${value}-${index}`}>
+                    <HelpText>{value}</HelpText>
+                    <Button
+                      type="button"
+                      tone="danger"
+                      onClick={() => unstageNewAnswer(index)}
+                    >
+                      Remove
+                    </Button>
+                  </Row>
+                ))}
+                <Row>
+                  <Input
+                    id="new_question_answer"
+                    type="text"
+                    placeholder="New acceptable answer"
+                    aria-label="Acceptable answer for the new question"
+                    value={newAnswerDraft}
+                    onChange={(e) => setNewAnswerDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        stageNewAnswer()
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    tone="secondary"
+                    onClick={stageNewAnswer}
+                  >
+                    Add acceptable answer
+                  </Button>
+                </Row>
               </Field>
               {addError && <ErrorText role="alert">{addError}</ErrorText>}
               <SubmitButton type="submit" disabled={adding}>
