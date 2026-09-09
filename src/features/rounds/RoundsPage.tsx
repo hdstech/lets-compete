@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useParams } from 'react-router-dom'
@@ -40,8 +41,10 @@ import {
 import type { SegmentInput } from '../segments/segments-api'
 import type { SegmentRow } from '../segments/types'
 import {
+  SegmentActions,
   SegmentList,
   SegmentRowItem,
+  SegmentRowMain,
   SegmentTitle,
 } from './rounds-ui'
 import {
@@ -194,6 +197,12 @@ export function RoundsPage() {
   const [newSegment, setNewSegment] = useState<Record<string, SegmentFormValues>>(
     {},
   )
+  // Which round cards currently have their add-segment form revealed. The
+  // inputs stay hidden behind an "Add segment" button until the organizer
+  // opts in, keeping each card compact by default.
+  const [segmentFormOpen, setSegmentFormOpen] = useState<
+    Record<string, boolean>
+  >({})
   const [segmentAddError, setSegmentAddError] = useState<
     Record<string, string | null>
   >({})
@@ -353,6 +362,22 @@ export function RoundsPage() {
     )
   }
 
+  function openSegmentForm(round: RoundRow) {
+    setSegmentAddError((prev) => ({ ...prev, [round.id]: null }))
+    setSegmentFormOpen((prev) => ({ ...prev, [round.id]: true }))
+  }
+
+  function closeSegmentForm(round: RoundRow) {
+    setSegmentFormOpen((prev) => ({ ...prev, [round.id]: false }))
+    setSegmentAddError((prev) => ({ ...prev, [round.id]: null }))
+    setNewSegment((prev) => ({
+      ...prev,
+      [round.id]: emptySegmentForm(
+        nextSegmentSequence(segmentsByRound[round.id] ?? []),
+      ),
+    }))
+  }
+
   async function handleAddSegment(
     formEvent: SubmitEvent<HTMLFormElement>,
     round: RoundRow,
@@ -376,6 +401,8 @@ export function RoundsPage() {
         ...prev,
         [round.id]: emptySegmentForm(nextSegmentSequence(rows)),
       }))
+      // Collapse back to the "Add segment" button once the segment lands.
+      setSegmentFormOpen((prev) => ({ ...prev, [round.id]: false }))
     } catch (err) {
       setSegmentAddError((prev) => ({
         ...prev,
@@ -663,99 +690,129 @@ export function RoundsPage() {
                     </SegmentRowItem>
                   ) : (
                     <SegmentRowItem key={segment.id}>
-                      <SegmentTitle>
-                        Segment {segment.sequence}: {segment.name}
-                      </SegmentTitle>
-                      <Row equal={isDraft}>
-                        <LinkButton
-                          to={`/events/${event.id}/rounds/${round.id}/segments/${segment.id}/questions`}
-                          tone="secondary"
-                        >
-                          Manage questions
-                        </LinkButton>
-                        {isDraft && (
-                          <>
-                            <Button
-                              type="button"
-                              tone="secondary"
-                              onClick={() => startEditSegment(segment)}
-                            >
-                              Edit segment
-                            </Button>
-                            <Button
-                              type="button"
-                              tone="danger"
-                              onClick={() => handleDeleteSegment(segment)}
-                              disabled={deletingSegmentId === segment.id}
-                            >
-                              {deletingSegmentId === segment.id
-                                ? 'Deleting…'
-                                : 'Delete segment'}
-                            </Button>
-                          </>
-                        )}
-                      </Row>
+                      <SegmentRowMain>
+                        <SegmentTitle>
+                          Segment {segment.sequence}: {segment.name}
+                        </SegmentTitle>
+                        <SegmentActions>
+                          <LinkButton
+                            to={`/events/${event.id}/rounds/${round.id}/segments/${segment.id}/questions`}
+                            tone="secondary"
+                            size="sm"
+                          >
+                            Manage questions
+                          </LinkButton>
+                          {isDraft && (
+                            <>
+                              <Button
+                                type="button"
+                                tone="secondary"
+                                size="sm"
+                                onClick={() => startEditSegment(segment)}
+                              >
+                                Edit segment
+                              </Button>
+                              <Button
+                                type="button"
+                                tone="danger"
+                                size="sm"
+                                onClick={() => handleDeleteSegment(segment)}
+                                disabled={deletingSegmentId === segment.id}
+                              >
+                                {deletingSegmentId === segment.id
+                                  ? 'Deleting…'
+                                  : 'Delete segment'}
+                              </Button>
+                            </>
+                          )}
+                        </SegmentActions>
+                      </SegmentRowMain>
                     </SegmentRowItem>
                   ),
                 )}
               </SegmentList>
 
-              {isDraft && editingSegmentId === null && (
-                <AuthForm onSubmit={(e) => handleAddSegment(e, round)}>
-                  <Field>
-                    <Label htmlFor={`new_segment_name_${round.id}`}>
-                      Segment name
-                    </Label>
-                    <Input
-                      id={`new_segment_name_${round.id}`}
-                      type="text"
-                      required
-                      value={segmentFormFor(round).name}
-                      onChange={(e) =>
-                        setNewSegment((prev) => ({
-                          ...prev,
-                          [round.id]: {
-                            ...segmentFormFor(round),
-                            name: e.target.value,
-                          },
-                        }))
-                      }
-                    />
-                  </Field>
-                  <Field>
-                    <Label htmlFor={`new_segment_order_${round.id}`}>
-                      Segment order
-                    </Label>
-                    <Input
-                      id={`new_segment_order_${round.id}`}
-                      type="number"
-                      min={1}
-                      required
-                      value={segmentFormFor(round).sequence}
-                      onChange={(e) =>
-                        setNewSegment((prev) => ({
-                          ...prev,
-                          [round.id]: {
-                            ...segmentFormFor(round),
-                            sequence: e.target.value,
-                          },
-                        }))
-                      }
-                    />
-                  </Field>
-                  {segmentAddError[round.id] && (
-                    <ErrorText role="alert">
-                      {segmentAddError[round.id]}
-                    </ErrorText>
-                  )}
-                  <SubmitButton
-                    type="submit"
-                    disabled={addingSegmentFor === round.id}
+              {isDraft &&
+                editingSegmentId === null &&
+                (segmentFormOpen[round.id] ? (
+                  <SegmentRowItem>
+                    <AuthForm onSubmit={(e) => handleAddSegment(e, round)}>
+                      <Field>
+                        <Label htmlFor={`new_segment_name_${round.id}`}>
+                          Segment name
+                        </Label>
+                        <Input
+                          id={`new_segment_name_${round.id}`}
+                          type="text"
+                          required
+                          value={segmentFormFor(round).name}
+                          onChange={(e) =>
+                            setNewSegment((prev) => ({
+                              ...prev,
+                              [round.id]: {
+                                ...segmentFormFor(round),
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </Field>
+                      <Field>
+                        <Label htmlFor={`new_segment_order_${round.id}`}>
+                          Segment order
+                        </Label>
+                        <Input
+                          id={`new_segment_order_${round.id}`}
+                          type="number"
+                          min={1}
+                          required
+                          value={segmentFormFor(round).sequence}
+                          onChange={(e) =>
+                            setNewSegment((prev) => ({
+                              ...prev,
+                              [round.id]: {
+                                ...segmentFormFor(round),
+                                sequence: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </Field>
+                      {segmentAddError[round.id] && (
+                        <ErrorText role="alert">
+                          {segmentAddError[round.id]}
+                        </ErrorText>
+                      )}
+                      <Row equal>
+                        <SubmitButton
+                          type="submit"
+                          disabled={addingSegmentFor === round.id}
+                        >
+                          {addingSegmentFor === round.id
+                            ? 'Adding…'
+                            : 'Save segment'}
+                        </SubmitButton>
+                        <Button
+                          type="button"
+                          tone="secondary"
+                          onClick={() => closeSegmentForm(round)}
+                        >
+                          Cancel
+                        </Button>
+                      </Row>
+                    </AuthForm>
+                  </SegmentRowItem>
+                ) : (
+                  <Button
+                    type="button"
+                    tone="secondary"
+                    size="sm"
+                    onClick={() => openSegmentForm(round)}
                   >
-                    {addingSegmentFor === round.id ? 'Adding…' : 'Add segment'}
-                  </SubmitButton>
-                </AuthForm>
-              )}
+                    <Plus size={14} />
+                    Add segment
+                  </Button>
+                ))}
 
               <Row equal>
                 {!isDraft && (

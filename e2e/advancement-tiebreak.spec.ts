@@ -42,8 +42,9 @@ async function addSegmentAndOpenQuestions(
   segmentName: string,
 ): Promise<string> {
   const card = page.getByRole('group').nth(index)
-  await card.getByLabel('Segment name').fill(segmentName)
   await card.getByRole('button', { name: 'Add segment' }).click()
+  await card.getByLabel('Segment name').fill(segmentName)
+  await card.getByRole('button', { name: 'Save segment' }).click()
   const questionsLink = card.getByRole('link', { name: 'Manage questions' })
   await expect(questionsLink).toBeVisible()
   await questionsLink.click()
@@ -61,8 +62,9 @@ async function addSegmentAndOpenQuestions(
 // the resulting "Manage questions" href.
 async function nthRoundId(page: Page, index: number): Promise<string> {
   const card = page.getByRole('group').nth(index)
-  await card.getByLabel('Segment name').fill('Segment A')
   await card.getByRole('button', { name: 'Add segment' }).click()
+  await card.getByLabel('Segment name').fill('Segment A')
+  await card.getByRole('button', { name: 'Save segment' }).click()
   const questionsLink = card.getByRole('link', { name: 'Manage questions' })
   await expect(questionsLink).toBeVisible()
   const href = await questionsLink.getAttribute('href')

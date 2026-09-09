@@ -78,17 +78,19 @@ export async function goToSegments(page: Page) {
   await expect(page.getByRole('button', { name: 'Add segment' })).toBeVisible()
 }
 
-// Adds a segment via the inline add-segment form on the round card. Assumes
-// exactly one round is configured (one add-segment form on the page); for a
-// multi-round event, scope the form to a specific round card first.
+// Adds a segment via the inline add-segment form on the round card. The form
+// is hidden behind an "Add segment" button, so this reveals it, fills it, and
+// saves. Assumes exactly one round is configured (one such button on the
+// page); for a multi-round event, scope the controls to a specific card first.
 export async function addSegment(page: Page, options: { name: string; sequence?: number }) {
+  await page.getByRole('button', { name: 'Add segment' }).click()
   await page.getByLabel('Segment name').fill(options.name)
   if (options.sequence !== undefined) {
     await page.getByLabel('Segment order').fill(String(options.sequence))
   }
-  await page.getByRole('button', { name: 'Add segment' }).click()
-  // Same async-settle rationale as addRound: wait for the submit control to
-  // reappear before returning, so callers can safely chain another call.
+  await page.getByRole('button', { name: 'Save segment' }).click()
+  // On success the form collapses back to the "Add segment" button; waiting
+  // for it lets callers safely chain another call.
   await expect(page.getByRole('button', { name: 'Add segment' })).toBeVisible()
 }
 
