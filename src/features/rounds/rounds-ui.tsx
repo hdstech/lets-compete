@@ -21,7 +21,7 @@ export const SegmentRowItem = styled('div', {
     display: 'flex',
     flexDirection: 'column',
     gap: '3',
-    bg: '#ececec',
+    bg: 'bg.sunken',
     borderWidth: '1px',
     borderColor: 'border.default',
     borderRadius: 'card',
@@ -36,8 +36,10 @@ export const SegmentRowItem = styled('div', {
       true: {
         _hover: {
           transform: 'translateY(-2px)',
-          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.25)',
+          borderColor: 'accent.default',
+          boxShadow: 'lifted',
         },
+        _motionReduce: { _hover: { transform: 'none' } },
       },
     },
   },

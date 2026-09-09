@@ -4,16 +4,15 @@ import { Navigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from './useAuth'
 import {
-  AuthCard,
   AuthFooterText,
   AuthForm,
   AuthLink,
-  AuthShell,
   ErrorText,
   Field,
   Input,
   Label,
 } from './auth-ui'
+import { AuthLayout } from './AuthLayout'
 import { Button as SubmitButton } from '../../components/ui/Button'
 import {
   Title as AuthTitle,
@@ -78,118 +77,120 @@ export function JoinPage() {
 
   if (linkSent) {
     return (
-      <AuthShell>
-        <AuthCard>
-          <AuthTitle>Check your email</AuthTitle>
-          <AuthSubtitle>
-            We sent a sign-in link to {email}. Open it on this device to
-            continue — no password needed.
-          </AuthSubtitle>
-        </AuthCard>
-      </AuthShell>
+      <AuthLayout
+        headline="Check your inbox."
+        blurb="Your link signs you straight in — no password to remember, nothing to install."
+      >
+        <AuthTitle size="card">Check your email</AuthTitle>
+        <AuthSubtitle>
+          We sent a sign-in link to {email}. Open it on this device to continue —
+          no password needed.
+        </AuthSubtitle>
+      </AuthLayout>
     )
   }
 
   return (
-    <AuthShell>
-      <AuthCard>
-        <div>
-          <AuthTitle>Join an event</AuthTitle>
-          <AuthSubtitle>
-            Participants and judges sign in with an emailed link — no password
-            needed.
-          </AuthSubtitle>
-        </div>
-        <AuthForm onSubmit={handleSubmit}>
-          <Field>
-            <Label htmlFor="joinCode">Join code (participants only)</Label>
-            <Input
-              id="joinCode"
-              name="joinCode"
-              type="text"
-              autoComplete="off"
-              placeholder="Leave blank if you're a judge"
-              value={joinCode}
-              onChange={(event) => setJoinCode(event.target.value)}
-            />
-          </Field>
+    <AuthLayout
+      headline="You're in the game."
+      blurb="Players and judges sign in with an emailed link. No password, nothing to install."
+    >
+      <div>
+        <AuthTitle size="card">Join an event</AuthTitle>
+        <AuthSubtitle>
+          Participants and judges sign in with an emailed link — no password
+          needed.
+        </AuthSubtitle>
+      </div>
+      <AuthForm onSubmit={handleSubmit}>
+        <Field>
+          <Label htmlFor="joinCode">Join code (participants only)</Label>
+          <Input
+            id="joinCode"
+            name="joinCode"
+            type="text"
+            autoComplete="off"
+            placeholder="Leave blank if you're a judge"
+            value={joinCode}
+            onChange={(event) => setJoinCode(event.target.value)}
+          />
+        </Field>
 
-          {wantsToJoin && (
-            <>
+        {wantsToJoin && (
+          <>
+            <Field>
+              <Label htmlFor="name">Your name</Label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </Field>
+
+            <Field>
+              <Label>Registering as</Label>
+              <Row>
+                <CheckboxField>
+                  <input
+                    type="radio"
+                    name="participant_type"
+                    checked={type === 'individual'}
+                    onChange={() => setType('individual')}
+                  />
+                  Individual
+                </CheckboxField>
+                <CheckboxField>
+                  <input
+                    type="radio"
+                    name="participant_type"
+                    checked={type === 'team'}
+                    onChange={() => setType('team')}
+                  />
+                  Team
+                </CheckboxField>
+              </Row>
+            </Field>
+
+            {type === 'team' && (
               <Field>
-                <Label htmlFor="name">Your name</Label>
+                <Label htmlFor="members">Team members</Label>
                 <Input
-                  id="name"
-                  name="name"
+                  id="members"
+                  name="members"
                   type="text"
-                  autoComplete="name"
-                  required
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  value={members}
+                  onChange={(event) => setMembers(event.target.value)}
                 />
               </Field>
+            )}
+          </>
+        )}
 
-              <Field>
-                <Label>Registering as</Label>
-                <Row>
-                  <CheckboxField>
-                    <input
-                      type="radio"
-                      name="participant_type"
-                      checked={type === 'individual'}
-                      onChange={() => setType('individual')}
-                    />
-                    Individual
-                  </CheckboxField>
-                  <CheckboxField>
-                    <input
-                      type="radio"
-                      name="participant_type"
-                      checked={type === 'team'}
-                      onChange={() => setType('team')}
-                    />
-                    Team
-                  </CheckboxField>
-                </Row>
-              </Field>
-
-              {type === 'team' && (
-                <Field>
-                  <Label htmlFor="members">Team members</Label>
-                  <Input
-                    id="members"
-                    name="members"
-                    type="text"
-                    value={members}
-                    onChange={(event) => setMembers(event.target.value)}
-                  />
-                </Field>
-              )}
-            </>
-          )}
-
-          <Field>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </Field>
-          {error && <ErrorText role="alert">{error}</ErrorText>}
-          <SubmitButton type="submit" width="full" disabled={submitting}>
-            {submitting ? 'Sending link…' : 'Email me a sign-in link'}
-          </SubmitButton>
-        </AuthForm>
-        <AuthFooterText>
-          Organizing an event?{' '}
-          <AuthLink to="/login">Log in with a password</AuthLink>
-        </AuthFooterText>
-      </AuthCard>
-    </AuthShell>
+        <Field>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </Field>
+        {error && <ErrorText role="alert">{error}</ErrorText>}
+        <SubmitButton type="submit" size="lg" width="full" disabled={submitting}>
+          {submitting ? 'Sending link…' : 'Email me a sign-in link'}
+        </SubmitButton>
+      </AuthForm>
+      <AuthFooterText>
+        Organizing an event?{' '}
+        <AuthLink to="/login">Log in with a password</AuthLink>
+      </AuthFooterText>
+    </AuthLayout>
   )
 }

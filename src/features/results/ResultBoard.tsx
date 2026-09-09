@@ -1,6 +1,19 @@
-import { Card, HelpText, SectionTitle } from '../events/events-ui'
+import {
+  HelpText,
+  SectionTitle,
+} from '../events/events-ui'
+import { Card } from '../../components/ui/Card'
 import type { ParticipantRow } from '../participants/types'
-import { BoardCell, BoardHeader, BoardHeadCell, BoardMeta, BoardTable, RankCell } from './results-ui'
+import {
+  BoardCell,
+  BoardHeader,
+  BoardHeadCell,
+  BoardMeta,
+  BoardRow,
+  BoardTable,
+  RankCell,
+  RankTile,
+} from './results-ui'
 import type { ResultCalculationEntryRow, ResultCalculationRow } from './types'
 
 export function ResultBoard({
@@ -34,18 +47,22 @@ export function ResultBoard({
             <tr>
               <BoardHeadCell scope="col">Rank</BoardHeadCell>
               <BoardHeadCell scope="col">Participant</BoardHeadCell>
-              <BoardHeadCell scope="col">Score</BoardHeadCell>
+              <BoardHeadCell scope="col" numeric>
+                Score
+              </BoardHeadCell>
             </tr>
           </thead>
           <tbody>
             {entries.map((entry) => (
-              <tr key={entry.id}>
-                <RankCell>{entry.rank}</RankCell>
+              <BoardRow key={entry.id} leading={entry.rank === 1}>
+                <RankCell>
+                  <RankTile leading={entry.rank === 1}>{entry.rank}</RankTile>
+                </RankCell>
                 <BoardCell>
                   {participantsById.get(entry.participant_id)?.name ?? 'Unknown participant'}
                 </BoardCell>
-                <BoardCell>{entry.total_score}</BoardCell>
-              </tr>
+                <BoardCell numeric>{entry.total_score}</BoardCell>
+              </BoardRow>
             ))}
           </tbody>
         </BoardTable>

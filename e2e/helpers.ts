@@ -161,9 +161,12 @@ export async function activateEvent(page: Page) {
 }
 
 // Assumes the current page is a round's rounds list, with exactly one
-// "Live console" link (i.e. the event is active).
+// "Live console" link (i.e. the event is active). The match has to be exact:
+// these specs name their events things like "Live Console Reveal <id>", and
+// that name is a breadcrumb link on this page, so a substring match resolves
+// to two elements.
 export async function goToLiveConsole(page: Page) {
-  await page.getByRole('link', { name: 'Live console' }).click()
+  await page.getByRole('link', { name: 'Live console', exact: true }).click()
   await page.waitForURL(
     /\/events\/[0-9a-f-]{36}\/rounds\/[0-9a-f-]{36}\/live$/,
   )

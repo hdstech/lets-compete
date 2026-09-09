@@ -1,20 +1,28 @@
-import { Calendar } from 'lucide-react'
+import { ArrowRight, Calendar, UserRound } from 'lucide-react'
 import { styled } from '../../styled-system/jsx'
 import { LinkButton } from '../components/ui/Button'
 import { Title as PageTitle, Subtitle as PageSubtitle } from '../components/ui/Typography'
 import {
-  Card,
   DefinitionGrid,
   DefinitionTerm,
   DefinitionValue,
-  SectionTitle,
 } from '../features/events/events-ui'
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardHeaderText,
+  CardTitle,
+  IconTile,
+} from '../components/ui/Card'
 import { useAuth } from '../features/auth/useAuth'
 
 const OverviewPage = styled('div', {
   base: {
     px: { base: '4', sm: '6' },
     py: { base: '4', sm: '6' },
+    animation: 'riseIn 0.35s ease-out both',
+    _motionReduce: { animation: 'none' },
   },
 })
 
@@ -32,26 +40,18 @@ const OverviewGrid = styled('div', {
     display: 'grid',
     gridTemplateColumns: { base: '1fr', lg: '2fr 1fr' },
     gap: '5',
+    alignItems: 'start',
   },
 })
 
-const WelcomeText = styled('p', {
+// The arrow on the primary action slides on hover, matching the landing
+// page's call-to-action.
+const ActionRow = styled('div', {
   base: {
-    fontSize: 'sm',
-    color: 'text.muted',
-  },
-})
-
-const IconBadge = styled('div', {
-  base: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '10',
-    height: '10',
-    borderRadius: 'control',
-    bg: 'bg.sunken',
-    color: 'text.primary',
+    marginTop: '1',
+    '& svg': { transition: 'transform 0.18s ease' },
+    '&:hover svg': { transform: 'translateX(4px)' },
+    _motionReduce: { '&:hover svg': { transform: 'none' } },
   },
 })
 
@@ -68,26 +68,38 @@ export function DashboardPage() {
 
       <OverviewGrid>
         <Card>
-          <IconBadge>
-            <Calendar size={18} />
-          </IconBadge>
-          <SectionTitle>Your events</SectionTitle>
-          <WelcomeText>
-            Create, configure, and run scored events from one place — rounds, segments, and
-            questions all live under each event.
-          </WelcomeText>
-          <div>
+          <CardHeader>
+            <IconTile>
+              <Calendar size={18} />
+            </IconTile>
+            <CardHeaderText>
+              <CardTitle>Your events</CardTitle>
+              <CardDescription>
+                Create, configure, and run scored events from one place — rounds,
+                segments, and questions all live under each event.
+              </CardDescription>
+            </CardHeaderText>
+          </CardHeader>
+          <ActionRow>
             <LinkButton to="/events" tone="primary">
               Manage your events
+              <ArrowRight size={16} aria-hidden="true" />
             </LinkButton>
-          </div>
+          </ActionRow>
         </Card>
 
         <Card>
-          <SectionTitle>Account</SectionTitle>
-          <DefinitionGrid>
+          <CardHeader>
+            <IconTile tone="subtle">
+              <UserRound size={18} />
+            </IconTile>
+            <CardHeaderText>
+              <CardTitle>Account</CardTitle>
+            </CardHeaderText>
+          </CardHeader>
+          <DefinitionGrid columns="stacked">
             <DefinitionTerm>Name</DefinitionTerm>
-            <DefinitionValue>{name ?? '—'}</DefinitionValue>
+            <DefinitionValue mb="2">{name ?? '—'}</DefinitionValue>
             <DefinitionTerm>Email</DefinitionTerm>
             <DefinitionValue>{user?.email ?? '—'}</DefinitionValue>
           </DefinitionGrid>

@@ -1,29 +1,20 @@
 import { styled } from '../../../styled-system/jsx'
 
-export const OutcomeBadge = styled('span', {
-  base: {
-    fontSize: 'xs',
-    fontWeight: 'semibold',
-    borderRadius: 'full',
-    px: '2.5',
-    py: '1',
-    textTransform: 'capitalize',
-  },
-  variants: {
-    outcome: {
-      advanced: { bg: 'green.700', color: 'green.50' },
-      eliminated: { bg: 'red.700', color: 'red.50' },
-      pending: { bg: 'amber.700', color: 'amber.50' },
-    },
-  },
-})
+// Outcome maps onto the shared badge tones; the component itself lives in
+// components/ui/Badge.
+export const OUTCOME_TONE = {
+  advanced: 'success',
+  eliminated: 'danger',
+  pending: 'warning',
+} as const
 
 export const Countdown = styled('div', {
   base: {
     fontSize: '2xl',
     fontWeight: 'bold',
     fontVariantNumeric: 'tabular-nums',
-    color: 'text.primary',
+    letterSpacing: '-0.02em',
+    color: 'accent.default',
   },
 })
 

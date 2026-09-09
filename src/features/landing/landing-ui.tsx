@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
 
-// Two-up marketing layout: a fixed-identity brand panel (its blue gradient is
-// the same in both themes) beside an action panel on the ordinary app canvas,
-// so the hand-off from here into /login and /signup is seamless.
+// The gradient panel itself, its glows, grid, wordmark and headline now live
+// in components/ui/brand-surface — they are shared with the auth pages and the
+// participant screens. What stays here is the landing page's own half: the
+// action column, and the live-standings demo that only this page runs.
+
 export const LandingRoot = styled('main', {
   base: {
     display: 'grid',
@@ -21,123 +23,6 @@ export const LandingRoot = styled('main', {
   },
 })
 
-export const BrandPanel = styled('section', {
-  base: {
-    position: 'relative',
-    isolation: 'isolate',
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    gap: '10',
-    color: 'white',
-    backgroundImage:
-      'linear-gradient(158deg, token(colors.brand.500) 0%, token(colors.brand.500) 46%, token(colors.brand.400) 100%)',
-    px: { base: '6', md: '10', lg: '12' },
-    paddingTop: 'max(2rem, env(safe-area-inset-top))',
-    paddingBottom: { base: '10', lg: '12' },
-    lg: { paddingLeft: 'max(3rem, env(safe-area-inset-left))' },
-  },
-})
-
-// Soft drifting light sources. Purely decorative, so they sit behind the
-// content and never intercept pointer events.
-export const BrandGlow = styled('div', {
-  base: {
-    position: 'absolute',
-    zIndex: '-1',
-    pointerEvents: 'none',
-    borderRadius: 'full',
-    filter: 'blur(60px)',
-    animation: 'drift 18s ease-in-out infinite',
-    _motionReduce: { animation: 'none' },
-  },
-  variants: {
-    placement: {
-      top: {
-        width: '22rem',
-        height: '22rem',
-        top: '-6rem',
-        right: '-4rem',
-        bg: 'rgba(255, 255, 255, 0.22)',
-      },
-      bottom: {
-        width: '26rem',
-        height: '26rem',
-        bottom: '-8rem',
-        left: '-6rem',
-        bg: 'rgba(63, 111, 189, 0.45)',
-        animationDelay: '-9s',
-      },
-    },
-  },
-})
-
-// Faint scoreboard grid, faded out toward the bottom so it never competes
-// with the leaderboard card sitting on top of it.
-export const BrandGrid = styled('div', {
-  base: {
-    position: 'absolute',
-    zIndex: '-1',
-    inset: '0',
-    pointerEvents: 'none',
-    opacity: '0.16',
-    backgroundImage:
-      'linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)',
-    backgroundSize: '56px 56px',
-    maskImage: 'linear-gradient(to bottom, black 0%, transparent 78%)',
-  },
-})
-
-export const Wordmark = styled('div', {
-  base: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '2.5',
-    fontSize: 'sm',
-    fontWeight: 'semibold',
-    letterSpacing: '0.04em',
-    textTransform: 'uppercase',
-  },
-})
-
-export const WordmarkBadge = styled('span', {
-  base: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '9',
-    height: '9',
-    borderRadius: 'control',
-    bg: 'rgba(255, 255, 255, 0.2)',
-    borderWidth: '1px',
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-  },
-})
-
-export const BrandHeadline = styled('h1', {
-  base: {
-    fontSize: 'clamp(3rem, 9vw, 5.5rem)',
-    lineHeight: '0.95',
-    fontWeight: 'bold',
-    letterSpacing: '-0.03em',
-    textWrap: 'balance',
-    animation: 'riseIn 0.7s ease-out both',
-    _motionReduce: { animation: 'none' },
-  },
-})
-
-export const BrandTagline = styled('p', {
-  base: {
-    maxWidth: '34ch',
-    marginTop: '4',
-    fontSize: { base: 'md', md: 'lg' },
-    color: 'rgba(255, 255, 255, 0.88)',
-    animation: 'riseIn 0.7s ease-out 0.1s both',
-    _motionReduce: { animation: 'none' },
-  },
-})
-
 export const ActionPanel = styled('section', {
   base: {
     position: 'relative',
@@ -150,32 +35,6 @@ export const ActionPanel = styled('section', {
     lg: {
       paddingRight: 'max(3rem, env(safe-area-inset-right))',
       overflowY: 'auto',
-    },
-  },
-})
-
-export const ThemeToggle = styled('button', {
-  base: {
-    position: 'absolute',
-    top: '5',
-    right: '5',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '10',
-    height: '10',
-    borderRadius: 'pill',
-    borderWidth: '1px',
-    borderColor: 'border.default',
-    bg: 'bg.surface',
-    color: 'text.muted',
-    cursor: 'pointer',
-    transition: 'color 0.15s ease, border-color 0.15s ease',
-    _hover: { color: 'text.primary', borderColor: 'text.muted' },
-    _focusVisible: {
-      outline: '2px solid',
-      outlineColor: 'accent.default',
-      outlineOffset: '2px',
     },
   },
 })
@@ -277,49 +136,26 @@ export const FeatureCard = styled('li', {
     borderWidth: '1px',
     borderColor: 'border.default',
     borderRadius: 'card',
+    boxShadow: 'card',
     px: '3.5',
     py: '3',
     fontSize: 'sm',
     fontWeight: 'medium',
-    transition: 'transform 0.18s ease, border-color 0.18s ease',
-    _hover: { transform: 'translateY(-3px)', borderColor: 'brand.500' },
+    transition: 'transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease',
+    _hover: {
+      transform: 'translateY(-3px)',
+      borderColor: 'accent.default',
+      boxShadow: 'lifted',
+    },
     _motionReduce: { _hover: { transform: 'none' } },
-  },
-})
-
-export const FeatureIcon = styled('span', {
-  base: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '8',
-    height: '8',
-    borderRadius: 'control',
-    bg: 'brand.500',
-    color: 'white',
-    flexShrink: '0',
   },
 })
 
 // --- Live standings demo -----------------------------------------------
 // A simulated leaderboard that reorders itself on the brand panel. It is the
 // clearest one-glance explanation of what the product does, so it earns its
-// place over a static screenshot.
-
-export const StandingsCard = styled('div', {
-  base: {
-    width: 'full',
-    maxWidth: '26rem',
-    bg: 'rgba(255, 255, 255, 0.14)',
-    borderWidth: '1px',
-    borderColor: 'rgba(255, 255, 255, 0.28)',
-    borderRadius: 'card',
-    backdropFilter: 'blur(12px)',
-    p: '4',
-    animation: 'riseIn 0.7s ease-out 0.2s both',
-    _motionReduce: { animation: 'none' },
-  },
-})
+// place over a static screenshot. The same row geometry is reused by the real
+// leaderboard on the results screens.
 
 export const StandingsHeader = styled('div', {
   base: {
@@ -344,7 +180,7 @@ export const LiveDot = styled('span', {
   base: {
     width: '2',
     height: '2',
-    borderRadius: 'full',
+    borderRadius: 'pill',
     bg: 'green.300',
     animation: 'pulseDot 1.6s ease-in-out infinite',
     _motionReduce: { animation: 'none' },

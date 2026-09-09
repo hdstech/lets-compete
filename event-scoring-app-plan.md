@@ -361,6 +361,20 @@ Cross-cutting visual/UX redesign of the admin (organizer) side, sequenced indepe
 - **DS13** Retheme `NewEventPage`.
 - **DS14** Reusable `ConfirmDialog` component (accessible modal, `tone="danger"`) for all destructive actions app-wide — built once, consumed by DS11/DS12.
 
+**Brand alignment pass (Track D, second detour)**
+
+The landing page ("Let's Compete", `/`) introduced a brand identity — a fixed
+blue gradient panel, bold tight-tracked headings, brand-blue icon tiles, soft
+tinted status pills, and lift-on-hover surfaces — that the rest of the app
+predated. This pass carries that identity through every screen, admin and
+participant/judge alike, so the two no longer read as different products.
+
+- **DS15** Token + recipe foundation for the brand: `brand.50–700` scale, `accent.*` semantic tokens (solid/subtle/fg/border/hover) with `accent.default` moved off indigo onto the brand blue, `success/danger/warning` tint trios shared by every status pill, a three-step shadow scale, and a config `badge` recipe replacing the four local badge components. Button recipe gains `accent`/`ghost` tones, an `lg`/`icon` size, and hover lift.
+- **DS16** Shared primitives in `components/ui`: `Card` (+ `CardHeader`/`IconTile`), `Badge`, `brand-surface` (the gradient panel, glows, grid and wordmark, extracted from the landing page), `ThemeToggle`, `PlayerShell`/`PlayerHeader`.
+- **DS17** Auth screens adopt the landing page's two-panel layout via `AuthLayout` (gradient aside on desktop, banner above the card on a phone).
+- **DS18** Participant/judge screens (waiting room, live answer) move onto `PlayerShell` with the gradient header — the mobile-first design pass DS1–DS14 deferred.
+- **DS19** Organizer screens adopt the icon-tile card headers, badge tones, accent forward-actions, and the leaderboard rank tiles that echo the landing page's live standings.
+
 ### V2 — Judged panel (future)
 
 Layered on the shipped V1 core: **judge-tables migration** (`scores`, `score_feedback`, `event_judges`, `round_final_submissions`, `scoring_criteria`, `participant_segments`); **T5** blind-judge RLS; **T7** judged roster-freeze at `draft→active`; **T8** criteria CRUD (min/max); **T11** scoring write API; **T12** score_feedback API; **T13** storage bucket + photo; **T14** per-round completeness gate + close-round; **T15** multi-judge dual-lock trigger; `calculate_results` judged branch; **T21** admin segment/criteria/participant mgmt; **T23** judge join + dashboard; **T24** judge scoring screen; **T25/T26** offline caching + sync; **T27** judge final-submit + locked UI; **T30** DQ/segment-zeroing UI.

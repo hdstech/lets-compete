@@ -19,10 +19,12 @@ const buttonRecipe = defineRecipe({
     gap: '1.5',
     textDecoration: 'none',
     textAlign: 'center',
-    transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease',
+    transition:
+      'background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease',
     _disabled: {
       opacity: 0.5,
       cursor: 'not-allowed',
+      _hover: { transform: 'none', boxShadow: 'none' },
     },
     _focusVisible: {
       outline: '2px solid',
@@ -32,15 +34,54 @@ const buttonRecipe = defineRecipe({
   },
   variants: {
     tone: {
-      primary: { bg: 'text.primary', color: 'bg.surface', _hover: { bg: 'ink.800' } },
+      primary: {
+        bg: 'text.primary',
+        color: 'bg.surface',
+        boxShadow: 'raised',
+        _hover: { bg: 'ink.800', boxShadow: 'lifted', transform: 'translateY(-1px)' },
+        _active: { transform: 'translateY(0)' },
+        _motionReduce: { _hover: { transform: 'none' } },
+      },
+      // The brand blue fill, for the one action that moves an event forward on
+      // a screen (open the live console, reveal, advance) — it picks up the
+      // landing page's accent rather than competing with `primary`'s ink.
+      accent: {
+        bg: 'accent.solid',
+        color: 'accent.onSolid',
+        boxShadow: 'raised',
+        _hover: { bg: 'accent.hover', boxShadow: 'lifted', transform: 'translateY(-1px)' },
+        _active: { transform: 'translateY(0)' },
+        _motionReduce: { _hover: { transform: 'none' } },
+      },
       secondary: {
-        bg: 'transparent',
+        bg: 'bg.surface',
         color: 'text.primary',
         borderColor: 'border.default',
-        _hover: { bg: 'bg.sunken' },
+        _hover: { bg: 'bg.sunken', borderColor: 'border.strong' },
       },
-      danger: { bg: 'salmon.600', color: 'white', _hover: { bg: 'salmon.700' } },
-      success: { bg: 'green.600', color: 'white', _hover: { bg: 'green.700' } },
+      // Chromeless until hovered — for icon buttons and low-stakes inline
+      // actions that would otherwise crowd a row with borders.
+      ghost: {
+        bg: 'transparent',
+        color: 'text.muted',
+        _hover: { bg: 'bg.sunken', color: 'text.primary' },
+      },
+      danger: {
+        bg: 'salmon.600',
+        color: 'white',
+        boxShadow: 'raised',
+        _hover: { bg: 'salmon.700', boxShadow: 'lifted', transform: 'translateY(-1px)' },
+        _active: { transform: 'translateY(0)' },
+        _motionReduce: { _hover: { transform: 'none' } },
+      },
+      success: {
+        bg: 'green.600',
+        color: 'white',
+        boxShadow: 'raised',
+        _hover: { bg: 'green.700', boxShadow: 'lifted', transform: 'translateY(-1px)' },
+        _active: { transform: 'translateY(0)' },
+        _motionReduce: { _hover: { transform: 'none' } },
+      },
     },
     // 'sm' is for a button sitting inline with small badges/pills (e.g. the
     // participant admission-status row) where the default size reads as
@@ -48,12 +89,61 @@ const buttonRecipe = defineRecipe({
     size: {
       md: { px: '4', py: '2', minHeight: '11', fontSize: 'sm' },
       sm: { px: '2.5', py: '1', minHeight: '7', fontSize: 'xs' },
-      // 'lg' is the landing-page call-to-action: it has to hold its own as
-      // the single focal control on an otherwise empty half of the screen.
+      // 'lg' is a page's focal call-to-action: the landing hand-off, and the
+      // primary submit on the auth cards.
       lg: { px: '6', py: '3', minHeight: '13', fontSize: 'md' },
+      // Square, label-less — a toggle or icon action sized for touch.
+      icon: { px: '0', py: '0', width: '11', height: '11', minHeight: '11' },
     },
   },
   defaultVariants: { tone: 'primary', size: 'md' },
+})
+
+// Every status pill in the app — event lifecycle, admission, eligibility,
+// round/question state — comes from here. They were previously three
+// near-identical local recipes with saturated fills that fought the calm
+// surface palette; these are soft tints carrying a readable foreground.
+const badgeRecipe = defineRecipe({
+  className: 'badge',
+  base: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '1.5',
+    flexShrink: '0',
+    borderRadius: 'pill',
+    borderWidth: '1px',
+    borderColor: 'transparent',
+    px: '2.5',
+    py: '1',
+    fontSize: 'xs',
+    fontWeight: 'semibold',
+    lineHeight: 'tight',
+    whiteSpace: 'nowrap',
+    textTransform: 'capitalize',
+  },
+  variants: {
+    tone: {
+      neutral: { bg: 'bg.sunken', color: 'text.muted', borderColor: 'border.default' },
+      accent: { bg: 'accent.subtle', color: 'accent.fg', borderColor: 'accent.border' },
+      success: { bg: 'success.subtle', color: 'success.fg', borderColor: 'success.border' },
+      danger: { bg: 'danger.subtle', color: 'danger.fg', borderColor: 'danger.border' },
+      warning: { bg: 'warning.subtle', color: 'warning.fg', borderColor: 'warning.border' },
+    },
+    // Micro-labels above a value or section ("JOIN CODE", "STATUS"): the same
+    // uppercase, letterspaced treatment the landing page uses for its eyebrow.
+    eyebrow: {
+      true: {
+        bg: 'transparent',
+        borderColor: 'transparent',
+        px: '0',
+        py: '0',
+        color: 'text.placeholder',
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+      },
+    },
+  },
+  defaultVariants: { tone: 'neutral' },
 })
 
 export default defineConfig({
@@ -69,16 +159,18 @@ export default defineConfig({
   // Files to exclude
   exclude: [],
 
-  // The `button` recipe is shared across many files via two styled() calls
-  // (Button, LinkButton) in src/components/ui/Button.tsx — Panda's per-usage
-  // JSX extractor was unreliable at generating CSS for every tone from that
-  // indirection (notably dropping the primary tone, the recipe's own
-  // defaultVariants value, even where JSX explicitly passed tone="primary").
-  // Forcing all its variants to be pre-generated sidesteps extraction so the
-  // recipe's CSS is always complete regardless of how/where it's consumed.
+  // These recipes are shared across many files via styled() indirection
+  // (components/ui/Button.tsx exports two, components/ui/Badge.tsx one) —
+  // Panda's per-usage JSX extractor was unreliable at generating CSS for
+  // every variant through that indirection (notably dropping the button's
+  // primary tone, the recipe's own defaultVariants value, even where JSX
+  // explicitly passed tone="primary"). Forcing all variants to be
+  // pre-generated sidesteps extraction so the CSS is always complete
+  // regardless of how or where the recipe is consumed.
   staticCss: {
     recipes: {
       button: ['*'],
+      badge: ['*'],
     },
   },
 
@@ -93,6 +185,7 @@ export default defineConfig({
     extend: {
       recipes: {
         button: buttonRecipe,
+        badge: badgeRecipe,
       },
 
       tokens: {
@@ -112,15 +205,19 @@ export default defineConfig({
             900: { value: '#242422' },
             950: { value: '#1f1f1d' },
           },
-          // Cool blues used only by the marketing landing page's gradient
-          // panel. Deliberately outside the app-chrome palette (ink/salmon):
-          // the landing page is the one surface with a brand identity of its
-          // own, and these stay fixed across light and dark themes.
+          // The brand blue, introduced by the landing page and now the app's
+          // single accent: active navigation, focus rings, links, icon tiles,
+          // live indicators. 300/400 are the desaturated pair the landing
+          // gradient is built from; 500 is the brand hex.
           brand: {
+            50: { value: '#eff5fd' },
+            100: { value: '#dce9fa' },
+            200: { value: '#bcd4f4' },
             300: { value: '#b9cbe6' },
             400: { value: '#90a9d1' },
             500: { value: '#5c91e6' },
             600: { value: '#3f6fbd' },
+            700: { value: '#2d5490' },
           },
           // Red used for destructive/danger buttons in place of a stock red.
           // 600 is the brand danger hex (#d97a7a); 700 is a matching darker
@@ -137,6 +234,13 @@ export default defineConfig({
           control: { value: '10px' }, // inputs, dropdowns, sidebar active-item, skeletons
           card: { value: '12px' }, // empty-state / onboarding cards
           pill: { value: '9999px' }, // tab tracks, switcher badge
+        },
+        shadows: {
+          // Three steps only: a resting card, a filled control, and the
+          // hover state either of them lifts into.
+          card: { value: '0 1px 2px rgba(31, 31, 29, 0.05)' },
+          raised: { value: '0 1px 2px rgba(31, 31, 29, 0.08)' },
+          lifted: { value: '0 6px 16px -6px rgba(31, 31, 29, 0.24)' },
         },
         fonts: {
           heading: { value: 'Geist, ui-sans-serif, system-ui, sans-serif' },
@@ -163,20 +267,74 @@ export default defineConfig({
             value: { base: '{colors.ink.950}', _dark: 'white' },
           },
           'text.muted': {
-            value: { base: '{colors.ink.500}', _dark: '{colors.slate.400}' },
+            value: { base: '{colors.ink.500}', _dark: '{colors.slate.300}' },
           },
           'text.placeholder': {
-            value: { base: '{colors.ink.400}', _dark: '{colors.slate.500}' },
+            value: { base: '{colors.ink.400}', _dark: '{colors.slate.400}' },
           },
           'border.default': {
             value: { base: '{colors.ink.200}', _dark: '{colors.ink.800}' },
           },
-          // Reserved for focus rings / links / active indicators — not button fills.
+          // A step up from border.default, for the hovered/focused edge of a
+          // control that should read as interactive without going full accent.
+          'border.strong': {
+            value: { base: '{colors.ink.300}', _dark: '{colors.ink.700}' },
+          },
+          // Accent = the landing page's brand blue. `default` is the ink-level
+          // value (links, focus rings, active labels); `solid` is a fill with
+          // `onSolid` on top; `subtle`/`fg`/`border` make a tinted chip.
           'accent.default': {
+            value: { base: '{colors.brand.600}', _dark: '{colors.brand.400}' },
+          },
+          'accent.solid': {
+            value: { base: '{colors.brand.500}', _dark: '{colors.brand.500}' },
+          },
+          'accent.onSolid': { value: { base: 'white', _dark: 'white' } },
+          'accent.hover': {
+            value: { base: '{colors.brand.600}', _dark: '{colors.brand.600}' },
+          },
+          'accent.subtle': {
             value: {
-              base: '{colors.indigo.500}',
-              _dark: '{colors.indigo.400}',
+              base: '{colors.brand.50}',
+              _dark: 'rgba(92, 145, 230, 0.16)',
             },
+          },
+          'accent.fg': {
+            value: { base: '{colors.brand.700}', _dark: '{colors.brand.300}' },
+          },
+          'accent.border': {
+            value: {
+              base: '{colors.brand.200}',
+              _dark: 'rgba(92, 145, 230, 0.32)',
+            },
+          },
+          // Status tints, shared by every badge and inline status message.
+          'success.subtle': {
+            value: { base: '{colors.green.100}', _dark: 'rgba(34, 197, 94, 0.16)' },
+          },
+          'success.fg': {
+            value: { base: '{colors.green.800}', _dark: '{colors.green.300}' },
+          },
+          'success.border': {
+            value: { base: '{colors.green.200}', _dark: 'rgba(34, 197, 94, 0.32)' },
+          },
+          'danger.subtle': {
+            value: { base: '{colors.salmon.50}', _dark: 'rgba(217, 122, 122, 0.18)' },
+          },
+          'danger.fg': {
+            value: { base: '{colors.salmon.700}', _dark: '{colors.salmon.400}' },
+          },
+          'danger.border': {
+            value: { base: '{colors.salmon.400}', _dark: 'rgba(217, 122, 122, 0.34)' },
+          },
+          'warning.subtle': {
+            value: { base: '{colors.amber.100}', _dark: 'rgba(245, 158, 11, 0.16)' },
+          },
+          'warning.fg': {
+            value: { base: '{colors.amber.800}', _dark: '{colors.amber.300}' },
+          },
+          'warning.border': {
+            value: { base: '{colors.amber.200}', _dark: 'rgba(245, 158, 11, 0.32)' },
           },
         },
       },
@@ -199,8 +357,8 @@ export default defineConfig({
       from: { transform: 'rotate(0deg)' },
       to: { transform: 'rotate(360deg)' },
     },
-    // Landing-page motion. Every consumer pairs these with `_motionReduce`
-    // so the page is fully static for visitors who ask for reduced motion.
+    // Shared motion. Every consumer pairs these with `_motionReduce` so the
+    // interface is fully static for anyone who asks for reduced motion.
     '@keyframes drift': {
       '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)' },
       '50%': { transform: 'translate3d(4%, -6%, 0) scale(1.12)' },
@@ -218,6 +376,7 @@ export default defineConfig({
     },
     'h1, h2, h3, h4, h5, h6': {
       fontFamily: 'heading',
+      letterSpacing: '-0.02em',
     },
   },
 

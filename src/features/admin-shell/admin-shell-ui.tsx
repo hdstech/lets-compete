@@ -21,6 +21,8 @@ export const SidebarShellRoot = styled('aside', {
     gap: '4',
     minHeight: '100dvh',
     bg: 'bg.sidebar',
+    borderRightWidth: { base: '0', md: '1px' },
+    borderColor: 'border.default',
     px: '3',
     py: '4',
     position: { base: 'fixed', md: 'relative' },
@@ -70,6 +72,45 @@ export const SidebarBackdrop = styled('button', {
   },
 })
 
+export const SidebarBrandLink = styled(Link, {
+  base: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '2.5',
+    px: '1',
+    py: '1',
+    color: 'text.primary',
+    textDecoration: 'none',
+    fontSize: 'sm',
+    fontWeight: 'bold',
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase',
+    whiteSpace: 'nowrap',
+    borderRadius: 'control',
+    _focusVisible: {
+      outline: '2px solid',
+      outlineColor: 'accent.default',
+      outlineOffset: '2px',
+    },
+  },
+})
+
+// The gradient square from the landing wordmark, at sidebar scale.
+export const SidebarBrandMark = styled('span', {
+  base: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: '0',
+    width: '8',
+    height: '8',
+    borderRadius: 'control',
+    color: 'white',
+    backgroundImage:
+      'linear-gradient(150deg, token(colors.brand.500) 0%, token(colors.brand.400) 100%)',
+  },
+})
+
 export const SidebarNavRoot = styled('nav', {
   base: {
     display: 'flex',
@@ -91,16 +132,23 @@ export const SidebarNavItemLink = styled(NavLink, {
     textDecoration: 'none',
     borderWidth: '1px',
     borderColor: 'transparent',
-    transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease',
-    _hover: { bg: 'bg.sunken' },
+    fontWeight: 'medium',
+    transition: 'background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease',
+    _hover: { bg: 'bg.sunken', color: 'text.primary' },
+    _focusVisible: {
+      outline: '2px solid',
+      outlineColor: 'accent.default',
+      outlineOffset: '2px',
+    },
   },
   variants: {
     active: {
       true: {
-        bg: 'bg.surface',
-        color: 'text.primary',
-        borderColor: 'border.default',
-        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.06)',
+        bg: 'accent.subtle',
+        color: 'accent.fg',
+        borderColor: 'accent.border',
+        fontWeight: 'semibold',
+        _hover: { bg: 'accent.subtle', color: 'accent.fg' },
       },
     },
   },
@@ -161,8 +209,14 @@ export const SwitcherToggleButton = styled('button', {
     py: '2',
     cursor: 'pointer',
     color: 'text.muted',
-    transition: 'background-color 0.15s ease',
-    _hover: { bg: 'bg.sunken' },
+    boxShadow: 'card',
+    transition: 'background-color 0.18s ease, border-color 0.18s ease',
+    _hover: { borderColor: 'accent.default', color: 'text.primary' },
+    _focusVisible: {
+      outline: '2px solid',
+      outlineColor: 'accent.default',
+      outlineOffset: '2px',
+    },
   },
 })
 
@@ -279,7 +333,8 @@ export const ContentHeaderRoot = styled('header', {
     position: 'sticky',
     top: '0',
     zIndex: '30',
-    bg: 'bg.canvas',
+    bg: 'bg.canvas/80',
+    backdropFilter: 'blur(8px)',
   },
 })
 
@@ -297,8 +352,13 @@ export const CollapseToggleButton = styled('button', {
     borderWidth: '1px',
     borderColor: 'transparent',
     cursor: 'pointer',
-    transition: 'background-color 0.15s ease, color 0.15s ease',
-    _hover: { bg: 'bg.sunken', color: 'text.primary' },
+    transition: 'background-color 0.18s ease, color 0.18s ease',
+    _hover: { bg: 'accent.subtle', color: 'accent.fg' },
+    _focusVisible: {
+      outline: '2px solid',
+      outlineColor: 'accent.default',
+      outlineOffset: '2px',
+    },
   },
 })
 
@@ -326,8 +386,8 @@ export const BreadcrumbIconLink = styled(Link, {
     borderRadius: 'control',
     color: 'text.muted',
     textDecoration: 'none',
-    transition: 'background-color 0.15s ease, color 0.15s ease',
-    _hover: { bg: 'bg.sunken', color: 'text.primary' },
+    transition: 'background-color 0.18s ease, color 0.18s ease',
+    _hover: { bg: 'accent.subtle', color: 'accent.fg' },
   },
 })
 
@@ -361,7 +421,7 @@ export const BreadcrumbCurrent = styled('span', {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    fontWeight: 'medium',
+    fontWeight: 'semibold',
     color: 'text.primary',
     px: '1.5',
   },

@@ -25,3 +25,20 @@ test('falls back to light for an invalid stored value', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
 })
+
+// The theme control on the pages with no sidebar to hold it (landing, login,
+// sign up, join) is a shared component wired to the same provider — check it
+// actually drives the document and survives a reload from there.
+test('the auth pages carry a working theme toggle', async ({ page }) => {
+  await page.goto('/login')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+
+  await page.getByRole('button', { name: 'Switch to dark theme' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await expect(
+    page.getByRole('button', { name: 'Switch to light theme' }),
+  ).toBeVisible()
+})

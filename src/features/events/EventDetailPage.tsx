@@ -10,6 +10,16 @@ import {
   Button as SubmitButton,
   LinkButton,
 } from '../../components/ui/Button'
+import {
+  ClipboardCheck,
+  Flag,
+  Info,
+  ListOrdered,
+  Pencil,
+  Trash2,
+  Users,
+} from 'lucide-react'
+import { Badge } from '../../components/ui/Badge'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { ErrorState } from '../../components/ui/ErrorState'
 import { LoadingBlock } from '../../components/ui/LoadingBlock'
@@ -23,9 +33,9 @@ import {
   revokeParticipant,
 } from '../participants/participants-api'
 import {
-  AdmissionBadge,
+  ADMISSION_TONE,
   ApprovedIcon,
-  EligibilityBadge,
+  ELIGIBILITY_TONE,
   ParticipantActions,
   ParticipantIdentity,
   ParticipantListEl,
@@ -48,21 +58,25 @@ import {
   getEvent,
   updateEvent,
 } from './events-api'
+import { EVENT_STATUS_TONE } from './event-status'
 import {
   BackLink,
-  Card,
   CheckboxField,
   CopyableCode,
   DefinitionGrid,
   DefinitionTerm,
   DefinitionValue,
-  FormatBadge,
   HelpText,
   PageHeader,
   Row,
   SectionTitle,
-  StatusBadge,
 } from './events-ui'
+import {
+  Card,
+  CardHeader,
+  CardHeaderText,
+  IconTile,
+} from '../../components/ui/Card'
 import type { EventRow } from './types'
 
 const PageContent = styled('div', {
@@ -399,15 +413,22 @@ export function EventDetailPage() {
         <div>
           <PageTitle>{event.name}</PageTitle>
           <Row>
-            <StatusBadge status={event.status}>{event.status}</StatusBadge>
-            <FormatBadge>{event.format}</FormatBadge>
+            <Badge tone={EVENT_STATUS_TONE[event.status]}>{event.status}</Badge>
+            <Badge>{event.format}</Badge>
           </Row>
         </div>
         <BackLink to="/events">Back to events</BackLink>
       </PageHeader>
 
       <Card>
-        <SectionTitle>Details</SectionTitle>
+        <CardHeader>
+          <IconTile>
+            <Info size={18} />
+          </IconTile>
+          <CardHeaderText>
+            <SectionTitle>Details</SectionTitle>
+          </CardHeaderText>
+        </CardHeader>
         <DefinitionGrid>
           <DefinitionTerm>Join code</DefinitionTerm>
           <DefinitionValue>
@@ -469,7 +490,14 @@ export function EventDetailPage() {
       {recalcResult && <HelpText>{recalcResult}</HelpText>}
 
       <Card>
-        <SectionTitle>Participants</SectionTitle>
+        <CardHeader>
+          <IconTile>
+            <Users size={18} />
+          </IconTile>
+          <CardHeaderText>
+            <SectionTitle>Participants</SectionTitle>
+          </CardHeaderText>
+        </CardHeader>
         {participantsError && (
           <ErrorState
             message={participantsError}
@@ -505,15 +533,15 @@ export function EventDetailPage() {
                   </ParticipantMeta>
                 </ParticipantIdentity>
                 <ParticipantActions>
-                  <AdmissionBadge admissionStatus={participant.admission_status}>
+                  <Badge tone={ADMISSION_TONE[participant.admission_status]}>
                     {participant.admission_status === 'approved' && (
                       <ApprovedIcon size={12} />
                     )}
                     {participant.admission_status}
-                  </AdmissionBadge>
-                  <EligibilityBadge eligibilityStatus={participant.status}>
+                  </Badge>
+                  <Badge tone={ELIGIBILITY_TONE[participant.status]}>
                     {participant.status}
-                  </EligibilityBadge>
+                  </Badge>
                   {participant.admission_status !== 'approved' && (
                     <Button
                       type="button"
@@ -566,7 +594,14 @@ export function EventDetailPage() {
       </Card>
 
       <Card>
-        <SectionTitle>Judge</SectionTitle>
+        <CardHeader>
+          <IconTile>
+            <ClipboardCheck size={18} />
+          </IconTile>
+          <CardHeaderText>
+            <SectionTitle>Judge</SectionTitle>
+          </CardHeaderText>
+        </CardHeader>
         <HelpText>
           The judge reviews and confirms auto pre-marked answers once a
           round closes. They sign in with the same emailed link as
@@ -614,14 +649,21 @@ export function EventDetailPage() {
 
       {event.format === 'quiz' && (
         <Card>
-          <SectionTitle>Rounds</SectionTitle>
+          <CardHeader>
+            <IconTile>
+              <ListOrdered size={18} />
+            </IconTile>
+            <CardHeaderText>
+              <SectionTitle>Rounds</SectionTitle>
+            </CardHeaderText>
+          </CardHeader>
           <HelpText>
             Configure the round(s) participants play and how many advance at
             each cutoff. At least one round must exist before this event can
             be activated.
           </HelpText>
           <Row>
-            <LinkButton to={`/events/${event.id}/rounds`} tone="secondary">
+            <LinkButton to={`/events/${event.id}/rounds`} tone="accent">
               Manage rounds
             </LinkButton>
           </Row>
@@ -629,7 +671,14 @@ export function EventDetailPage() {
       )}
 
       <Card>
-        <SectionTitle>Edit event</SectionTitle>
+        <CardHeader>
+          <IconTile tone="subtle">
+            <Pencil size={18} />
+          </IconTile>
+          <CardHeaderText>
+            <SectionTitle>Edit event</SectionTitle>
+          </CardHeaderText>
+        </CardHeader>
         <AuthForm onSubmit={handleSave}>
           <Field>
             <Label htmlFor="name">Event name</Label>
@@ -685,7 +734,14 @@ export function EventDetailPage() {
       </Card>
 
       <Card>
-        <SectionTitle>Lifecycle</SectionTitle>
+        <CardHeader>
+          <IconTile>
+            <Flag size={18} />
+          </IconTile>
+          <CardHeaderText>
+            <SectionTitle>Lifecycle</SectionTitle>
+          </CardHeaderText>
+        </CardHeader>
 
         {event.status === 'draft' && (
           <>
@@ -738,7 +794,14 @@ export function EventDetailPage() {
 
       {event.status === 'draft' && (
         <Card>
-          <SectionTitle>Danger zone</SectionTitle>
+          <CardHeader>
+            <IconTile tone="danger">
+              <Trash2 size={18} />
+            </IconTile>
+            <CardHeaderText>
+              <SectionTitle>Danger zone</SectionTitle>
+            </CardHeaderText>
+          </CardHeader>
           <HelpText>
             Deleting a draft event removes it and everything in it.
           </HelpText>

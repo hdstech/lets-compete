@@ -11,7 +11,6 @@ import {
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
-  Card,
   EmptyState,
   HelpText,
   PageHeader,
@@ -19,32 +18,26 @@ import {
   PageShell,
   SectionTitle,
 } from '../events/events-ui'
+import { Card } from '../../components/ui/Card'
 import type { EventRow } from '../events/types'
 import { listEventParticipants } from '../participants/participants-api'
 import type { ParticipantRow } from '../participants/types'
+import { Badge } from '../../components/ui/Badge'
 import { listRounds } from '../rounds/rounds-api'
 import type { RoundRow } from '../rounds/types'
 import { listSegments } from '../segments/segments-api'
 import type { SegmentRow } from '../segments/types'
 import { getErrorMessage, listAllCalculations, listCalculationEntries, scopeKey } from './results-api'
-import { BoardCell, BoardHeadCell, BoardHeader, BoardTable, RankCell } from './results-ui'
+import {
+  BoardCell,
+  BoardHeadCell,
+  BoardHeader,
+  BoardRow,
+  BoardTable,
+  RankCell,
+  RankTile,
+} from './results-ui'
 import type { ResultCalculationEntryRow, ResultCalculationRow } from './types'
-
-const StatusBadge = styled('span', {
-  base: {
-    fontSize: 'xs',
-    fontWeight: 'semibold',
-    borderRadius: 'full',
-    px: '2.5',
-    py: '1',
-  },
-  variants: {
-    isFinal: {
-      true: { bg: 'green.700', color: 'green.50' },
-      false: { bg: 'bg.sunken', color: 'text.muted' },
-    },
-  },
-})
 
 const RunRow = styled('div', {
   base: {
@@ -113,9 +106,9 @@ function CalculationRun({
           <RunTimestamp>{new Date(calculation.calculated_at).toLocaleString()}</RunTimestamp>
           <RunReason>{calculation.reason ?? 'No reason given'}</RunReason>
         </RunMeta>
-        <StatusBadge isFinal={calculation.is_final}>
+        <Badge tone={calculation.is_final ? 'success' : 'neutral'}>
           {calculation.is_final ? 'Current' : 'Superseded'}
-        </StatusBadge>
+        </Badge>
       </RunRow>
       {expanded && (
         <BoardTable>
@@ -123,7 +116,9 @@ function CalculationRun({
             <tr>
               <BoardHeadCell scope="col">Rank</BoardHeadCell>
               <BoardHeadCell scope="col">Participant</BoardHeadCell>
-              <BoardHeadCell scope="col">Score</BoardHeadCell>
+              <BoardHeadCell scope="col" numeric>
+                Score
+              </BoardHeadCell>
             </tr>
           </thead>
           <tbody>
@@ -133,13 +128,15 @@ function CalculationRun({
               </tr>
             ) : (
               (entries ?? []).map((entry) => (
-                <tr key={entry.id}>
-                  <RankCell>{entry.rank}</RankCell>
+                <BoardRow key={entry.id} leading={entry.rank === 1}>
+                  <RankCell>
+                    <RankTile leading={entry.rank === 1}>{entry.rank}</RankTile>
+                  </RankCell>
                   <BoardCell>
                     {participantsById.get(entry.participant_id)?.name ?? 'Unknown participant'}
                   </BoardCell>
-                  <BoardCell>{entry.total_score}</BoardCell>
-                </tr>
+                  <BoardCell numeric>{entry.total_score}</BoardCell>
+                </BoardRow>
               ))
             )}
           </tbody>

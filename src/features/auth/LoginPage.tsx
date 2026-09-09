@@ -4,16 +4,15 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from './useAuth'
 import {
-  AuthCard,
   AuthFooterText,
   AuthForm,
   AuthLink,
-  AuthShell,
   ErrorText,
   Field,
   Input,
   Label,
 } from './auth-ui'
+import { AuthLayout } from './AuthLayout'
 import { Button as SubmitButton } from '../../components/ui/Button'
 import {
   Title as AuthTitle,
@@ -59,50 +58,50 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell>
-      <AuthCard>
-        <div>
-          <AuthTitle>Organizer log in</AuthTitle>
-          <AuthSubtitle>Log in to create and run an event.</AuthSubtitle>
-        </div>
-        <AuthForm onSubmit={handleSubmit}>
-          <Field>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </Field>
-          <Field>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </Field>
-          {error && <ErrorText role="alert">{error}</ErrorText>}
-          <SubmitButton type="submit" width="full" disabled={submitting}>
-            {submitting ? 'Logging in…' : 'Log in'}
-          </SubmitButton>
-        </AuthForm>
-        <AuthFooterText>
-          Need an account? <AuthLink to="/signup">Sign up</AuthLink>
-        </AuthFooterText>
-        <AuthFooterText>
-          Participant or judge?{' '}
-          <AuthLink to="/join">Use your email link</AuthLink>
-        </AuthFooterText>
-      </AuthCard>
-    </AuthShell>
+    <AuthLayout
+      headline="Welcome back."
+      blurb="Your rounds, questions and live scoring are exactly where you left them."
+    >
+      <div>
+        <AuthTitle size="card">Organizer log in</AuthTitle>
+        <AuthSubtitle>Log in to create and run an event.</AuthSubtitle>
+      </div>
+      <AuthForm onSubmit={handleSubmit}>
+        <Field>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </Field>
+        <Field>
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </Field>
+        {error && <ErrorText role="alert">{error}</ErrorText>}
+        <SubmitButton type="submit" size="lg" width="full" disabled={submitting}>
+          {submitting ? 'Logging in…' : 'Log in'}
+        </SubmitButton>
+      </AuthForm>
+      <AuthFooterText>
+        Need an account? <AuthLink to="/signup">Sign up</AuthLink>
+      </AuthFooterText>
+      <AuthFooterText>
+        Participant or judge? <AuthLink to="/join">Use your email link</AuthLink>
+      </AuthFooterText>
+    </AuthLayout>
   )
 }

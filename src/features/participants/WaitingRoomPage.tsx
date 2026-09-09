@@ -3,41 +3,33 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
-import { AuthLink, AuthShell, LoadingScreen } from '../auth/auth-ui'
+import { AuthLink, LoadingScreen } from '../auth/auth-ui'
+import { Card } from '../../components/ui/Card'
 import { ErrorState } from '../../components/ui/ErrorState'
-import { LoadingBlock } from '../../components/ui/LoadingBlock'
+import { PlayerHeader } from '../../components/ui/PlayerHeader'
 import {
-  Title as PageTitle,
-  Subtitle as PageSubtitle,
-} from '../../components/ui/Typography'
+  PlayerBody,
+  PlayerHeaderBadge,
+  PlayerShell,
+} from '../../components/ui/PlayerShell'
+import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import { getEvent } from '../events/events-api'
 import type { EventRow } from '../events/types'
 import { listRoundQuestions } from '../live-quiz/live-quiz-api'
 import { listRounds } from '../rounds/rounds-api'
-import { AdmissionBadge } from './participants-ui'
 import { getErrorMessage, getMyParticipant } from './participants-api'
 import type { ParticipantRow } from './types'
 
-const StatusCard = styled('div', {
-  base: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4',
-    width: 'full',
-    maxWidth: '96',
-    minWidth: '0',
-    bg: 'bg.surface',
-    borderWidth: '1px',
-    borderColor: 'border.default',
-    borderRadius: 'card',
-    p: { base: '4', sm: '6' },
-    textAlign: 'center',
-    alignItems: 'center',
-  },
-})
-
 const StatusMessage = styled('p', {
   base: { fontSize: 'sm', color: 'text.muted' },
+})
+
+const StatusActions = styled('div', {
+  base: {
+    display: 'flex',
+    justifyContent: 'center',
+    fontSize: 'sm',
+  },
 })
 
 export function WaitingRoomPage() {
@@ -146,18 +138,20 @@ export function WaitingRoomPage() {
 
   if (error) {
     return (
-      <AuthShell>
-        <StatusCard>
-          <PageTitle>Something went wrong</PageTitle>
-          <ErrorState
-            message={error}
-            onRetry={() => {
-              setError(null)
-              loadRegistration()
-            }}
-          />
-        </StatusCard>
-      </AuthShell>
+      <PlayerShell>
+        <PlayerHeader title="Something went wrong" />
+        <PlayerBody>
+          <Card>
+            <ErrorState
+              message={error}
+              onRetry={() => {
+                setError(null)
+                loadRegistration()
+              }}
+            />
+          </Card>
+        </PlayerBody>
+      </PlayerShell>
     )
   }
 
@@ -170,40 +164,42 @@ export function WaitingRoomPage() {
   }
 
   return (
-    <AuthShell>
-      <StatusCard>
-        <div>
-          <PageTitle>{event.name}</PageTitle>
-          <PageSubtitle>Registered as {participant.name}</PageSubtitle>
-        </div>
+    <PlayerShell>
+      <PlayerHeader
+        title={event.name}
+        subtitle={`Registered as ${participant.name}`}
+      >
+        <PlayerHeaderBadge>{participant.admission_status}</PlayerHeaderBadge>
+      </PlayerHeader>
 
-        <AdmissionBadge admissionStatus={participant.admission_status}>
-          {participant.admission_status}
-        </AdmissionBadge>
+      <PlayerBody>
+        <Card>
+          {participant.admission_status === 'pending' && (
+            <StatusMessage>
+              Waiting for the organizer to approve you. This page updates
+              automatically — no need to refresh.
+            </StatusMessage>
+          )}
 
-        {participant.admission_status === 'pending' && (
-          <StatusMessage>
-            Waiting for the organizer to approve you. This page updates
-            automatically — no need to refresh.
-          </StatusMessage>
-        )}
+          {participant.admission_status === 'approved' && (
+            <StatusMessage>
+              You're in! We'll bring you into the quiz here once the organizer
+              starts it.
+            </StatusMessage>
+          )}
 
-        {participant.admission_status === 'approved' && (
-          <StatusMessage>
-            You're in! We'll bring you into the quiz here once the organizer
-            starts it.
-          </StatusMessage>
-        )}
+          {participant.admission_status === 'revoked' && (
+            <StatusMessage>
+              You weren't admitted to this event. If you think that's a mistake,
+              contact the organizer.
+            </StatusMessage>
+          )}
 
-        {participant.admission_status === 'revoked' && (
-          <StatusMessage>
-            You weren't admitted to this event. If you think that's a
-            mistake, contact the organizer.
-          </StatusMessage>
-        )}
-
-        <AuthLink to="/join">Join a different event</AuthLink>
-      </StatusCard>
-    </AuthShell>
+          <StatusActions>
+            <AuthLink to="/join">Join a different event</AuthLink>
+          </StatusActions>
+        </Card>
+      </PlayerBody>
+    </PlayerShell>
   )
 }

@@ -2,7 +2,9 @@ import { Calendar } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { styled } from '../../../styled-system/jsx'
 import { useAuth } from '../auth/useAuth'
+import { Badge } from '../../components/ui/Badge'
 import { LinkButton } from '../../components/ui/Button'
+import { IconTile } from '../../components/ui/Card'
 import { ErrorState } from '../../components/ui/ErrorState'
 import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import {
@@ -10,18 +12,17 @@ import {
   Subtitle as PageSubtitle,
 } from '../../components/ui/Typography'
 import { getErrorMessage, listOrganizerEvents } from './events-api'
+import { EVENT_STATUS_TONE } from './event-status'
 import {
   EmptyState,
-  EmptyStateIcon,
   EventList,
   EventListItem,
+  EventListItemBody,
   EventListItemTitleRow,
   EventMeta,
   EventName,
-  FormatBadge,
   PageHeader,
   Row,
-  StatusBadge,
 } from './events-ui'
 import type { EventRow } from './types'
 
@@ -85,9 +86,9 @@ export function EventsListPage() {
 
       {events !== null && events.length === 0 && (
         <EmptyState>
-          <EmptyStateIcon>
-            <Calendar size={20} />
-          </EmptyStateIcon>
+          <IconTile tone="subtle" size="lg">
+            <Calendar size={22} />
+          </IconTile>
           You haven't created an event yet.
         </EmptyState>
       )}
@@ -96,21 +97,26 @@ export function EventsListPage() {
         <EventList>
           {events.map((event) => (
             <EventListItem key={event.id} to={`/events/${event.id}`}>
-              <EventListItemTitleRow>
-                <EventName>{event.name}</EventName>
-                <StatusBadge status={event.status}>
-                  {event.status}
-                </StatusBadge>
-              </EventListItemTitleRow>
-              <Row>
-                <FormatBadge>{event.format}</FormatBadge>
-                <EventMeta>
-                  {event.event_date
-                    ? `Event date: ${event.event_date}`
-                    : 'No date set'}
-                </EventMeta>
-                <EventMeta>Join code: {event.join_code}</EventMeta>
-              </Row>
+              <IconTile tone="subtle">
+                <Calendar size={18} />
+              </IconTile>
+              <EventListItemBody>
+                <EventListItemTitleRow>
+                  <EventName>{event.name}</EventName>
+                  <Badge tone={EVENT_STATUS_TONE[event.status]}>
+                    {event.status}
+                  </Badge>
+                </EventListItemTitleRow>
+                <Row>
+                  <Badge>{event.format}</Badge>
+                  <EventMeta>
+                    {event.event_date
+                      ? `Event date: ${event.event_date}`
+                      : 'No date set'}
+                  </EventMeta>
+                  <EventMeta>Join code: {event.join_code}</EventMeta>
+                </Row>
+              </EventListItemBody>
             </EventListItem>
           ))}
         </EventList>

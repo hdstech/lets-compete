@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { ListOrdered, Plus, Radio } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useParams } from 'react-router-dom'
@@ -19,7 +19,6 @@ import { usePageBreadcrumbs, useUnsavedChanges } from '../admin-shell/use-breadc
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
-  Card,
   CheckboxField,
   DefinitionGrid,
   DefinitionTerm,
@@ -32,7 +31,15 @@ import {
   Row,
   SectionTitle,
 } from '../events/events-ui'
+import { Badge } from '../../components/ui/Badge'
+import {
+  Card,
+  CardHeader,
+  CardHeaderText,
+  IconTile,
+} from '../../components/ui/Card'
 import type { EventRow } from '../events/types'
+import { ROUND_STATUS_TONE, roundStatusLabel } from './round-status'
 import {
   createSegment,
   deleteSegment,
@@ -634,16 +641,22 @@ export function RoundsPage() {
               role="group"
               aria-label={`Round ${round.sequence}: ${round.name}`}
             >
-              <SectionTitle>
-                Round {round.sequence}: {round.name}
-              </SectionTitle>
+              <CardHeader>
+                <IconTile>
+                  <ListOrdered size={18} />
+                </IconTile>
+                <CardHeaderText>
+                  <SectionTitle>
+                    Round {round.sequence}: {round.name}
+                  </SectionTitle>
+                </CardHeaderText>
+                <Badge tone={ROUND_STATUS_TONE[round.status]}>
+                  {roundStatusLabel(round.status)}
+                </Badge>
+              </CardHeader>
               <DefinitionGrid>
                 <DefinitionTerm>Advancement</DefinitionTerm>
                 <DefinitionValue>{describeAdvancement(round)}</DefinitionValue>
-                <DefinitionTerm>Status</DefinitionTerm>
-                <DefinitionValue>
-                  {round.status.replace('_', ' ')}
-                </DefinitionValue>
               </DefinitionGrid>
 
               <SectionTitle>Segments</SectionTitle>
@@ -837,8 +850,9 @@ export function RoundsPage() {
                 {!isDraft && (
                   <LinkButton
                     to={`/events/${event.id}/rounds/${round.id}/live`}
-                    tone="primary"
+                    tone="accent"
                   >
+                    <Radio size={16} aria-hidden="true" />
                     Live console
                   </LinkButton>
                 )}
