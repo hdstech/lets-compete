@@ -112,9 +112,8 @@ function emptyAnswerForm(question: QuestionRow): AnswerFormValues {
 }
 
 export function QuestionsPage() {
-  const { eventId, roundId, segmentId } = useParams<{
+  const { eventId, segmentId } = useParams<{
     eventId: string
-    roundId: string
     segmentId: string
   }>()
 
@@ -344,9 +343,7 @@ export function QuestionsPage() {
     return (
       <PageShell>
         <PageInner>
-          <BackLink to={`/events/${eventId}/rounds/${roundId}/segments`}>
-            Back to segments
-          </BackLink>
+          <BackLink to={`/events/${eventId}/rounds`}>Back to rounds</BackLink>
           <ErrorState
             message={loadError}
             onRetry={() => {
@@ -383,9 +380,7 @@ export function QuestionsPage() {
               sudden-death instead of the normal running order.
             </PageSubtitle>
           </div>
-          <BackLink to={`/events/${event.id}/rounds/${roundId}/segments`}>
-            Back to segments
-          </BackLink>
+          <BackLink to={`/events/${event.id}/rounds`}>Back to rounds</BackLink>
         </PageHeader>
 
         {!isDraft && (

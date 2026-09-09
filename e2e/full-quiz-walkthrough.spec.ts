@@ -48,14 +48,27 @@ async function createRoundsEvent(page: Page, name: string) {
   await page.waitForURL(/\/events\/[0-9a-f-]{36}$/)
 }
 
-// Assumes the current page is a round's rounds list. Clicks the nth
-// "Manage segments" link (0-indexed, in round-sequence order) and returns
-// the round id from the resulting URL — same helper advancement-tiebreak.spec.ts
+// Segments are managed inline on each round card now (each rendered as a
+// role="group" region, in round-sequence order). Adds a segment to the nth
+// round card (0-indexed), opens its "Manage questions" screen, and returns
+// that round's id from the resulting URL — same helper advancement-tiebreak.spec.ts
 // duplicates locally for a multi-round event.
-async function goToNthRoundSegments(page: Page, index: number): Promise<string> {
-  await page.getByRole('link', { name: 'Manage segments' }).nth(index).click()
-  const match = page.url().match(/\/rounds\/([0-9a-f-]{36})\/segments$/)
-  if (!match) throw new Error(`Expected a round segments URL, got ${page.url()}`)
+async function addSegmentAndOpenQuestions(
+  page: Page,
+  index: number,
+  segmentName: string,
+): Promise<string> {
+  const card = page.getByRole('group').nth(index)
+  await card.getByLabel('Segment name').fill(segmentName)
+  await card.getByRole('button', { name: 'Add segment' }).click()
+  const questionsLink = card.getByRole('link', { name: 'Manage questions' })
+  await expect(questionsLink).toBeVisible()
+  await questionsLink.click()
+  await page.waitForURL(
+    /\/rounds\/[0-9a-f-]{36}\/segments\/[0-9a-f-]{36}\/questions$/,
+  )
+  const match = page.url().match(/\/rounds\/([0-9a-f-]{36})\/segments\//)
+  if (!match) throw new Error(`Expected a questions URL, got ${page.url()}`)
   return match[1]
 }
 
@@ -134,9 +147,7 @@ test('quiz lifecycle: author, activate, every live-answer edge case, adjudicate,
   // Round 1: six questions in one segment — a correct answer, a no-show, a
   // focus-integrity return-in-time, a focus-integrity grace-timeout, a void,
   // and a tiebreak reserve question never touched by the normal reveal flow.
-  await goToNthRoundSegments(organizerPage, 0)
-  await addSegment(organizerPage, { name: 'Segment A' })
-  await goToQuestions(organizerPage)
+  await addSegmentAndOpenQuestions(organizerPage, 0, 'Segment A')
   await addQuestion(organizerPage, { prompt: 'Capital of France (Q1)', windowSeconds: 6 })
   await addAcceptableAnswerToQuestion(organizerPage, 1, 'Paris')
   await addQuestion(organizerPage, {
@@ -163,9 +174,7 @@ test('quiz lifecycle: author, activate, every live-answer edge case, adjudicate,
   // Final round: one question only the real participant can answer, so it
   // alone determines the champion once round 1's tie is resolved.
   await organizerPage.goto(`/events/${eventId}/rounds`)
-  await goToNthRoundSegments(organizerPage, 1)
-  await addSegment(organizerPage, { name: 'Final Segment' })
-  await goToQuestions(organizerPage)
+  await addSegmentAndOpenQuestions(organizerPage, 1, 'Final Segment')
   await addQuestion(organizerPage, {
     prompt: 'Capital of Japan — final round (Q7)',
     windowSeconds: 6,
@@ -440,9 +449,7 @@ test('a rank-1 tie that exhausts the reserve pool in the final round blocks decl
 
   await goToRounds(page)
   await addRound(page, { name: 'Final', isFinal: true })
-  const roundId = await goToNthRoundSegments(page, 0)
-  await addSegment(page, { name: 'Segment A' })
-  await page.getByRole('link', { name: 'Manage questions' }).click()
+  const roundId = await addSegmentAndOpenQuestions(page, 0, 'Segment A')
   await addQuestion(page, {
     prompt: 'Sudden-death reserve question',
     windowSeconds: 3,

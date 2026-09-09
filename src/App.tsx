@@ -19,7 +19,6 @@ import { ResultsHistoryPage } from './features/results/ResultsHistoryPage'
 import { ResultsPage } from './features/results/ResultsPage'
 import { RoundsPage } from './features/rounds/RoundsPage'
 import { ScoringPage } from './features/scoring/ScoringPage'
-import { SegmentsPage } from './features/segments/SegmentsPage'
 import { DashboardPage } from './pages/DashboardPage'
 
 function App() {
@@ -82,14 +81,6 @@ function App() {
             element={
               <RequireAuth>
                 <AdvancementPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/events/:eventId/rounds/:roundId/segments"
-            element={
-              <RequireAuth>
-                <SegmentsPage />
               </RequireAuth>
             }
           />
