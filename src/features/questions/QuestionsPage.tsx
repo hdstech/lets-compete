@@ -9,6 +9,7 @@ import {
   Title as PageTitle,
   Subtitle as PageSubtitle,
 } from '../../components/ui/Typography'
+import { usePageBreadcrumbs, useUnsavedChanges } from '../admin-shell/use-breadcrumbs'
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
@@ -155,6 +156,25 @@ export function QuestionsPage() {
   )
   const [addingAnswerFor, setAddingAnswerFor] = useState<string | null>(null)
   const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null)
+
+  usePageBreadcrumbs(
+    event && segment
+      ? [
+          { label: event.name, to: `/events/${event.id}` },
+          { label: 'Rounds', to: `/events/${event.id}/rounds` },
+          { label: segment.name },
+        ]
+      : [{ label: 'Questions' }],
+  )
+
+  // A half-authored question (prompt typed, answers staged) or an in-progress
+  // edit is unsaved work worth warning about before breadcrumb navigation.
+  useUnsavedChanges(
+    editingId !== null ||
+      newQuestion.prompt.trim() !== '' ||
+      newQuestionAnswers.length > 0 ||
+      newAnswerDraft.trim() !== '',
+  )
 
   const loadData = useCallback(() => {
     if (!eventId || !segmentId) return () => {}

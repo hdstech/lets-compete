@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
+import { usePageBreadcrumbs } from '../admin-shell/use-breadcrumbs'
 import { supabase } from '../../lib/supabase'
 import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
 import {
@@ -145,6 +146,8 @@ export function EventDetailPage() {
   }, [eventId])
 
   useEffect(() => loadEvent(), [loadEvent])
+
+  usePageBreadcrumbs(event ? [{ label: event.name }] : [])
 
   function refreshParticipants(id: string) {
     return listEventParticipants(id)

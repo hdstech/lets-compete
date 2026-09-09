@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
+import { usePageBreadcrumbs } from '../admin-shell/use-breadcrumbs'
 import { ErrorState } from '../../components/ui/ErrorState'
 import { LoadingBlock } from '../../components/ui/LoadingBlock'
 import {
@@ -161,6 +162,16 @@ export function ResultsHistoryPage() {
   >(new Map())
   const [loadError, setLoadError] = useState<string | null>(null)
   const [expandedCalcId, setExpandedCalcId] = useState<string | null>(null)
+
+  usePageBreadcrumbs(
+    event
+      ? [
+          { label: event.name, to: `/events/${event.id}` },
+          { label: 'Results', to: `/events/${event.id}/results` },
+          { label: 'History' },
+        ]
+      : [{ label: 'History' }],
+  )
 
   const loadData = useCallback(() => {
     if (!eventId) return () => {}

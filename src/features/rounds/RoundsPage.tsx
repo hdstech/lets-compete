@@ -15,6 +15,7 @@ import {
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { ErrorState } from '../../components/ui/ErrorState'
 import { LoadingBlock } from '../../components/ui/LoadingBlock'
+import { usePageBreadcrumbs, useUnsavedChanges } from '../admin-shell/use-breadcrumbs'
 import { getEvent } from '../events/events-api'
 import {
   BackLink,
@@ -219,6 +220,24 @@ export function RoundsPage() {
     null,
   )
   const [deletingSegmentId, setDeletingSegmentId] = useState<string | null>(null)
+
+  usePageBreadcrumbs(
+    event
+      ? [
+          { label: event.name, to: `/events/${event.id}` },
+          { label: 'Rounds' },
+        ]
+      : [{ label: 'Rounds' }],
+  )
+
+  // Anything typed into an add form, or an in-progress inline edit, counts as
+  // unsaved work worth warning about before breadcrumb navigation.
+  useUnsavedChanges(
+    editingId !== null ||
+      editingSegmentId !== null ||
+      newRound.name.trim() !== '' ||
+      Object.values(newSegment).some((form) => form.name.trim() !== ''),
+  )
 
   async function loadSegmentsMap(
     roundRows: RoundRow[],
