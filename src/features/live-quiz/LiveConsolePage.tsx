@@ -2,8 +2,10 @@ import { ListOrdered, Radio } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
-import { supabase } from '../../lib/supabase'
 import { getDeadlineMs, formatClock } from '../../lib/quiz-timing'
+import { combineRealtimeStatus, useRealtimeChannel } from '../../lib/use-realtime-channel'
+import { LiveStatusBadge } from '../../components/ui/LiveStatusBadge'
+import { useToast } from '../../components/ui/useToast'
 import { ErrorText } from '../auth/auth-ui'
 import { Button, LinkButton } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -113,6 +115,7 @@ const QuestionRunRow = styled('div', {
 
 export function LiveConsolePage() {
   const { eventId, roundId } = useParams<{ eventId: string; roundId: string }>()
+  const { showStatus } = useToast()
 
   const [event, setEvent] = useState<EventRow | null>(null)
   const [round, setRound] = useState<RoundRow | null>(null)
@@ -197,52 +200,60 @@ export function LiveConsolePage() {
   // Changes filters only support a single indexed-column eq — segment_id
   // can't express "any segment in this round" — so we subscribe unfiltered
   // and check membership client-side instead.
-  useEffect(() => {
-    if (!questionIdsKey) return
-    const idSet = new Set(questionIdsKey.split(','))
-
-    const channel = supabase
-      .channel(`live-console-questions-${roundId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'questions' },
-        (payload) => {
-          const updated = payload.new as QuestionRow
-          if (!idSet.has(updated.id)) return
-          setQuestions((prev) =>
-            prev ? prev.map((q) => (q.id === updated.id ? { ...q, ...updated } : q)) : prev,
-          )
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [roundId, questionIdsKey])
+  const questionsStatus = useRealtimeChannel({
+    channelName: questionIdsKey ? `live-console-questions-${roundId}` : null,
+    subscribe: useCallback(
+      (channel) => {
+        const idSet = new Set(questionIdsKey.split(','))
+        return channel.on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'questions' },
+          (payload) => {
+            const updated = payload.new as QuestionRow
+            if (!idSet.has(updated.id)) return
+            setQuestions((prev) =>
+              prev ? prev.map((q) => (q.id === updated.id ? { ...q, ...updated } : q)) : prev,
+            )
+          },
+        )
+      },
+      [questionIdsKey],
+    ),
+    // Postgres Changes replays nothing that happened while the socket was
+    // down, so a recovered channel has to refetch rather than resume from
+    // whatever the screen was showing when it dropped.
+    onReconnect: refreshQuestions,
+  })
 
   // Realtime: who's-answered updates as participants submit — round_id is a
   // real (denormalized) column on answers, so this can filter server-side.
-  useEffect(() => {
-    if (!roundId) return
+  const answersStatus = useRealtimeChannel({
+    channelName: roundId ? `live-console-answers-${roundId}` : null,
+    subscribe: useCallback(
+      (channel) =>
+        channel.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'answers', filter: `round_id=eq.${roundId}` },
+          () => {
+            refreshAnswers().catch((err: unknown) => {
+              // The screen is now showing a roster that's behind the real
+              // submissions, which an organizer deciding when to close a
+              // question would otherwise act on without knowing.
+              showStatus(
+                `Couldn't refresh who's answered — showing the last known state. ${getErrorMessage(err, 'Retrying on the next submission.')}`,
+                { key: 'live-console-answers-refresh' },
+              )
+            })
+          },
+        ),
+      [roundId, refreshAnswers, showStatus],
+    ),
+    onReconnect: refreshAnswers,
+  })
 
-    const channel = supabase
-      .channel(`live-console-answers-${roundId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'answers', filter: `round_id=eq.${roundId}` },
-        () => {
-          refreshAnswers().catch(() => {
-            // Best-effort: the next reveal/void/close-round action re-syncs.
-          })
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [roundId, refreshAnswers])
+  // The header reports the weaker of the two: if either channel is down,
+  // something on this screen is stale.
+  const realtimeStatus = combineRealtimeStatus(questionsStatus, answersStatus)
 
   // Tick the clock once a second to drive the open question's countdown.
   useEffect(() => {
@@ -418,7 +429,10 @@ export function LiveConsolePage() {
             </PageTitle>
             <PageSubtitle>{event.name}</PageSubtitle>
           </div>
-          <BackLink to={`/events/${eventId}/rounds`}>Back to rounds</BackLink>
+          <Row>
+            <LiveStatusBadge status={realtimeStatus} />
+            <BackLink to={`/events/${eventId}/rounds`}>Back to rounds</BackLink>
+          </Row>
         </PageHeader>
 
         {round.status !== 'scoring_open' && (

@@ -12,9 +12,17 @@ export default defineConfig({
   },
   projects: [
     { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    // Pure-function tests. They import from src/ directly and never open a
+    // page, so they need neither a browser context nor the auth setup —
+    // Playwright is already here, so this avoids a second test runner.
+    { name: 'unit', testMatch: /.*\.unit\.spec\.ts/ },
     {
       name: 'chromium',
-      testIgnore: [/participant-.*\.spec\.ts/, /judge-.*\.spec\.ts/],
+      testIgnore: [
+        /participant-.*\.spec\.ts/,
+        /judge-.*\.spec\.ts/,
+        /.*\.unit\.spec\.ts/,
+      ],
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/organizer.json',

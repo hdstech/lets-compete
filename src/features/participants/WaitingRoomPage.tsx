@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
-import { supabase } from '../../lib/supabase'
+import { combineRealtimeStatus, useRealtimeChannel } from '../../lib/use-realtime-channel'
+import { LiveStatusBadge } from '../../components/ui/LiveStatusBadge'
+import { useToast } from '../../components/ui/useToast'
 import { useAuth } from '../auth/useAuth'
 import { AuthLink, LoadingScreen } from '../auth/auth-ui'
 import { Card } from '../../components/ui/Card'
@@ -35,6 +37,7 @@ const StatusActions = styled('div', {
 export function WaitingRoomPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const { user } = useAuth()
+  const { showStatus } = useToast()
   const navigate = useNavigate()
 
   const [event, setEvent] = useState<EventRow | null>(null)
@@ -65,29 +68,28 @@ export function WaitingRoomPage() {
   // Live-updates when the organizer approves/revokes elsewhere, without the
   // participant needing to refresh.
   const participantId = participant?.id ?? null
-  useEffect(() => {
-    if (!participantId) return
-
-    const channel = supabase
-      .channel(`waiting-room-${participantId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'participants',
-          filter: `id=eq.${participantId}`,
-        },
-        (payload) => {
-          setParticipant(payload.new as ParticipantRow)
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [participantId])
+  const admissionStatus = useRealtimeChannel({
+    channelName: participantId ? `waiting-room-${participantId}` : null,
+    subscribe: useCallback(
+      (channel) =>
+        channel.on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'participants',
+            filter: `id=eq.${participantId}`,
+          },
+          (payload) => {
+            setParticipant(payload.new as ParticipantRow)
+          },
+        ),
+      [participantId],
+    ),
+    // An approval granted while the socket was down is exactly what this
+    // screen exists to notice, and Postgres Changes won't replay it.
+    onReconnect: loadRegistration,
+  })
 
   // Once approved, hand off to the live answering screen (QB4) as soon as
   // the quiz actually starts — not at approval time itself, since approval
@@ -111,30 +113,41 @@ export function WaitingRoomPage() {
           navigate(`/events/${eventId}/play`, { replace: true })
         }
       })
-      .catch(() => {
-        // Best-effort: the realtime subscription below still catches a
-        // reveal that happens while this page stays open.
+      .catch((err: unknown) => {
+        if (cancelled) return
+        // Still best-effort — the subscription below catches a reveal that
+        // happens while this page stays open — but if the quiz has *already*
+        // started, this check was the only thing that would have moved the
+        // participant along, and failing it silently strands them here.
+        showStatus(
+          `Couldn't check whether the quiz has started. ${getErrorMessage(err, 'Reload if you were expecting it to be underway.')}`,
+          { key: 'waiting-room-start-check' },
+        )
       })
 
     return () => {
       cancelled = true
     }
-  }, [eventId, approved, navigate])
+  }, [eventId, approved, navigate, showStatus])
 
-  useEffect(() => {
-    if (!eventId || !approved) return
+  const revealStatus = useRealtimeChannel({
+    channelName: eventId && approved ? `waiting-room-questions-${eventId}` : null,
+    subscribe: useCallback(
+      (channel) =>
+        channel.on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'questions' },
+          () => {
+            navigate(`/events/${eventId}/play`, { replace: true })
+          },
+        ),
+      [eventId, navigate],
+    ),
+  })
 
-    const channel = supabase
-      .channel(`waiting-room-questions-${eventId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'questions' }, () => {
-        navigate(`/events/${eventId}/play`, { replace: true })
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [eventId, approved, navigate])
+  // The reveal channel only opens once the participant is admitted, so
+  // while they're still pending this reports on the admission channel alone.
+  const realtimeStatus = combineRealtimeStatus(admissionStatus, revealStatus)
 
   if (error) {
     return (
@@ -170,6 +183,7 @@ export function WaitingRoomPage() {
         subtitle={`Registered as ${participant.name}`}
       >
         <PlayerHeaderBadge>{participant.admission_status}</PlayerHeaderBadge>
+        <LiveStatusBadge status={realtimeStatus} onBrand />
       </PlayerHeader>
 
       <PlayerBody>

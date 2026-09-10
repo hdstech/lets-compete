@@ -1,5 +1,7 @@
 import { LogOut, Moon, Sun } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { getErrorMessage } from '../../lib/errors'
+import { useToast } from '../../components/ui/useToast'
 import { useAuth } from '../auth/useAuth'
 import { useTheme } from '../theme/useTheme'
 import { SidebarFooterButton, SidebarFooterRoot, SidebarItemLabel } from './admin-shell-ui'
@@ -7,10 +9,22 @@ import { SidebarFooterButton, SidebarFooterRoot, SidebarItemLabel } from './admi
 export function SidebarFooter({ railed }: { railed: boolean }) {
   const { theme, toggleTheme } = useTheme()
   const { signOut } = useAuth()
+  const { showError } = useToast()
   const navigate = useNavigate()
 
   async function handleSignOut() {
-    await signOut()
+    try {
+      await signOut()
+    } catch (err) {
+      // The local session is cleared regardless, so still leave for /login —
+      // but say that the server-side sign-out didn't land, since on a shared
+      // machine that's the difference between signed out and only appearing
+      // to be.
+      showError(
+        `Signed out on this device, but the server didn't confirm it. ${getErrorMessage(err, 'Sign out again once you have a connection.')}`,
+        { key: 'sign-out' },
+      )
+    }
     navigate('/login', { replace: true })
   }
 

@@ -65,3 +65,61 @@ test('a failed rounds fetch shows a retry that recovers', async ({ page }) => {
   await page.getByRole('link', { name: 'Back to event' }).click()
   await deleteCurrentEvent(page)
 })
+
+// T38 (system feedback): the classifier only rewrites errors whose raw text
+// tells the user nothing. The two tests above already pin the other half of
+// that contract — a server-authored message reaches the UI verbatim — so
+// these cover the rewriting side and the realtime-dropout signal.
+
+// Slow by construction: supabase-js retries a transport failure, so the
+// failure only becomes visible once src/lib/supabase.ts's per-request
+// timeout gives up. That wait is the behaviour under test — before the
+// timeout existed the request never settled at all and this page spun
+// forever with no error to catch.
+test('a dropped connection reads as connection copy, not "Failed to fetch"', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+
+  let shouldFail = true
+  await page.route('**/rest/v1/events*', async (route) => {
+    if (shouldFail && route.request().method() === 'GET') {
+      // A transport-level failure, which is what an actual dropped
+      // connection produces — the browser surfaces it to fetch() as
+      // `TypeError: Failed to fetch`.
+      await route.abort('failed')
+      return
+    }
+    await route.continue()
+  })
+
+  await page.goto('/events')
+
+  const alert = page.getByRole('alert')
+  await expect(alert).toContainText('Check your connection', { timeout: 60_000 })
+  await expect(alert).not.toContainText('Failed to fetch')
+
+  shouldFail = false
+  await page.getByRole('button', { name: 'Try again' }).click()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'New event' })).toBeVisible()
+})
+
+test('a dead realtime socket is called out instead of looking like a quiet event', async ({
+  page,
+}) => {
+  // Closing the socket as soon as it opens is what a lost connection looks
+  // like to the client: the channel never reaches SUBSCRIBED, so without
+  // T38's status handling the participants list would simply stop updating
+  // with nothing on screen to say so.
+  await page.routeWebSocket('**/realtime/v1/**', (ws) => {
+    ws.close()
+  })
+
+  const name = uniqueEventName('Realtime Drop')
+  await createDraftEvent(page, name)
+
+  await expect(page.getByText('Live updates interrupted')).toBeVisible({ timeout: 15_000 })
+
+  await deleteCurrentEvent(page)
+})

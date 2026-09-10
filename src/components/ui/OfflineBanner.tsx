@@ -3,10 +3,11 @@ import { styled } from '../../../styled-system/jsx'
 
 const Banner = styled('div', {
   base: {
-    position: 'fixed',
-    top: '0',
-    insetInline: '0',
-    zIndex: '40',
+    // Positioning is owned by ToastProvider's SystemStatusStack, which this
+    // renders inside — the banner just fills that stack's width, so a toast
+    // stacked below it can never overlap it.
+    width: 'full',
+    pointerEvents: 'auto',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -22,9 +23,10 @@ const Banner = styled('div', {
   },
 })
 
-// Mounted once at the app root (see App.tsx) so every surface — participant
-// screens on flaky mobile connections and the admin console alike — gets the
-// same signal when a fetch/RPC would silently fail. This is a plain browser
+// Rendered once by ToastProvider, at the top of the shared system-status
+// stack, so every surface — participant screens on flaky mobile connections
+// and the admin console alike — gets the same signal when a fetch/RPC would
+// silently fail. This is a plain browser
 // online/offline indicator, not tied to any sync-on-reconnect queue (T26,
 // deferred to V2), so there's nothing here to replay once back online.
 export function OfflineBanner() {

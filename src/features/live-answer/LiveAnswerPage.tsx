@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
-import { supabase } from '../../lib/supabase'
 import { formatClock, getDeadlineMs } from '../../lib/quiz-timing'
+import { combineRealtimeStatus, useRealtimeChannel } from '../../lib/use-realtime-channel'
+import { LiveStatusBadge } from '../../components/ui/LiveStatusBadge'
+import { useToast } from '../../components/ui/useToast'
 import { useAuth } from '../auth/useAuth'
 import { ErrorText, Input, LoadingScreen } from '../auth/auth-ui'
 import { Button } from '../../components/ui/Button'
@@ -135,6 +137,7 @@ const WarningBanner = styled('p', {
 export function LiveAnswerPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const { user } = useAuth()
+  const { showError } = useToast()
 
   const [event, setEvent] = useState<EventRow | null>(null)
   const [participant, setParticipant] = useState<ParticipantRow | null>(null)
@@ -147,6 +150,7 @@ export function LiveAnswerPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [locked, setLocked] = useState(false)
+  const [autoSubmitFailed, setAutoSubmitFailed] = useState(false)
 
   const [now, setNow] = useState(() => Date.now())
 
@@ -200,27 +204,29 @@ export function LiveAnswerPage() {
   // Live round-status transitions (round 1 closes, round 2 opens via
   // advance_round) — rounds.event_id is a real indexed column, so this can
   // filter server-side.
-  useEffect(() => {
-    if (!eventId || !approved) return
+  const refreshRounds = useCallback(async () => {
+    if (!eventId) return
+    setRounds(await listRounds(eventId))
+  }, [eventId])
 
-    const channel = supabase
-      .channel(`live-answer-rounds-${eventId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'rounds', filter: `event_id=eq.${eventId}` },
-        (payload) => {
-          const updated = payload.new as RoundRow
-          setRounds((prev) =>
-            prev ? prev.map((r) => (r.id === updated.id ? updated : r)) : prev,
-          )
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [eventId, approved])
+  const roundsStatus = useRealtimeChannel({
+    channelName: eventId && approved ? `live-answer-rounds-${eventId}` : null,
+    subscribe: useCallback(
+      (channel) =>
+        channel.on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'rounds', filter: `event_id=eq.${eventId}` },
+          (payload) => {
+            const updated = payload.new as RoundRow
+            setRounds((prev) =>
+              prev ? prev.map((r) => (r.id === updated.id ? updated : r)) : prev,
+            )
+          },
+        ),
+      [eventId],
+    ),
+    onReconnect: refreshRounds,
+  })
 
   const scoringOpenRound = useMemo(
     () => rounds?.find((r) => r.status === 'scoring_open') ?? null,
@@ -258,22 +264,33 @@ export function LiveAnswerPage() {
   // there's no already-known id set to filter by client-side — a full
   // refetch on any inbound change is what actually catches a brand-new
   // reveal rather than only updates to rows already loaded.
-  useEffect(() => {
-    if (!roundId) return
+  const questionsStatus = useRealtimeChannel({
+    channelName: roundId ? `live-answer-questions-${roundId}` : null,
+    subscribe: useCallback(
+      (channel) =>
+        channel.on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'questions' },
+          () => {
+            refreshQuestions().catch((err: unknown) => {
+              // A missed reveal means the participant sits on the previous
+              // question while their answer window is already counting down,
+              // so this can't stay a silent best-effort catch.
+              showError(
+                `Couldn't load the latest question — this screen may be behind. ${getLoadErrorMessage(err, 'Reload the page if nothing changes.')}`,
+                { key: 'live-answer-question-refresh' },
+              )
+            })
+          },
+        ),
+      [refreshQuestions, showError],
+    ),
+    onReconnect: refreshQuestions,
+  })
 
-    const channel = supabase
-      .channel(`live-answer-questions-${roundId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'questions' }, () => {
-        refreshQuestions().catch(() => {
-          // Best-effort: the next reveal/close event re-syncs.
-        })
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [roundId, refreshQuestions])
+  // Either channel dropping means a reveal or a round change can pass this
+  // screen by, so the header reports the weaker of the two.
+  const realtimeStatus = combineRealtimeStatus(roundsStatus, questionsStatus)
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000)
@@ -306,6 +323,7 @@ export function LiveAnswerPage() {
   if (focusedQuestionId !== lockedForQuestionId) {
     setLockedForQuestionId(focusedQuestionId)
     setLocked(false)
+    setAutoSubmitFailed(false)
   }
 
   // Load (or reset) the answer draft whenever the focused question changes:
@@ -322,14 +340,23 @@ export function LiveAnswerPage() {
         setMyAnswer(answer)
         setAnswerText(answer?.submitted_text ?? getAnswerDraft(focusedQuestionId) ?? '')
       })
-      .catch(() => {
-        if (!cancelled) setAnswerText(getAnswerDraft(focusedQuestionId) ?? '')
+      .catch((err: unknown) => {
+        if (cancelled) return
+        // Falling back to the local draft is right, but doing it silently
+        // leaves the participant unable to tell an answer that was recorded
+        // from one that never reached the server — the single worst thing
+        // for this screen to be quietly wrong about.
+        setAnswerText(getAnswerDraft(focusedQuestionId) ?? '')
+        showError(
+          `Couldn't confirm whether your answer was already submitted — what's shown is your local draft. ${getSubmitErrorMessage(err, 'Submit again before the window closes.')}`,
+          { key: 'live-answer-confirm' },
+        )
       })
 
     return () => {
       cancelled = true
     }
-  }, [focusedQuestionId, participant?.id])
+  }, [focusedQuestionId, participant?.id, showError])
 
   function handleAnswerChange(value: string) {
     setAnswerText(value)
@@ -362,6 +389,13 @@ export function LiveAnswerPage() {
     question: focusedQuestion,
     answerText,
     onAutoSubmitted: (answer) => setMyAnswer(answer),
+    onAutoSubmitFailed: () => {
+      setAutoSubmitFailed(true)
+      showError(
+        "You left the screen and your answer couldn't be sent — it may not have been recorded. Tell the organizer before the round closes.",
+        { key: 'live-answer-auto-submit' },
+      )
+    },
     onLocked: () => setLocked(true),
   })
 
@@ -403,6 +437,7 @@ export function LiveAnswerPage() {
       <PlayerShell>
         <PlayerHeader title={event.name} subtitle={participant.name}>
           <PlayerHeaderBadge>Waiting to start</PlayerHeaderBadge>
+          <LiveStatusBadge status={realtimeStatus} onBrand />
         </PlayerHeader>
         <PlayerBody>
           <Card>
@@ -429,6 +464,7 @@ export function LiveAnswerPage() {
       <PlayerShell>
         <PlayerHeader title={event.name} subtitle={participant.name}>
           <PlayerHeaderBadge>Round open</PlayerHeaderBadge>
+          <LiveStatusBadge status={realtimeStatus} onBrand />
         </PlayerHeader>
         <PlayerBody>
           <Card>
@@ -454,6 +490,7 @@ export function LiveAnswerPage() {
       <PlayerHeader title={event.name} subtitle={participant.name}>
         <PlayerHeaderBadge>{focusedQuestion.segment_name}</PlayerHeaderBadge>
         <PlayerHeaderBadge>{answerTypeLabel(focusedQuestion.answer_type)}</PlayerHeaderBadge>
+        <LiveStatusBadge status={realtimeStatus} onBrand />
       </PlayerHeader>
 
       <PlayerBody>
@@ -533,11 +570,20 @@ export function LiveAnswerPage() {
           </Button>
         )}
 
-        {locked && (
-          <SubmitStatus>
-            Auto-submitted because you left the screen — you can't edit this answer anymore.
-          </SubmitStatus>
-        )}
+        {locked &&
+          (autoSubmitFailed ? (
+            // Saying "auto-submitted" here when the request never landed
+            // would be the most misleading thing on the screen.
+            <ErrorText role="alert">
+              You left the screen, and your answer couldn't be sent — it may not have
+              been recorded. Tell the organizer before the round closes.
+            </ErrorText>
+          ) : (
+            <SubmitStatus>
+              Auto-submitted because you left the screen — you can't edit this answer
+              anymore.
+            </SubmitStatus>
+          ))}
         {!locked && !isOpen && myAnswer?.submitted_text && (
           <SubmitStatus>Your answer: {myAnswer.submitted_text}</SubmitStatus>
         )}
