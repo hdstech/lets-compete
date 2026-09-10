@@ -90,6 +90,10 @@ test('a tie at the advancement cutoff runs through sudden death to pool exhausti
   await page.getByLabel('Prompt').fill('Sudden-death reserve question')
   await page.getByLabel('Answer window (seconds)').fill('3')
   await page.getByLabel('Tiebreak reserve pool question').check()
+  // A question needs an acceptable answer before it can be saved. Nobody
+  // answers this one — the tie below is broken by pool exhaustion, not by a
+  // correct answer — so the value only has to exist.
+  await page.getByLabel('Acceptable answer for the new question').fill('unanswered')
   await page.getByRole('button', { name: 'Add question' }).click()
   await expect(page.getByRole('button', { name: 'Add question' })).toBeVisible()
 
