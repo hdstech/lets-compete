@@ -14,7 +14,9 @@ export const AdminShellRoot = styled('div', {
 
 export const SidebarShellRoot = styled('aside', {
   base: {
-    width: '220px',
+    // Wide enough for the wordmark to sit beside the collapse control without
+    // either being truncated.
+    width: '240px',
     flexShrink: 0,
     display: 'flex',
     flexDirection: 'column',
@@ -37,13 +39,15 @@ export const SidebarShellRoot = styled('aside', {
     transition: 'transform 0.22s ease, width 0.22s ease, padding 0.22s ease, opacity 0.2s ease',
   },
   variants: {
+    // Collapsing means two different things by breakpoint: on a phone the
+    // panel is an overlay drawer that slides off-canvas entirely, while from
+    // `md` up it shrinks to an icon rail that stays on screen and operable.
     collapsed: {
       true: {
         transform: { base: 'translateX(-100%)', md: 'none' },
-        width: { md: '0' },
-        px: { md: '0' },
-        opacity: { base: '1', md: '0' },
-        pointerEvents: 'none',
+        width: { md: '16' },
+        px: { md: '2' },
+        pointerEvents: { base: 'none', md: 'auto' },
       },
     },
   },
@@ -72,11 +76,32 @@ export const SidebarBackdrop = styled('button', {
   },
 })
 
+// Holds the wordmark and the collapse control. Side by side when the panel is
+// open; stacked and centred once it is down to an icon rail.
+export const SidebarHeaderRow = styled('div', {
+  base: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '2',
+  },
+  variants: {
+    railed: {
+      true: {
+        flexDirection: 'column',
+        justifyContent: 'center',
+        gap: '2',
+      },
+    },
+  },
+})
+
 export const SidebarBrandLink = styled(Link, {
   base: {
     display: 'flex',
     alignItems: 'center',
     gap: '2.5',
+    minWidth: '0',
     px: '1',
     py: '1',
     color: 'text.primary',
@@ -108,6 +133,50 @@ export const SidebarBrandMark = styled('span', {
     color: 'white',
     backgroundImage:
       'linear-gradient(150deg, token(colors.brand.500) 0%, token(colors.brand.400) 100%)',
+  },
+})
+
+// The collapse control proper, living on the panel it collapses. Hidden below
+// `md`, where the panel is an off-canvas drawer and a control inside it would
+// be unreachable once closed.
+export const SidebarCollapseButton = styled('button', {
+  base: {
+    display: { base: 'none', md: 'inline-flex' },
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: '0',
+    width: '9',
+    height: '9',
+    borderRadius: 'control',
+    color: 'text.muted',
+    bg: 'transparent',
+    borderWidth: '1px',
+    borderColor: 'transparent',
+    cursor: 'pointer',
+    transition: 'background-color 0.18s ease, color 0.18s ease',
+    _hover: { bg: 'accent.subtle', color: 'accent.fg' },
+    _focusVisible: {
+      outline: '2px solid',
+      outlineColor: 'accent.default',
+      outlineOffset: '2px',
+    },
+  },
+})
+
+// The text half of any sidebar row (wordmark, nav item, footer action). The
+// icon stays put and this drops out when the panel is railed, which is what
+// keeps the rail readable as a column of icons.
+export const SidebarItemLabel = styled('span', {
+  base: {
+    minWidth: '0',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  variants: {
+    railed: {
+      true: { display: 'none' },
+    },
   },
 })
 
@@ -151,6 +220,9 @@ export const SidebarNavItemLink = styled(NavLink, {
         _hover: { bg: 'accent.subtle', color: 'accent.fg' },
       },
     },
+    railed: {
+      true: { justifyContent: 'center', px: '0' },
+    },
   },
 })
 
@@ -183,6 +255,16 @@ export const SidebarFooterButton = styled('button', {
     textAlign: 'left',
     transition: 'background-color 0.15s ease, color 0.15s ease',
     _hover: { bg: 'bg.sunken', color: 'text.primary' },
+    _focusVisible: {
+      outline: '2px solid',
+      outlineColor: 'accent.default',
+      outlineOffset: '2px',
+    },
+  },
+  variants: {
+    railed: {
+      true: { justifyContent: 'center', px: '0' },
+    },
   },
 })
 
@@ -216,6 +298,11 @@ export const SwitcherToggleButton = styled('button', {
       outline: '2px solid',
       outlineColor: 'accent.default',
       outlineOffset: '2px',
+    },
+  },
+  variants: {
+    railed: {
+      true: { justifyContent: 'center', px: '0', py: '2.5' },
     },
   },
 })
@@ -338,9 +425,11 @@ export const ContentHeaderRoot = styled('header', {
   },
 })
 
+// The phone-only drawer trigger. From `md` up the panel never leaves the
+// screen, so its own `SidebarCollapseButton` owns the toggle instead.
 export const CollapseToggleButton = styled('button', {
   base: {
-    display: 'inline-flex',
+    display: { base: 'inline-flex', md: 'none' },
     alignItems: 'center',
     justifyContent: 'center',
     width: '11',
