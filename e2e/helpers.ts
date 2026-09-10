@@ -103,22 +103,35 @@ export async function goToQuestions(page: Page) {
   )
 }
 
+// A question can't be saved without at least one acceptable answer, so a
+// caller that doesn't care about grading still needs one. This value is
+// deliberately unmatchable, which keeps specs that submit an answer and
+// assert on the auto pre-mark result behaving exactly as they did when a
+// question could be saved with no acceptable answers at all.
+const UNMATCHABLE_ANSWER = 'no-acceptable-answer-configured'
+
 export async function addQuestion(
   page: Page,
   options: {
     prompt: string
-    answerType?: 'text' | 'numeric'
+    answerType?: 'text' | 'numeric' | 'boolean'
     windowSeconds?: number
     sequence?: number
     isTiebreak?: boolean
     // Acceptable answers to stage on the create form and save together with
-    // the question (they inherit the question's answer type).
+    // the question (they inherit the question's answer type). Ignored for a
+    // True/False question, which takes `correctAnswer` instead.
     acceptableAnswers?: string[]
+    // The correct value for a True/False question; defaults to True.
+    correctAnswer?: 'True' | 'False'
   },
 ) {
   await page.getByLabel('Prompt').fill(options.prompt)
   if (options.answerType === 'numeric') {
     await page.getByRole('radio', { name: 'Numeric' }).first().check()
+  }
+  if (options.answerType === 'boolean') {
+    await page.getByRole('radio', { name: 'True/False' }).first().check()
   }
   if (options.windowSeconds !== undefined) {
     await page.getByLabel('Answer window (seconds)').fill(String(options.windowSeconds))
@@ -129,9 +142,15 @@ export async function addQuestion(
   if (options.isTiebreak) {
     await page.getByLabel('Tiebreak reserve pool question').check()
   }
-  for (const value of options.acceptableAnswers ?? []) {
-    await page.getByLabel('Acceptable answer for the new question').fill(value)
-    await page.getByRole('button', { name: 'Add acceptable answer' }).click()
+  if (options.answerType === 'boolean') {
+    await page
+      .getByRole('radio', { name: options.correctAnswer ?? 'True', exact: true })
+      .check()
+  } else {
+    for (const value of options.acceptableAnswers ?? [UNMATCHABLE_ANSWER]) {
+      await page.getByLabel('Acceptable answer for the new question').fill(value)
+      await page.getByRole('button', { name: 'Add acceptable answer' }).click()
+    }
   }
   await page.getByRole('button', { name: 'Add question' }).click()
   await expect(page.getByRole('button', { name: 'Add question' })).toBeVisible()

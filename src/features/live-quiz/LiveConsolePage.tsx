@@ -35,6 +35,7 @@ import {
   IconTile,
 } from '../../components/ui/Card'
 import type { EventRow } from '../events/types'
+import { answerTypeLabel } from '../questions/answer-type'
 import {
   QUESTION_STATUS_TONE,
   questionStatusLabel,
@@ -463,7 +464,7 @@ export function LiveConsolePage() {
                   <DefinitionTerm>Segment</DefinitionTerm>
                   <DefinitionValue>{openQuestion.segment_name}</DefinitionValue>
                   <DefinitionTerm>Answer type</DefinitionTerm>
-                  <DefinitionValue>{openQuestion.answer_type}</DefinitionValue>
+                  <DefinitionValue>{answerTypeLabel(openQuestion.answer_type)}</DefinitionValue>
                 </DefinitionGrid>
                 <Countdown aria-live="polite">{formatClock(remainingMs ?? 0)}</Countdown>
                 <Row>

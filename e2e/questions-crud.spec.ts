@@ -102,13 +102,98 @@ test('a question and its acceptable answers save together in one action', async 
   await deleteCurrentEvent(page)
 })
 
+test('a True/False question stores the chosen correct answer', async ({ page }) => {
+  const name = uniqueEventName('Question TrueFalse')
+  await setUpToQuestions(page, name)
+
+  await addQuestion(page, {
+    prompt: 'The Sea of Galilee is a freshwater lake.',
+    answerType: 'boolean',
+    windowSeconds: 20,
+    correctAnswer: 'True',
+  })
+
+  // The card reports the type and the picker reflects the stored answer —
+  // 'True' here rather than the create form's own "True/False" type radio.
+  await expect(page.getByRole('definition').filter({ hasText: 'True/False' })).toBeVisible()
+  const trueOption = page.getByRole('radio', { name: 'True', exact: true })
+  const falseOption = page.getByRole('radio', { name: 'False', exact: true })
+  await expect(trueOption).toBeChecked()
+
+  // Re-picking replaces the stored answer rather than adding a second one.
+  // Clicked rather than checked: the radio reflects the new value only once
+  // the write it kicks off comes back, which check() doesn't wait for.
+  await falseOption.click()
+  await expect(falseOption).toBeChecked()
+  await page.reload()
+  await expect(page.getByRole('radio', { name: 'False', exact: true })).toBeChecked()
+  await expect(page.getByRole('radio', { name: 'True', exact: true })).not.toBeChecked()
+
+  await page.goto('/events')
+  await page.getByRole('link', { name: new RegExp(name) }).click()
+  await deleteCurrentEvent(page)
+})
+
+test('editing an acceptable answer persists across a reload', async ({ page }) => {
+  const name = uniqueEventName('Question Answer Edit')
+  await setUpToQuestions(page, name)
+
+  await addQuestion(page, {
+    prompt: 'What is the capital of France?',
+    windowSeconds: 20,
+    acceptableAnswers: ['Pariz'],
+  })
+
+  await page.getByRole('button', { name: 'Edit answer Pariz' }).click()
+  await page.getByLabel('Edit acceptable answer Pariz').fill('Paris')
+  await page.getByRole('button', { name: 'Save answer' }).click()
+
+  await expect(page.getByText('Paris', { exact: true })).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByText('Paris', { exact: true })).toBeVisible()
+  await expect(page.getByText('Pariz', { exact: true })).toHaveCount(0)
+
+  await page.goto('/events')
+  await page.getByRole('link', { name: new RegExp(name) }).click()
+  await deleteCurrentEvent(page)
+})
+
+test('a question cannot be saved without an acceptable answer', async ({ page }) => {
+  const name = uniqueEventName('Question Answer Gate')
+  await setUpToQuestions(page, name)
+
+  await page.getByLabel('Prompt').fill('Needs an acceptable answer')
+  const stageAnswer = page.getByRole('button', { name: 'Add acceptable answer' })
+  const addQuestionButton = page.getByRole('button', { name: 'Add question' })
+  await expect(stageAnswer).toBeDisabled()
+  await expect(addQuestionButton).toBeDisabled()
+
+  await page.getByLabel('Acceptable answer for the new question').fill('An answer')
+  await expect(stageAnswer).toBeEnabled()
+  await expect(addQuestionButton).toBeEnabled()
+  await addQuestionButton.click()
+
+  // The same rule on the saved question's own answer form.
+  await expect(page.getByRole('heading', { level: 2, name: 'Question 1' })).toBeVisible()
+  const addAnswerButton = page.getByRole('button', { name: 'Add answer' })
+  await expect(addAnswerButton).toBeDisabled()
+  await page.getByPlaceholder('Acceptable answer value').fill('Another answer')
+  await expect(addAnswerButton).toBeEnabled()
+
+  await page.goto('/events')
+  await page.getByRole('link', { name: new RegExp(name) }).click()
+  await deleteCurrentEvent(page)
+})
+
 test('editing a question persists across a reload', async ({ page }) => {
   const name = uniqueEventName('Question Edit')
   await setUpToQuestions(page, name)
 
   await addQuestion(page, { prompt: 'Original prompt', windowSeconds: 20 })
 
-  await page.getByRole('button', { name: 'Edit' }).click()
+  // Exact: the answer rows carry their own "Edit answer …" buttons.
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByLabel('Prompt').fill('Updated prompt')
   await page.getByLabel('Answer window (seconds)').fill('45')
   await page.getByRole('button', { name: 'Save question' }).click()

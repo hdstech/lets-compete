@@ -33,7 +33,6 @@ import type { SegmentRow } from '../segments/types'
 import {
   addAcceptableAnswer,
   createQuestion,
-  deleteAcceptableAnswer,
   deleteQuestion,
   getErrorMessage,
   listAcceptableAnswers,
@@ -46,14 +45,18 @@ import {
   validateAcceptableAnswer,
 } from './acceptable-answer'
 import {
-  AcceptableAnswerField,
-  AcceptableAnswerInput,
+  ANSWER_TYPES,
+  ANSWER_TYPE_LABELS,
+  BOOLEAN_ANSWER_VALUES,
+  answerTypeLabel,
+} from './answer-type'
+import type { BooleanAnswerValue } from './answer-type'
+import { AcceptableAnswersEditor } from './AcceptableAnswersEditor'
+import {
   AcceptableAnswerItem,
   AcceptableAnswerList,
-  AcceptableAnswerMeta,
   AcceptableAnswerText,
-  InlineCheckboxField,
-  RemoveAnswerButton,
+  AnswerIconButton,
 } from './questions-ui'
 import type { AcceptableAnswerRow, AnswerType, QuestionRow } from './types'
 
@@ -121,12 +124,6 @@ function validate(
   }
 }
 
-type AnswerFormValues = { value: string; isNumeric: boolean }
-
-function emptyAnswerForm(question: QuestionRow): AnswerFormValues {
-  return { value: '', isNumeric: question.answer_type === 'numeric' }
-}
-
 export function QuestionsPage() {
   const { eventId, segmentId } = useParams<{
     eventId: string
@@ -147,9 +144,12 @@ export function QuestionsPage() {
   // Acceptable answers staged on the create form, saved together with the
   // question in one action. `newAnswerDraft` is the value currently typed but
   // not yet added to the list; it's also included on submit so a single
-  // answer needn't be explicitly "added" first.
+  // answer needn't be explicitly "added" first. A True/False question instead
+  // carries its one correct value in `newCorrectAnswer`.
   const [newQuestionAnswers, setNewQuestionAnswers] = useState<string[]>([])
   const [newAnswerDraft, setNewAnswerDraft] = useState('')
+  const [newCorrectAnswer, setNewCorrectAnswer] =
+    useState<BooleanAnswerValue | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
@@ -162,15 +162,6 @@ export function QuestionsPage() {
 
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-
-  const [newAnswer, setNewAnswer] = useState<Record<string, AnswerFormValues>>(
-    {},
-  )
-  const [answerError, setAnswerError] = useState<Record<string, string | null>>(
-    {},
-  )
-  const [addingAnswerFor, setAddingAnswerFor] = useState<string | null>(null)
-  const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null)
 
   usePageBreadcrumbs(
     event && segment
@@ -188,7 +179,8 @@ export function QuestionsPage() {
     editingId !== null ||
       newQuestion.prompt.trim() !== '' ||
       newQuestionAnswers.length > 0 ||
-      newAnswerDraft.trim() !== '',
+      newAnswerDraft.trim() !== '' ||
+      newCorrectAnswer !== null,
   )
 
   const loadData = useCallback(() => {
@@ -248,15 +240,48 @@ export function QuestionsPage() {
     setAnswersByQuestion((prev) => ({ ...prev, [questionId]: rows }))
   }
 
+  // Staged answers are interpreted through the question's answer type — a
+  // numeric list means nothing on a True/False question, and vice versa — so
+  // switching the type starts the answer section over.
+  function changeNewAnswerType(answerType: AnswerType) {
+    setNewQuestion((prev) => ({ ...prev, answerType }))
+    setNewQuestionAnswers([])
+    setNewAnswerDraft('')
+    setNewCorrectAnswer(null)
+    setAddError(null)
+  }
+
   function stageNewAnswer() {
     const value = newAnswerDraft.trim()
     if (!value) return
+
+    const validationError = validateAcceptableAnswer(
+      value,
+      newQuestion.answerType === 'numeric',
+    )
+    if (validationError) {
+      setAddError(validationError)
+      return
+    }
+
     setNewQuestionAnswers((prev) => [...prev, value])
     setNewAnswerDraft('')
+    setAddError(null)
   }
 
   function unstageNewAnswer(index: number) {
     setNewQuestionAnswers((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  // The acceptable answers a submit would save. Also what gates the "Add
+  // question" button: a question with nothing to match against can never be
+  // marked correct.
+  function stagedAnswers(): string[] {
+    if (newQuestion.answerType === 'boolean') {
+      return newCorrectAnswer ? [newCorrectAnswer] : []
+    }
+    const draft = newAnswerDraft.trim()
+    return draft ? [...newQuestionAnswers, draft] : newQuestionAnswers
   }
 
   async function handleAddQuestion(formEvent: SubmitEvent<HTMLFormElement>) {
@@ -270,13 +295,15 @@ export function QuestionsPage() {
       return
     }
 
-    // Save the question together with its acceptable answers: the staged
-    // list plus any value typed but not yet added. Acceptable answers inherit
-    // the question's answer type here; per-answer numeric overrides remain
-    // available afterward through the per-question editor below.
-    const answers = [...newQuestionAnswers]
-    const draft = newAnswerDraft.trim()
-    if (draft) answers.push(draft)
+    // Save the question together with its acceptable answers. Acceptable
+    // answers inherit the question's answer type here; per-answer numeric
+    // overrides remain available afterward through the per-question editor
+    // below.
+    const answers = stagedAnswers()
+    if (answers.length === 0) {
+      setAddError('Add at least one acceptable answer.')
+      return
+    }
     const isNumeric = newQuestion.answerType === 'numeric'
 
     setAdding(true)
@@ -304,6 +331,7 @@ export function QuestionsPage() {
 
     setNewQuestionAnswers([])
     setNewAnswerDraft('')
+    setNewCorrectAnswer(null)
     await refreshQuestions()
     setAdding(false)
   }
@@ -363,63 +391,6 @@ export function QuestionsPage() {
     }
   }
 
-  function answerFormFor(question: QuestionRow): AnswerFormValues {
-    return newAnswer[question.id] ?? emptyAnswerForm(question)
-  }
-
-  async function handleAddAnswer(
-    formEvent: SubmitEvent<HTMLFormElement>,
-    question: QuestionRow,
-  ) {
-    formEvent.preventDefault()
-    const form = answerFormFor(question)
-    const validationError = validateAcceptableAnswer(form.value, form.isNumeric)
-    if (validationError) {
-      setAnswerError((prev) => ({
-        ...prev,
-        [question.id]: validationError,
-      }))
-      return
-    }
-
-    const value = form.value.trim()
-    setAnswerError((prev) => ({ ...prev, [question.id]: null }))
-    setAddingAnswerFor(question.id)
-    try {
-      await addAcceptableAnswer(question.id, value, form.isNumeric)
-      await refreshAnswers(question.id)
-      setNewAnswer((prev) => ({
-        ...prev,
-        [question.id]: emptyAnswerForm(question),
-      }))
-    } catch (err) {
-      setAnswerError((prev) => ({
-        ...prev,
-        [question.id]: getErrorMessage(err, 'Failed to add acceptable answer'),
-      }))
-    } finally {
-      setAddingAnswerFor(null)
-    }
-  }
-
-  async function handleDeleteAnswer(answer: AcceptableAnswerRow) {
-    setDeletingAnswerId(answer.id)
-    try {
-      await deleteAcceptableAnswer(answer.id)
-      await refreshAnswers(answer.question_id)
-    } catch (err) {
-      setAnswerError((prev) => ({
-        ...prev,
-        [answer.question_id]: getErrorMessage(
-          err,
-          'Failed to remove acceptable answer',
-        ),
-      }))
-    } finally {
-      setDeletingAnswerId(null)
-    }
-  }
-
   if (loadError) {
     return (
       <PageShell>
@@ -476,7 +447,6 @@ export function QuestionsPage() {
 
         {questions.map((question) => {
           const answers = answersByQuestion[question.id] ?? []
-          const answerForm = answerFormFor(question)
 
           if (editingId === question.id) {
             return (
@@ -501,35 +471,26 @@ export function QuestionsPage() {
                   <Field>
                     <Label>Answer type</Label>
                     <Row>
-                      <CheckboxField>
-                        <input
-                          type="radio"
-                          name="question_answer_type"
-                          checked={editQuestion.answerType === 'text'}
-                          onChange={() =>
-                            setEditQuestion({
-                              ...editQuestion,
-                              answerType: 'text',
-                            })
-                          }
-                        />
-                        Text
-                      </CheckboxField>
-                      <CheckboxField>
-                        <input
-                          type="radio"
-                          name="question_answer_type"
-                          checked={editQuestion.answerType === 'numeric'}
-                          onChange={() =>
-                            setEditQuestion({
-                              ...editQuestion,
-                              answerType: 'numeric',
-                            })
-                          }
-                        />
-                        Numeric
-                      </CheckboxField>
+                      {ANSWER_TYPES.map((answerType) => (
+                        <CheckboxField key={answerType}>
+                          <input
+                            type="radio"
+                            name="question_answer_type"
+                            checked={editQuestion.answerType === answerType}
+                            onChange={() =>
+                              setEditQuestion({ ...editQuestion, answerType })
+                            }
+                          />
+                          {ANSWER_TYPE_LABELS[answerType]}
+                        </CheckboxField>
+                      ))}
                     </Row>
+                    {editQuestion.answerType !== question.answer_type && (
+                      <HelpText>
+                        Changing the answer type changes how this question is
+                        matched — review its answers below after saving.
+                      </HelpText>
+                    )}
                   </Field>
                   <Field>
                     <Label htmlFor="question_window_seconds">
@@ -604,7 +565,9 @@ export function QuestionsPage() {
                 <DefinitionTerm>Prompt</DefinitionTerm>
                 <DefinitionValue>{question.prompt}</DefinitionValue>
                 <DefinitionTerm>Answer type</DefinitionTerm>
-                <DefinitionValue>{question.answer_type}</DefinitionValue>
+                <DefinitionValue>
+                  {answerTypeLabel(question.answer_type)}
+                </DefinitionValue>
                 <DefinitionTerm>Answer window</DefinitionTerm>
                 <DefinitionValue>{question.window_seconds}s</DefinitionValue>
                 <DefinitionTerm>Status</DefinitionTerm>
@@ -613,111 +576,20 @@ export function QuestionsPage() {
                 </DefinitionValue>
               </DefinitionGrid>
 
-              <SectionTitle>Acceptable answers</SectionTitle>
-              {answers.length === 0 && (
-                <HelpText>No acceptable answers yet.</HelpText>
-              )}
-              {answers.length > 0 && (
-                <AcceptableAnswerList>
-                  {answers.map((answer) => (
-                    <AcceptableAnswerItem key={answer.id}>
-                      <AcceptableAnswerText>
-                        {answer.value}
-                        {answer.is_numeric && (
-                          <AcceptableAnswerMeta> (numeric)</AcceptableAnswerMeta>
-                        )}
-                      </AcceptableAnswerText>
-                      {isDraft && (
-                        <RemoveAnswerButton
-                          type="button"
-                          onClick={() => handleDeleteAnswer(answer)}
-                          disabled={deletingAnswerId === answer.id}
-                          aria-label={
-                            deletingAnswerId === answer.id
-                              ? 'Removing answer'
-                              : 'Remove answer'
-                          }
-                        >
-                          <Trash2 size={14} aria-hidden="true" />
-                        </RemoveAnswerButton>
-                      )}
-                    </AcceptableAnswerItem>
-                  ))}
-                </AcceptableAnswerList>
-              )}
-
-              {isDraft && (
-                <AuthForm onSubmit={(e) => handleAddAnswer(e, question)}>
-                  <Row>
-                    <AcceptableAnswerField>
-                      <AcceptableAnswerInput
-                        type="text"
-                        placeholder="Acceptable answer value"
-                        aria-label={`Acceptable answer for question ${question.sequence}`}
-                        inputMode={answerForm.isNumeric ? 'decimal' : 'text'}
-                        value={answerForm.value}
-                        onChange={(e) => {
-                          const raw = e.target.value
-                          const value = answerForm.isNumeric
-                            ? filterNumericAnswerInput(raw)
-                            : raw
-                          setNewAnswer((prev) => ({
-                            ...prev,
-                            [question.id]: {
-                              ...answerForm,
-                              value,
-                            },
-                          }))
-                          if (answerError[question.id]) {
-                            setAnswerError((prev) => ({
-                              ...prev,
-                              [question.id]: null,
-                            }))
-                          }
-                        }}
-                      />
-                      <InlineCheckboxField>
-                        <input
-                          id={`answer_numeric_${question.id}`}
-                          type="checkbox"
-                          checked={answerForm.isNumeric}
-                          onChange={(e) => {
-                            const isNumeric = e.target.checked
-                            setNewAnswer((prev) => ({
-                              ...prev,
-                              [question.id]: {
-                                ...answerForm,
-                                isNumeric,
-                                value: isNumeric
-                                  ? filterNumericAnswerInput(answerForm.value)
-                                  : answerForm.value,
-                              },
-                            }))
-                            setAnswerError((prev) => ({
-                              ...prev,
-                              [question.id]: null,
-                            }))
-                          }}
-                        />
-                        Numeric
-                      </InlineCheckboxField>
-                    </AcceptableAnswerField>
-                    <SubmitButton
-                      type="submit"
-                      disabled={addingAnswerFor === question.id}
-                    >
-                      {addingAnswerFor === question.id
-                        ? 'Adding…'
-                        : 'Add answer'}
-                    </SubmitButton>
-                  </Row>
-                  {answerError[question.id] && (
-                    <ErrorText role="alert">
-                      {answerError[question.id]}
-                    </ErrorText>
-                  )}
-                </AuthForm>
-              )}
+              <SectionTitle>
+                {question.answer_type === 'boolean'
+                  ? 'Correct answer'
+                  : 'Acceptable answers'}
+              </SectionTitle>
+              <AcceptableAnswersEditor
+                // Remounted when the type changes so the answer draft picks up
+                // the new type's defaults.
+                key={question.answer_type}
+                question={question}
+                answers={answers}
+                editable={isDraft}
+                onChanged={() => refreshAnswers(question.id)}
+              />
 
               {isDraft && (
                 <Row equal>
@@ -763,31 +635,17 @@ export function QuestionsPage() {
               <Field>
                 <Label>Answer type</Label>
                 <Row>
-                  <CheckboxField>
-                    <input
-                      type="radio"
-                      name="new_question_answer_type"
-                      checked={newQuestion.answerType === 'text'}
-                      onChange={() =>
-                        setNewQuestion({ ...newQuestion, answerType: 'text' })
-                      }
-                    />
-                    Text
-                  </CheckboxField>
-                  <CheckboxField>
-                    <input
-                      type="radio"
-                      name="new_question_answer_type"
-                      checked={newQuestion.answerType === 'numeric'}
-                      onChange={() =>
-                        setNewQuestion({
-                          ...newQuestion,
-                          answerType: 'numeric',
-                        })
-                      }
-                    />
-                    Numeric
-                  </CheckboxField>
+                  {ANSWER_TYPES.map((answerType) => (
+                    <CheckboxField key={answerType}>
+                      <input
+                        type="radio"
+                        name="new_question_answer_type"
+                        checked={newQuestion.answerType === answerType}
+                        onChange={() => changeNewAnswerType(answerType)}
+                      />
+                      {ANSWER_TYPE_LABELS[answerType]}
+                    </CheckboxField>
+                  ))}
                 </Row>
               </Field>
               <Field>
@@ -836,56 +694,99 @@ export function QuestionsPage() {
                   Tiebreak reserve pool question
                 </CheckboxField>
               </Field>
-              <Field>
-                <Label htmlFor="new_question_answer">Acceptable answers</Label>
-                {newQuestionAnswers.length === 0 && (
-                  <HelpText>
-                    Add one or more acceptable answers — they save with the
-                    question.
-                  </HelpText>
-                )}
-                {newQuestionAnswers.length > 0 && (
-                  <AcceptableAnswerList>
-                    {newQuestionAnswers.map((value, index) => (
-                      <AcceptableAnswerItem key={`${value}-${index}`}>
-                        <AcceptableAnswerText>{value}</AcceptableAnswerText>
-                        <RemoveAnswerButton
-                          type="button"
-                          onClick={() => unstageNewAnswer(index)}
-                          aria-label="Remove answer"
-                        >
-                          <Trash2 size={14} aria-hidden="true" />
-                        </RemoveAnswerButton>
-                      </AcceptableAnswerItem>
+
+              {newQuestion.answerType === 'boolean' ? (
+                <Field>
+                  <Label>Correct answer</Label>
+                  <Row>
+                    {BOOLEAN_ANSWER_VALUES.map((value) => (
+                      <CheckboxField key={value}>
+                        <input
+                          type="radio"
+                          name="new_question_correct_answer"
+                          checked={newCorrectAnswer === value}
+                          onChange={() => {
+                            setNewCorrectAnswer(value)
+                            setAddError(null)
+                          }}
+                        />
+                        {value}
+                      </CheckboxField>
                     ))}
-                  </AcceptableAnswerList>
-                )}
-                <Row>
-                  <Input
-                    id="new_question_answer"
-                    type="text"
-                    placeholder="New acceptable answer"
-                    aria-label="Acceptable answer for the new question"
-                    value={newAnswerDraft}
-                    onChange={(e) => setNewAnswerDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        stageNewAnswer()
+                  </Row>
+                  {!newCorrectAnswer && (
+                    <HelpText>Choose which answer is correct.</HelpText>
+                  )}
+                </Field>
+              ) : (
+                <Field>
+                  <Label htmlFor="new_question_answer">Acceptable answers</Label>
+                  {newQuestionAnswers.length === 0 && (
+                    <HelpText>
+                      Add one or more acceptable answers — they save with the
+                      question.
+                    </HelpText>
+                  )}
+                  {newQuestionAnswers.length > 0 && (
+                    <AcceptableAnswerList>
+                      {newQuestionAnswers.map((value, index) => (
+                        <AcceptableAnswerItem key={`${value}-${index}`}>
+                          <AcceptableAnswerText>{value}</AcceptableAnswerText>
+                          <AnswerIconButton
+                            type="button"
+                            tone="danger"
+                            onClick={() => unstageNewAnswer(index)}
+                            aria-label={`Remove answer ${value}`}
+                          >
+                            <Trash2 size={14} aria-hidden="true" />
+                          </AnswerIconButton>
+                        </AcceptableAnswerItem>
+                      ))}
+                    </AcceptableAnswerList>
+                  )}
+                  <Row>
+                    <Input
+                      id="new_question_answer"
+                      type="text"
+                      placeholder="New acceptable answer"
+                      aria-label="Acceptable answer for the new question"
+                      inputMode={
+                        newQuestion.answerType === 'numeric' ? 'decimal' : 'text'
                       }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    tone="secondary"
-                    onClick={stageNewAnswer}
-                  >
-                    Add acceptable answer
-                  </Button>
-                </Row>
-              </Field>
+                      value={newAnswerDraft}
+                      onChange={(e) => {
+                        const raw = e.target.value
+                        setNewAnswerDraft(
+                          newQuestion.answerType === 'numeric'
+                            ? filterNumericAnswerInput(raw)
+                            : raw,
+                        )
+                        setAddError(null)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          stageNewAnswer()
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      tone="secondary"
+                      onClick={stageNewAnswer}
+                      disabled={newAnswerDraft.trim() === ''}
+                    >
+                      Add acceptable answer
+                    </Button>
+                  </Row>
+                </Field>
+              )}
+
               {addError && <ErrorText role="alert">{addError}</ErrorText>}
-              <SubmitButton type="submit" disabled={adding}>
+              <SubmitButton
+                type="submit"
+                disabled={adding || stagedAnswers().length === 0}
+              >
                 {adding ? 'Adding…' : 'Add question'}
               </SubmitButton>
             </AuthForm>

@@ -32,7 +32,7 @@ An event can optionally run as **rounds**: progressive elimination stages where 
 - **Void.** Before the round is scored, the admin can **void** a bad question (wrong reveal, typo, no valid answer); its answers are discarded and don't count. Voiding is one-way per question but leaves an audit trail.
 
 **Answers & scoring (hybrid, single judge, batched)**
-- Answers are **typed** (not multiple choice), `text` or `numeric`.
+- Answers are **typed** (not multiple choice), `text`, `numeric` or `boolean` (True/False). A True/False question is authored with exactly one correct value and answered by picking one of two choices instead of typing; it is stored and matched as ordinary text ('True' / 'False'), so it needs no separate grading path.
 - **Auto pre-mark**: the submitted answer is normalized (trim, case-insensitive, collapsed punctuation) and matched against the question's **acceptable-answer list** (synonyms like "Paul" / "the Apostle Paul"; numeric answers compared by value where listed). This sets a provisional `auto_correct`.
 - **Adjudication**: a **single authoritative judge** reviews the whole round's answers at once **after the round closes** (scoring is not live and can be done offline), confirming or overriding each `auto_correct` into the final `final_correct`. There is **no summing across judges** — one score per answer. Correctness is objective enough that a panel/average is unnecessary in V1.
 - **Score** = count of `final_correct` = 1 point each. A voided question contributes nothing.
@@ -176,7 +176,7 @@ result_calculation_entries
 questions                                 -- the scored unit in quiz mode (replaces scoring_criteria)
   id (pk), segment_id (fk -> segments)
   prompt (text)
-  answer_type                             -- text | numeric
+  answer_type                             -- text | numeric | boolean (True/False)
   window_seconds (int)                    -- answer window length
   sequence (int)
   is_tiebreak (boolean, default false)    -- true = drawn from the reserve pool for sudden-death

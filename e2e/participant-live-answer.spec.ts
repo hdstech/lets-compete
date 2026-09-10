@@ -81,6 +81,59 @@ test('participant receives a revealed question live and submits an answer', asyn
   await organizerContext.close()
 })
 
+test('a True/False question is answered by picking a choice', async ({ page, browser }) => {
+  const organizerContext = await browser.newContext({
+    storageState: 'playwright/.auth/organizer.json',
+  })
+  const organizerPage = await organizerContext.newPage()
+
+  const name = uniqueEventName('Live Answer TrueFalse')
+  await createDraftEvent(organizerPage, name)
+  const eventId = organizerPage.url().match(/\/events\/([0-9a-f-]{36})$/)![1]
+  const joinCode = await getJoinCode(organizerPage)
+
+  await goToRounds(organizerPage)
+  await addRound(organizerPage, { name: 'Round 1', isFinal: true })
+  await goToSegments(organizerPage)
+  await addSegment(organizerPage, { name: 'Segment A' })
+  await goToQuestions(organizerPage)
+  await addQuestion(organizerPage, {
+    prompt: 'The Nile flows north.',
+    answerType: 'boolean',
+    correctAnswer: 'True',
+    windowSeconds: 15,
+  })
+
+  await organizerPage.goto(`/events/${eventId}`)
+  await activateEvent(organizerPage)
+
+  await page.goto('/')
+  await joinEventViaApi(page, joinCode, 'TrueFalse Participant')
+  await page.goto(`/events/${eventId}/waiting-room`)
+
+  await organizerPage.reload()
+  await organizerPage.getByRole('button', { name: 'Approve' }).click()
+  await expect(page.getByText('approved', { exact: true })).toBeVisible({ timeout: 8_000 })
+
+  await goToRounds(organizerPage)
+  await goToLiveConsole(organizerPage)
+  await organizerPage.getByRole('button', { name: 'Reveal question' }).click()
+
+  await expect(page).toHaveURL(new RegExp(`/events/${eventId}/play$`), { timeout: 8_000 })
+  await expect(page.getByText('The Nile flows north.')).toBeVisible()
+
+  // A True/False question replaces the free-text box with two choices.
+  await expect(page.getByLabel('Your answer')).toHaveCount(0)
+  await page.getByRole('button', { name: 'True', exact: true }).click()
+  await page.getByRole('button', { name: 'Submit answer' }).click()
+  await expect(page.getByText(/submitted/i)).toBeVisible()
+
+  await expect(organizerPage.getByText(/1 of \d+ answered/)).toBeVisible({ timeout: 15_000 })
+
+  await deleteEventViaApi(organizerPage, eventId)
+  await organizerContext.close()
+})
+
 test('an unsubmitted answer survives a reload as a local draft', async ({ page, browser }) => {
   const organizerContext = await browser.newContext({
     storageState: 'playwright/.auth/organizer.json',
