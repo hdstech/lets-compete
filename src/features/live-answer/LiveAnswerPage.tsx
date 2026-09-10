@@ -25,6 +25,7 @@ import { getErrorMessage as getLoadErrorMessage, getMyParticipant } from '../par
 import type { ParticipantRow } from '../participants/types'
 import { listRounds } from '../rounds/rounds-api'
 import type { RoundRow } from '../rounds/types'
+import { answerTypeLabel, BOOLEAN_ANSWER_VALUES } from '../questions/answer-type'
 import { getAnswerDraft, setAnswerDraft } from './answer-draft'
 import { getErrorMessage as getSubmitErrorMessage, getMyAnswer, submitAnswer } from './live-answer-api'
 import { useFocusIntegrity } from './useFocusIntegrity'
@@ -42,6 +43,16 @@ const PlayComposer = styled('div', {
     borderTopWidth: '1px',
     borderColor: 'border.default',
     paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+  },
+})
+
+// True/False answers: two equal, thumb-sized targets in place of the text
+// box, so the whole answer is one tap on a phone.
+const ChoiceRow = styled('div', {
+  base: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '3',
   },
 })
 
@@ -442,7 +453,7 @@ export function LiveAnswerPage() {
     <PlayerShell>
       <PlayerHeader title={event.name} subtitle={participant.name}>
         <PlayerHeaderBadge>{focusedQuestion.segment_name}</PlayerHeaderBadge>
-        <PlayerHeaderBadge>{focusedQuestion.answer_type}</PlayerHeaderBadge>
+        <PlayerHeaderBadge>{answerTypeLabel(focusedQuestion.answer_type)}</PlayerHeaderBadge>
       </PlayerHeader>
 
       <PlayerBody>
@@ -481,14 +492,32 @@ export function LiveAnswerPage() {
       </PlayerBody>
 
       <PlayComposer>
-        <Input
-          value={answerText}
-          onChange={(e) => handleAnswerChange(e.target.value)}
-          inputMode={focusedQuestion.answer_type === 'numeric' ? 'decimal' : 'text'}
-          placeholder="Your answer"
-          disabled={!isOpen || locked}
-          aria-label="Your answer"
-        />
+        {focusedQuestion.answer_type === 'boolean' ? (
+          <ChoiceRow>
+            {BOOLEAN_ANSWER_VALUES.map((value) => (
+              <Button
+                key={value}
+                type="button"
+                size="lg"
+                tone={answerText === value ? 'accent' : 'secondary'}
+                aria-pressed={answerText === value}
+                disabled={!isOpen || locked}
+                onClick={() => handleAnswerChange(value)}
+              >
+                {value}
+              </Button>
+            ))}
+          </ChoiceRow>
+        ) : (
+          <Input
+            value={answerText}
+            onChange={(e) => handleAnswerChange(e.target.value)}
+            inputMode={focusedQuestion.answer_type === 'numeric' ? 'decimal' : 'text'}
+            placeholder="Your answer"
+            disabled={!isOpen || locked}
+            aria-label="Your answer"
+          />
+        )}
 
         {submitError && <ErrorText role="alert">{submitError}</ErrorText>}
 

@@ -70,7 +70,18 @@ export const AcceptableAnswerMeta = styled('span', {
   },
 })
 
-export const RemoveAnswerButton = styled('button', {
+// The two per-answer actions (edit, remove) sit together at the end of an
+// answer row.
+export const AnswerItemActions = styled('div', {
+  base: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1',
+    flexShrink: 0,
+  },
+})
+
+export const AnswerIconButton = styled('button', {
   base: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -81,14 +92,38 @@ export const RemoveAnswerButton = styled('button', {
     borderRadius: 'control',
     border: 'none',
     bg: 'transparent',
-    color: 'salmon.600',
     cursor: 'pointer',
-    _hover: { bg: 'salmon.50', color: 'salmon.700' },
     _disabled: { opacity: 0.5, cursor: 'not-allowed' },
     _focusVisible: {
       outline: '2px solid',
       outlineColor: 'accent.default',
       outlineOffset: '2px',
     },
+  },
+  variants: {
+    tone: {
+      neutral: {
+        color: 'text.muted',
+        _hover: { bg: 'bg.sunken', color: 'text.primary' },
+      },
+      danger: {
+        color: 'salmon.600',
+        _hover: { bg: 'salmon.50', color: 'salmon.700' },
+      },
+    },
+  },
+  defaultVariants: { tone: 'neutral' },
+})
+
+// The in-place edit form that replaces an answer row's text while it is
+// being renamed — laid out as one flexible row so it occupies the same
+// footprint as the row it stands in for.
+export const AnswerEditForm = styled('form', {
+  base: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '3',
+    flexWrap: 'wrap',
+    width: 'full',
   },
 })

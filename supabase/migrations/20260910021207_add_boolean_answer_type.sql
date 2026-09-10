@@ -1,0 +1,24 @@
+-- Adds a third question answer type: 'boolean' (True/False).
+--
+-- QA1 created `public.question_answer_type as enum ('text', 'numeric')`; a
+-- True/False question is authored with exactly one acceptable answer whose
+-- value is the literal text 'True' or 'False'. That deliberately reuses the
+-- existing matcher rather than adding a parallel one: QA7's
+-- `private.normalize_answer_text` lowercases and trims both sides, so a
+-- participant submitting "true", "True" or " TRUE " matches an acceptable
+-- answer stored as 'True' with no further change. `is_numeric` stays false
+-- for these rows, so the numeric branch of
+-- `private.question_matches_acceptable_answer` never applies.
+--
+-- Nothing else in the schema branches on `answer_type` — it is authoring
+-- metadata that drives the client's input affordance (a text box, a decimal
+-- keypad, or a pair of True/False buttons) — so no function, policy or
+-- trigger needs updating alongside this. The QA4 freeze guard already treats
+-- `answer_type` as frozen once the event leaves draft and keeps doing so.
+--
+-- `add value` (rather than recreating the type) keeps the existing column
+-- and its dependents untouched. Postgres allows this inside a transaction
+-- block as long as the new label isn't *used* in the same transaction, which
+-- it isn't here.
+
+alter type public.question_answer_type add value if not exists 'boolean';

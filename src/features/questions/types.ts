@@ -1,4 +1,4 @@
-export type AnswerType = 'text' | 'numeric'
+export type AnswerType = 'text' | 'numeric' | 'boolean'
 export type QuestionStatus = 'pending' | 'revealed' | 'window_open' | 'window_closed' | 'voided'
 
 export type QuestionRow = {
