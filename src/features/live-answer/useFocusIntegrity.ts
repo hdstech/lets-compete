@@ -50,9 +50,16 @@ export function useFocusIntegrity(params: {
   question: RoundQuestion | null
   answerText: string
   onAutoSubmitted: (answer: AnswerRow) => void
+  /**
+   * The auto-submit was attempted but the answer never reached the server.
+   * The question still locks either way (the participant did leave), so
+   * without this the screen would claim the answer was auto-submitted when
+   * it wasn't.
+   */
+  onAutoSubmitFailed: () => void
   onLocked: () => void
 }): FocusIntegrityState {
-  const { participantId, question, onAutoSubmitted, onLocked } = params
+  const { participantId, question, onAutoSubmitted, onAutoSubmitFailed, onLocked } = params
 
   const [warning, setWarning] = useState(false)
   const [graceRemainingMs, setGraceRemainingMs] = useState(0)
@@ -80,6 +87,11 @@ export function useFocusIntegrity(params: {
   useEffect(() => {
     onAutoSubmittedRef.current = onAutoSubmitted
   }, [onAutoSubmitted])
+
+  const onAutoSubmitFailedRef = useRef(onAutoSubmitFailed)
+  useEffect(() => {
+    onAutoSubmitFailedRef.current = onAutoSubmitFailed
+  }, [onAutoSubmitFailed])
 
   const onLockedRef = useRef(onLocked)
   useEffect(() => {
@@ -121,7 +133,11 @@ export function useFocusIntegrity(params: {
         clientElapsedMs,
         revealToken: q.reveal_token,
       })
-      if (answer) onAutoSubmittedRef.current(answer)
+      if (answer) {
+        onAutoSubmittedRef.current(answer)
+      } else {
+        onAutoSubmitFailedRef.current()
+      }
 
       void logIntegrityEvent(pid, q.id, 'auto_submit', new Date().toISOString())
       onLockedRef.current()

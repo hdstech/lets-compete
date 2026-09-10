@@ -1,5 +1,4 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { OfflineBanner } from './components/ui/OfflineBanner'
 import { AdvancementPage } from './features/advancement/AdvancementPage'
 import { AdminLayout } from './features/admin-shell/AdminLayout'
 import { AuthProvider } from './features/auth/AuthProvider'
@@ -24,7 +23,6 @@ import { DashboardPage } from './pages/DashboardPage'
 function App() {
   return (
     <BrowserRouter>
-      <OfflineBanner />
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />

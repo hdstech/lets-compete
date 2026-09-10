@@ -1,6 +1,7 @@
 import { Calendar, Home, PanelLeftClose, PanelLeftOpen, Trophy } from 'lucide-react'
 import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import { RootErrorBoundary } from '../../components/ui/RootErrorBoundary'
 import {
   AdminShellRoot,
   ContentArea,
@@ -98,7 +99,12 @@ export function AdminLayout() {
             onToggleCollapse={() => setCollapsed((prev) => !prev)}
           />
           <PageOutletWrapper>
-            <Outlet />
+            {/* Scoped to the content column so a crash in one admin page
+                keeps the sidebar and header usable — resetting on the path
+                means navigating away clears the fallback. */}
+            <RootErrorBoundary inline resetKey={location.pathname}>
+              <Outlet />
+            </RootErrorBoundary>
           </PageOutletWrapper>
         </ContentArea>
       </AdminShellRoot>

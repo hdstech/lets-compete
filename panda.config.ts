@@ -367,6 +367,13 @@ export default defineConfig({
       from: { opacity: '0', transform: 'translate3d(0, 14px, 0)' },
       to: { opacity: '1', transform: 'translate3d(0, 0, 0)' },
     },
+    // riseIn's mirror, for the toast stack: anything anchored to the top of
+    // the viewport should enter from above it rather than rise past its own
+    // resting position.
+    '@keyframes dropIn': {
+      from: { opacity: '0', transform: 'translate3d(0, -14px, 0)' },
+      to: { opacity: '1', transform: 'translate3d(0, 0, 0)' },
+    },
     '@keyframes pulseDot': {
       '0%, 100%': { opacity: '1', transform: 'scale(1)' },
       '50%': { opacity: '0.35', transform: 'scale(0.75)' },

@@ -3,7 +3,9 @@ import type { SubmitEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
 import { usePageBreadcrumbs } from '../admin-shell/use-breadcrumbs'
-import { supabase } from '../../lib/supabase'
+import { useRealtimeChannel } from '../../lib/use-realtime-channel'
+import { LiveStatusBadge } from '../../components/ui/LiveStatusBadge'
+import { useToast } from '../../components/ui/useToast'
 import { AuthForm, ErrorText, Field, Input, Label } from '../auth/auth-ui'
 import {
   Button,
@@ -92,6 +94,7 @@ const PageContent = styled('div', {
 export function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
+  const { showStatus } = useToast()
 
   const [event, setEvent] = useState<EventRow | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -179,24 +182,25 @@ export function EventDetailPage() {
   // A participant self-registering (or another admin tab approving/revoking
   // one) should show up here live. Re-fetching on any change is simpler and
   // less error-prone than merging individual payloads into local state.
-  useEffect(() => {
-    if (!eventId) return
-
-    const channel = supabase
-      .channel(`event-detail-participants-${eventId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${eventId}` },
-        () => {
-          void refreshParticipants(eventId)
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [eventId])
+  const participantsRealtimeStatus = useRealtimeChannel({
+    channelName: eventId ? `event-detail-participants-${eventId}` : null,
+    subscribe: useCallback(
+      (channel) =>
+        channel.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${eventId}` },
+          () => {
+            void refreshParticipants(eventId as string)
+          },
+        ),
+      // refreshParticipants is a plain function redeclared each render; the
+      // channel only needs to be rebuilt when the event it watches changes.
+      [eventId],
+    ),
+    onReconnect: () => {
+      if (eventId) void refreshParticipants(eventId)
+    },
+  })
 
   async function handleSave(formEvent: SubmitEvent<HTMLFormElement>) {
     formEvent.preventDefault()
@@ -337,9 +341,15 @@ export function EventDetailPage() {
         setRecalcResult(null)
         setRecalcPrompt({ participantName, action })
       }
-    } catch {
-      // Best-effort: the admin can still recalculate manually from the
-      // Results page if this check fails.
+    } catch (err) {
+      // Still best-effort — the organizer can recalculate manually from the
+      // Results page — but swallowing it meant published results could stay
+      // silently stale after a revoke or DQ, with nothing on screen ever
+      // having mentioned it.
+      showStatus(
+        `Couldn't check whether published results need recalculating after this change. ${getResultsErrorMessage(err, 'Recalculate from the Results page to be sure.')}`,
+        { key: 'event-detail-recalc-check' },
+      )
     }
   }
 
@@ -497,6 +507,12 @@ export function EventDetailPage() {
           <CardHeaderText>
             <SectionTitle>Participants</SectionTitle>
           </CardHeaderText>
+          {/* Only when it's the bad news: this list is live, and a steady
+              "Live" pill on an admin page is noise, but a silently dead
+              socket means new registrations never appear here. */}
+          {participantsRealtimeStatus === 'interrupted' && (
+            <LiveStatusBadge status={participantsRealtimeStatus} />
+          )}
         </CardHeader>
         {participantsError && (
           <ErrorState
