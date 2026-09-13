@@ -1,4 +1,5 @@
 import { expect, test as setup } from '@playwright/test'
+import { getUserId, setOrganizerFlag } from './helpers'
 
 const authFile = 'playwright/.auth/organizer.json'
 
@@ -31,5 +32,10 @@ setup('authenticate as the e2e organizer account', async ({ page }) => {
   }
 
   await expect(page.getByRole('link', { name: 'Manage your events' })).toBeVisible()
+
+  // A first-run signup above already gets the flag from api/organizer-signup;
+  // a reused account created before QA19 only got it if it owned an event.
+  await setOrganizerFlag(await getUserId(page), true)
+
   await page.context().storageState({ path: authFile })
 })

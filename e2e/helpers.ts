@@ -31,6 +31,10 @@ export async function createDraftEvent(page: Page, name: string) {
   await page.getByLabel('Event name').fill(name)
   await page.getByRole('button', { name: 'Create event' }).click()
   await page.waitForURL(/\/events\/[0-9a-f-]{36}$/)
+  // The detail page's edit form is seeded from the event once it loads. The
+  // heading renders in that same update, so waiting for it keeps a caller
+  // that immediately edits the form from having its typing overwritten.
+  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
 }
 
 // Assumes the current page is an event's detail page.
@@ -254,7 +258,7 @@ export async function setPageHidden(page: Page, hidden: boolean) {
 // so this is the only way to drive a fresh join_event call in these specs.
 // Shared by every direct-REST helper below: reads the current page's
 // Supabase session out of localStorage, the same way deleteEventViaApi does.
-async function getAccessToken(page: Page): Promise<string> {
+export async function getAccessToken(page: Page): Promise<string> {
   const accessToken = await page.evaluate(() => {
     const storageKey = Object.keys(localStorage).find((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
     if (!storageKey) return null
@@ -274,6 +278,41 @@ function decodeUserId(accessToken: string): string {
     sub: string
   }
   return payload.sub
+}
+
+export async function getUserId(page: Page): Promise<string> {
+  return decodeUserId(await getAccessToken(page))
+}
+
+// QA19: profiles.is_organizer can only be changed with the secret key (the
+// profiles_guard_is_organizer trigger rejects the user's own session). The
+// setup files use this to put each reused fixture account into the role it
+// stands in for, however and whenever that account was first created — the
+// judge and participant fixtures sign up over GoTrue directly, and the
+// organizer fixture may predate QA19 without owning an event to backfill from.
+export async function setOrganizerFlag(userId: string, isOrganizer: boolean) {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const secretKey = process.env.SUPABASE_SECRET_KEY
+  if (!supabaseUrl || !secretKey) {
+    throw new Error('VITE_SUPABASE_URL/SUPABASE_SECRET_KEY are required to set the organizer flag')
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
+    method: 'PATCH',
+    headers: {
+      apikey: secretKey,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify({ is_organizer: isOrganizer }),
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to set is_organizer for ${userId}: ${res.status} ${await res.text()}`)
+  }
+  const rows = (await res.json()) as unknown[]
+  if (rows.length !== 1) {
+    throw new Error(`Failed to set is_organizer for ${userId}: no profiles row matched`)
+  }
 }
 
 async function restInsert<T>(page: Page, table: string, body: unknown): Promise<T[]> {

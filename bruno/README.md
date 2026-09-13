@@ -9,15 +9,11 @@ the primary deliverable referenced by ticket **T18** in
 [`../event-scoring-app-plan.md`](../event-scoring-app-plan.md). This folder
 exists purely so the two tools can be compared side by side.
 
-Every folder, request, header, body, and test/capture script here was
-**translated 1:1** from `../yaak/event-app.postman_collection.json` and
-`../yaak/event-app.postman_environment.json` — same 17 folders (`QA0` →
-`T17`), same 60 requests, same run order, same fixture-authoring decisions.
-Nothing was redesigned; where the two collections differ it is only because
-Postman and Bruno express the same request differently (JSON blob vs.
-`.bru` text block), never because the underlying request changed. Kept in
-parity by construction — if the Postman/Yaak collection is ever updated,
-this folder should be re-translated the same way.
+The original 60 requests were translated 1:1 from
+`../yaak/event-app.postman_collection.json`. Bruno additionally carries the
+QA19 organizer-capability setup and negative request: its reused admin is
+preserved as an organizer, its password-backed participant and judge fixtures
+are reset to non-organizers, then the judge is proven unable to create an event.
 
 ## Files
 
@@ -26,7 +22,7 @@ this folder should be re-translated the same way.
 | `bruno.json` | Collection manifest (name/type/ignore) that marks this folder as a Bruno collection. |
 | `<folder>/folder.bru` | One per ticket folder (17 total) — `meta { name, seq }` plus a `docs { }` block carrying the same explanatory text as that folder's `description` in the Postman collection. |
 | `<folder>/<Request Name>.bru` | One per request (60 total) — `meta`, the HTTP method block (`post`/`patch`), `headers`, `body:json`, an optional `script:post-response` (translated from the Postman test/capture script), and a `docs` block (translated from the Postman request description). |
-| `environments/local.bru` | The 38 variables the collection references (`base_url`, JWTs, fixture ids, ...). Every value ships **empty** — no real secrets are committed here. `anon_key` and the three `*_jwt`/`*_password` pairs (7 vars total) are declared under `vars:secret`, so Bruno keeps their real values in its own local secret store instead of writing them into this file. |
+| `environments/local.bru` | The variables the collection references (`base_url`, JWTs, fixture ids, ...). Every value ships **empty** — no real secrets are committed here. `anon_key`, `secret_key`, and the three `*_jwt`/`*_password` pairs are declared under `vars:secret`, so Bruno keeps their real values in its own local secret store instead of writing them into this file. |
 | `README.md` | This file. |
 
 ## Opening in Bruno
@@ -52,6 +48,9 @@ icon, or the collection's Environments settings) and fill in:
 - `anon_key` — from `.env`, this is `VITE_SUPABASE_ANON_KEY` (the
   publishable/anon key — safe to use here since RLS is the real security
   boundary, but still declared `vars:secret` below out of caution).
+- `secret_key` — from `.env`, this is `SUPABASE_SECRET_KEY`. It is used only
+  to clear the password-backed participant and judge fixtures' QA19 organizer
+  flags. It is server-only and must remain in Bruno's local secret store.
 - `admin_email` / `admin_password`, `participant_email` / `participant_password`,
   `judge_email` / `judge_password` — pick any test credentials for three
   throwaway Supabase Auth users. These aren't org secrets, just fixture
@@ -61,7 +60,7 @@ icon, or the collection's Environments settings) and fill in:
 - `admin_jwt` / `participant_jwt` / `judge_jwt` — normally populated
   automatically (see below), but declared here as inputs too since they're
   `vars:secret`.
-- `anon_key`, the three `*_password` fields, and the three `*_jwt` fields
+- `anon_key`, `secret_key`, the three `*_password` fields, and the three `*_jwt` fields
   are all declared under `vars:secret` in `environments/local.bru`, so
   Bruno masks them in the UI, excludes them from any collection export,
   and — this is the important part — **keeps their real values out of
@@ -95,12 +94,12 @@ collection runner, or by hand:
 
 1. **Auth** — sign up (or log in, on a re-run) the three seeded users;
    captures `admin_jwt` / `participant_jwt` / `judge_jwt` and their user
-   ids. Everything downstream depends on this running first.
+   ids, then normalizes all three organizer flags with `secret_key`.
+   Everything downstream depends on this running first.
 2. **QA0** — empty folder, `docs` notes only (pure schema/trigger ticket,
    no endpoint of its own — no `.bru` request files inside).
-3. **QA2** — three deliberately-403 RLS negative tests, one per role.
-   Order-independent (uses a nil UUID), included here mainly to keep the
-   folder order matching the ticket order.
+3. **QA2 / QA19** — four deliberately-403 RLS negative tests, including a
+   QA19 check that the non-organizer judge cannot create an event.
 4. **T6** — creates the event, both rounds, both segments, and all four
    questions (+ acceptable answers), then calls `activate_event`. See the
    note below on why fixture authoring is consolidated into this folder.

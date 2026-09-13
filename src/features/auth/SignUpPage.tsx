@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { getErrorMessage } from '../../lib/errors'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from './useAuth'
 import {
@@ -19,6 +20,8 @@ import {
   Subtitle as AuthSubtitle,
 } from '../../components/ui/Typography'
 
+const SIGNUP_FAILED = 'Could not create your account. Please try again.'
+
 export function SignUpPage() {
   const { session } = useAuth()
   const navigate = useNavigate()
@@ -27,7 +30,6 @@ export function SignUpPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [confirmationSent, setConfirmationSent] = useState(false)
 
   if (session) {
     return <Navigate to="/dashboard" replace />
@@ -38,40 +40,33 @@ export function SignUpPage() {
     setError(null)
     setSubmitting(true)
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
-    })
+    try {
+      // Organizer accounts are created by our own server route rather than
+      // supabase.auth.signUp, because only the server can set
+      // profiles.is_organizer (QA19). The route creates the account already
+      // confirmed, so signing straight in afterwards always works.
+      const res = await fetch('/api/organizer-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        setError(body?.error ?? SIGNUP_FAILED)
+        return
+      }
 
-    setSubmitting(false)
-    if (error) {
-      setError(error.message)
-      return
-    }
-
-    if (data.session) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) {
+        setError(signInError.message)
+        return
+      }
       navigate('/dashboard', { replace: true })
-      return
+    } catch (err) {
+      setError(getErrorMessage(err, SIGNUP_FAILED))
+    } finally {
+      setSubmitting(false)
     }
-
-    // Email confirmation is enabled on this project — no session yet.
-    setConfirmationSent(true)
-  }
-
-  if (confirmationSent) {
-    return (
-      <AuthLayout
-        headline="One click away."
-        blurb="Confirm your address and your organizer account is ready to run its first event."
-      >
-        <AuthTitle size="card">Check your email</AuthTitle>
-        <AuthSubtitle>
-          We sent a confirmation link to {email}. Confirm your address, then{' '}
-          <AuthLink to="/login">log in</AuthLink>.
-        </AuthSubtitle>
-      </AuthLayout>
-    )
   }
 
   return (
