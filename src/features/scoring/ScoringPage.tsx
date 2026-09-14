@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from '../../../styled-system/jsx'
 import { ErrorText } from '../auth/auth-ui'
+import { useAuth } from '../auth/useAuth'
 import { Button } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { ErrorState } from '../../components/ui/ErrorState'
@@ -122,6 +123,7 @@ const DecisionStatic = styled('span', {
 
 export function ScoringPage() {
   const { eventId, roundId } = useParams<{ eventId: string; roundId: string }>()
+  const { user } = useAuth()
 
   const [event, setEvent] = useState<EventRow | null>(null)
   const [round, setRound] = useState<RoundRow | null>(null)
@@ -217,6 +219,10 @@ export function ScoringPage() {
 
   const canEditScores = round?.status === 'scoring_closed'
   const totalAnswers = answers?.length ?? 0
+  const roundsPath =
+    event?.grader_id === user?.id
+      ? `/events/${eventId}/judge`
+      : `/events/${eventId}/rounds`
 
   function toggleDecision(answerId: string) {
     if (!canEditScores) return
@@ -248,7 +254,7 @@ export function ScoringPage() {
     return (
       <PageShell>
         <PageInner>
-          <BackLink to={`/events/${eventId}/rounds`}>Back to rounds</BackLink>
+          <BackLink to={roundsPath}>Back to rounds</BackLink>
           <ErrorState
             message={loadError}
             onRetry={() => {
@@ -281,7 +287,7 @@ export function ScoringPage() {
             </PageTitle>
             <PageSubtitle>{event.name}</PageSubtitle>
           </div>
-          <BackLink to={`/events/${eventId}/rounds`}>Back to rounds</BackLink>
+          <BackLink to={roundsPath}>Back to rounds</BackLink>
         </PageHeader>
 
         {round.status === 'pending' || round.status === 'scoring_open' ? (

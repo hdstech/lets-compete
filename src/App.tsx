@@ -3,6 +3,7 @@ import { AdvancementPage } from './features/advancement/AdvancementPage'
 import { AdminLayout } from './features/admin-shell/AdminLayout'
 import { AuthProvider } from './features/auth/AuthProvider'
 import { JoinPage } from './features/auth/JoinPage'
+import { JudgeSignInPage } from './features/auth/JudgeSignInPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { RequireAuth } from './features/auth/RequireAuth'
 import { SignUpPage } from './features/auth/SignUpPage'
@@ -17,6 +18,8 @@ import { QuestionsPage } from './features/questions/QuestionsPage'
 import { ResultsHistoryPage } from './features/results/ResultsHistoryPage'
 import { ResultsPage } from './features/results/ResultsPage'
 import { RoundsPage } from './features/rounds/RoundsPage'
+import { JudgeEventPage } from './features/scoring/JudgeEventPage'
+import { JudgeHomePage } from './features/scoring/JudgeHomePage'
 import { ScoringPage } from './features/scoring/ScoringPage'
 import { DashboardPage } from './pages/DashboardPage'
 
@@ -29,6 +32,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/join" element={<JoinPage />} />
+          <Route path="/judge/sign-in" element={<JudgeSignInPage />} />
           <Route
             element={
               <RequireAuth>
@@ -56,6 +60,22 @@ function App() {
             element={
               <RequireAuth>
                 <WaitingRoomPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/judge"
+            element={
+              <RequireAuth>
+                <JudgeHomePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/events/:eventId/judge"
+            element={
+              <RequireAuth>
+                <JudgeEventPage />
               </RequireAuth>
             }
           />
