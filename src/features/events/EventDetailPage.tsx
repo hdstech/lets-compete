@@ -646,8 +646,8 @@ export function EventDetailPage() {
               onChange={(changeEvent) => setJudgeEmail(changeEvent.target.value)}
             />
             <HelpText>
-              They must have already signed in at least once (via the join
-              page) before they can be assigned.
+              They must first request a sign-in link from the judge sign-in
+              page before they can be assigned.
             </HelpText>
           </Field>
           {judgeError && <ErrorText role="alert">{judgeError}</ErrorText>}
