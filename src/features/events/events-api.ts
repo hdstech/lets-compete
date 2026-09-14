@@ -15,6 +15,17 @@ export async function listOrganizerEvents(organizerId: string): Promise<EventRow
   return data as EventRow[]
 }
 
+export async function listJudgedEvents(graderId: string): Promise<EventRow[]> {
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('grader_id', graderId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data as EventRow[]
+}
+
 export async function getEvent(eventId: string): Promise<EventRow> {
   const { data, error } = await supabase.from('events').select('*').eq('id', eventId).single()
 

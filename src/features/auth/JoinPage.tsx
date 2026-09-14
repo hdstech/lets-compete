@@ -39,27 +39,28 @@ export function JoinPage() {
     return <Navigate to="/dashboard" replace />
   }
 
-  const wantsToJoin = joinCode.trim() !== ''
-
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
 
-    if (wantsToJoin && name.trim() === '') {
+    if (joinCode.trim() === '') {
+      setError('Enter the event join code.')
+      return
+    }
+
+    if (name.trim() === '') {
       setError('Enter your name to join with a code.')
       return
     }
 
     setSubmitting(true)
 
-    if (wantsToJoin) {
-      setPendingJoin({
-        joinCode: joinCode.trim(),
-        name: name.trim(),
-        type,
-        members: type === 'team' ? members.trim() || undefined : undefined,
-      })
-    }
+    setPendingJoin({
+      joinCode: joinCode.trim(),
+      name: name.trim(),
+      type,
+      members: type === 'team' ? members.trim() || undefined : undefined,
+    })
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -93,81 +94,76 @@ export function JoinPage() {
   return (
     <AuthLayout
       headline="You're in the game."
-      blurb="Players and judges sign in with an emailed link. No password, nothing to install."
+      blurb="Use your event code, then we'll email you a sign-in link."
     >
       <div>
         <AuthTitle size="card">Join an event</AuthTitle>
         <AuthSubtitle>
-          Participants and judges sign in with an emailed link — no password
-          needed.
+          Participants sign in with an emailed link — no password needed.
         </AuthSubtitle>
       </div>
       <AuthForm onSubmit={handleSubmit}>
         <Field>
-          <Label htmlFor="joinCode">Join code (participants only)</Label>
+          <Label htmlFor="joinCode">Join code</Label>
           <Input
             id="joinCode"
             name="joinCode"
             type="text"
             autoComplete="off"
-            placeholder="Leave blank if you're a judge"
+            required
             value={joinCode}
             onChange={(event) => setJoinCode(event.target.value)}
           />
         </Field>
 
-        {wantsToJoin && (
-          <>
-            <Field>
-              <Label htmlFor="name">Your name</Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                autoComplete="name"
-                required
-                value={name}
-                onChange={(event) => setName(event.target.value)}
+        <Field>
+          <Label htmlFor="name">Your name</Label>
+          <Input
+            id="name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </Field>
+
+        <Field>
+          <Label>Registering as</Label>
+          <Row>
+            <CheckboxField>
+              <input
+                type="radio"
+                name="participant_type"
+                checked={type === 'individual'}
+                onChange={() => setType('individual')}
               />
-            </Field>
+              Individual
+            </CheckboxField>
+            <CheckboxField>
+              <input
+                type="radio"
+                name="participant_type"
+                checked={type === 'team'}
+                onChange={() => setType('team')}
+              />
+              Team
+            </CheckboxField>
+          </Row>
+        </Field>
 
-            <Field>
-              <Label>Registering as</Label>
-              <Row>
-                <CheckboxField>
-                  <input
-                    type="radio"
-                    name="participant_type"
-                    checked={type === 'individual'}
-                    onChange={() => setType('individual')}
-                  />
-                  Individual
-                </CheckboxField>
-                <CheckboxField>
-                  <input
-                    type="radio"
-                    name="participant_type"
-                    checked={type === 'team'}
-                    onChange={() => setType('team')}
-                  />
-                  Team
-                </CheckboxField>
-              </Row>
-            </Field>
-
-            {type === 'team' && (
-              <Field>
-                <Label htmlFor="members">Team members</Label>
-                <Input
-                  id="members"
-                  name="members"
-                  type="text"
-                  value={members}
-                  onChange={(event) => setMembers(event.target.value)}
-                />
-              </Field>
-            )}
-          </>
+        {type === 'team' && (
+          <Field>
+            <Label htmlFor="members">Team members</Label>
+            <Input
+              id="members"
+              name="members"
+              type="text"
+              value={members}
+              onChange={(event) => setMembers(event.target.value)}
+            />
+          </Field>
         )}
 
         <Field>
@@ -190,6 +186,9 @@ export function JoinPage() {
       <AuthFooterText>
         Organizing an event?{' '}
         <AuthLink to="/login">Log in with a password</AuthLink>
+      </AuthFooterText>
+      <AuthFooterText>
+        Judging this event? <AuthLink to="/judge/sign-in">Sign in here</AuthLink>
       </AuthFooterText>
     </AuthLayout>
   )

@@ -37,7 +37,7 @@ test('join screen fits a phone without horizontal scroll or tiny tap targets', a
     await expect(page.getByRole('heading', { name: 'Join an event' })).toBeVisible()
     await expectNoHorizontalOverflow(page)
 
-    const joinCode = page.getByLabel('Join code (participants only)')
+    const joinCode = page.getByLabel('Join code')
     const fontSize = await joinCode.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
     expect(fontSize, 'inputs must stay ≥16px so iOS does not zoom on focus').toBeGreaterThanOrEqual(
       16,
