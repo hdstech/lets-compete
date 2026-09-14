@@ -1,0 +1,32 @@
+meta {
+  name: Admin / Organizer - Ensure Organizer Flag
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{base_url}}/rest/v1/profiles?id=eq.{{admin_user_id}}
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{secret_key}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "is_organizer": true
+  }
+}
+
+script:post-response {
+  test("organizer flag ensured (204)", function () {
+      expect([204]).to.include(res.status);
+  });
+}
+
+docs {
+  QA19: only the app's own api/organizer-signup route (behind /signup) grants profiles.is_organizer. The Sign Up request above calls GoTrue's /signup directly, so this admin fixture doesn't get the flag from it; this request sets it with the server-only secret key (the only non-SECURITY-DEFINER context allowed to change it). Run it after Sign Up or Log In. Never put the secret key in a tracked file.
+}

@@ -1,0 +1,38 @@
+meta {
+  name: Judge - Blocked: Create Event
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/rest/v1/events
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{judge_jwt}}
+  Content-Type: application/json
+  Prefer: return=representation
+}
+
+body:json {
+  {
+    "name": "Should Be Rejected",
+    "event_date": "2026-09-01",
+    "organizer_id": "{{judge_user_id}}",
+    "format": "quiz",
+    "has_rounds": false
+  }
+}
+
+script:post-response {
+  test("non-organizer judge event creation is rejected by RLS (403)", function () {
+      expect([403]).to.include(res.status);
+  });
+}
+
+docs {
+  QA19 RLS: events_insert_organizer requires both organizer_id = auth.uid() and private.is_organizer(). The Auth setup clears this password-backed judge fixture's organizer flag, so creating an event must be rejected even when organizer_id matches the judge's own user id.
+}

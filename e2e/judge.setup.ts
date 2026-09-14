@@ -1,4 +1,5 @@
 import { expect, test as setup } from '@playwright/test'
+import { setOrganizerFlag } from './helpers'
 
 const authFile = 'playwright/.auth/judge.json'
 
@@ -53,6 +54,12 @@ setup('authenticate as the e2e judge account', async ({ page, request }) => {
   }
 
   const body = await res.json()
+
+  // This fixture stands in for a magic-link judge, who is never an organizer
+  // (QA19). Clear the flag in case the account ever picked it up (e.g. it was
+  // created some other way), so judge specs exercise the real judge access.
+  await setOrganizerFlag(body.user.id, false)
+
   const nowSeconds = Math.floor(Date.now() / 1000)
   const session = {
     access_token: body.access_token,

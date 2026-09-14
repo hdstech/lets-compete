@@ -1,0 +1,32 @@
+meta {
+  name: Judge - Clear Organizer Flag
+  type: http
+  seq: 9
+}
+
+patch {
+  url: {{base_url}}/rest/v1/profiles?id=eq.{{judge_user_id}}
+  body: json
+  auth: none
+}
+
+headers {
+  apikey: {{secret_key}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "is_organizer": false
+  }
+}
+
+script:post-response {
+  test("judge organizer flag cleared (204)", function () {
+      expect([204]).to.include(res.status);
+  });
+}
+
+docs {
+  QA19: this password-backed fixture stands in for a production magic-link judge, who is never an organizer. A GoTrue signup doesn't grant the flag, so this is defensive — it resets the flag with the server-only secret key after Sign Up or Log In in case the account ever picked it up, so downstream requests exercise the real judge capability. Never put the secret key in a tracked file.
+}
